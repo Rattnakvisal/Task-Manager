@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Task;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class TaskApiController extends Controller
@@ -12,7 +11,7 @@ class TaskApiController extends Controller
     public function dashboard(Request $request)
     {
         $payload = $this->payload($request);
-        $tasks = Task::orderBy('due_date')->orderByDesc('created_at')->get();
+        $tasks = $request->user()->tasks()->orderBy('due_date')->orderByDesc('created_at')->get();
 
         $payload['upcoming_tasks'] = $tasks
             ->whereNotNull('due_date')
@@ -26,7 +25,7 @@ class TaskApiController extends Controller
             ->take(5)
             ->map(fn (Task $task) => $this->serializeTask($task))
             ->values();
-        $payload['recent_tasks'] = Task::latest()
+        $payload['recent_tasks'] = $request->user()->tasks()->latest()
             ->take(5)
             ->get()
             ->map(fn (Task $task) => $this->serializeTask($task))
@@ -60,9 +59,9 @@ class TaskApiController extends Controller
         return response()->json($this->payload($request));
     }
 
-    public function notifications()
+    public function notifications(Request $request)
     {
-        $tasks = $this->notificationTasks();
+        $tasks = $this->notificationTasks($request);
 
         return response()->json([
             'count' => $tasks->count(),
@@ -86,7 +85,7 @@ class TaskApiController extends Controller
     public function store(Request $request)
     {
         $task = Task::create($this->validated($request) + [
-            'user_id' => $this->defaultUser()->id,
+            'user_id' => $request->user()->id,
         ]);
 
         return response()->json([
@@ -95,13 +94,16 @@ class TaskApiController extends Controller
         ], 201);
     }
 
-    public function show(Task $task)
+    public function show(Request $request, Task $task)
     {
+        $this->ensureTaskOwner($request, $task);
+
         return response()->json(['task' => $this->serializeTask($task)]);
     }
 
     public function update(Request $request, Task $task)
     {
+        $this->ensureTaskOwner($request, $task);
         $task->update($this->validated($request));
 
         return response()->json([
@@ -110,8 +112,9 @@ class TaskApiController extends Controller
         ]);
     }
 
-    public function destroy(Task $task)
+    public function destroy(Request $request, Task $task)
     {
+        $this->ensureTaskOwner($request, $task);
         $task->delete();
 
         return response()->json(['message' => 'Task deleted successfully.']);
@@ -119,8 +122,8 @@ class TaskApiController extends Controller
 
     private function payload(Request $request, array $forcedFilters = []): array
     {
-        $allTasks = Task::all();
-        $query = Task::query();
+        $allTasks = $request->user()->tasks()->get();
+        $query = $request->user()->tasks();
 
         $status = $forcedFilters['status'] ?? $request->status;
         $priority = $forcedFilters['priority'] ?? $request->priority;
@@ -191,9 +194,9 @@ class TaskApiController extends Controller
         ]);
     }
 
-    private function notificationTasks()
+    private function notificationTasks(Request $request)
     {
-        return Task::whereNotNull('end_date')
+        return $request->user()->tasks()->whereNotNull('end_date')
             ->where('status', '!=', 'completed')
             ->where(function ($query) {
                 $query->whereDate('end_date', now()->toDateString())
@@ -204,11 +207,8 @@ class TaskApiController extends Controller
             ->get();
     }
 
-    private function defaultUser(): User
+    private function ensureTaskOwner(Request $request, Task $task): void
     {
-        return User::firstOrCreate(
-            ['email' => 'local@example.com'],
-            ['name' => 'Local User', 'password' => 'password']
-        );
+        abort_unless($task->user_id === $request->user()->id, 404);
     }
 }

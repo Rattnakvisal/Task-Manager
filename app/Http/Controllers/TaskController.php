@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -23,7 +22,7 @@ class TaskController extends Controller
 
     public function dashboard(Request $request)
     {
-        $tasks = Task::orderBy('due_date')->orderByDesc('created_at')->get();
+        $tasks = $request->user()->tasks()->orderBy('due_date')->orderByDesc('created_at')->get();
         $stats = [
             'Total Tasks' => ['value' => $tasks->count(), 'label' => 'All tasks', 'icon' => 'clipboard', 'tone' => 'bg-blue-50 text-blue-600'],
             'Pending' => ['value' => $tasks->where('status', 'pending')->count(), 'label' => 'Needs attention', 'icon' => 'list', 'tone' => 'bg-amber-50 text-amber-600'],
@@ -32,19 +31,19 @@ class TaskController extends Controller
         ];
         $upcomingTasks = $tasks->whereNotNull('due_date')->where('status', '!=', 'completed')->take(5);
         $priorityTasks = $tasks->where('priority', 'high')->where('status', '!=', 'completed')->take(5);
-        $recentTasks = Task::latest()->take(5)->get();
+        $recentTasks = $request->user()->tasks()->latest()->take(5)->get();
 
         return view('tasks.dashboard', compact('stats', 'upcomingTasks', 'priorityTasks', 'recentTasks'));
     }
 
     public function calendar(Request $request)
     {
-        $tasks = Task::whereNotNull('due_date')
+        $tasks = $request->user()->tasks()->whereNotNull('due_date')
             ->orderBy('due_date')
             ->orderByDesc('created_at')
             ->get();
         $groupedTasks = $tasks->groupBy(fn (Task $task) => $task->due_date->format('Y-m-d'));
-        $unscheduledTasks = Task::whereNull('due_date')->orderByDesc('created_at')->get();
+        $unscheduledTasks = $request->user()->tasks()->whereNull('due_date')->orderByDesc('created_at')->get();
 
         return view('tasks.calendar', compact('groupedTasks', 'unscheduledTasks'));
     }
@@ -52,9 +51,9 @@ class TaskController extends Controller
     public function priority(Request $request)
     {
         $tasksByPriority = [
-            'high' => Task::where('priority', 'high')->orderBy('due_date')->orderByDesc('created_at')->get(),
-            'medium' => Task::where('priority', 'medium')->orderBy('due_date')->orderByDesc('created_at')->get(),
-            'low' => Task::where('priority', 'low')->orderBy('due_date')->orderByDesc('created_at')->get(),
+            'high' => $request->user()->tasks()->where('priority', 'high')->orderBy('due_date')->orderByDesc('created_at')->get(),
+            'medium' => $request->user()->tasks()->where('priority', 'medium')->orderBy('due_date')->orderByDesc('created_at')->get(),
+            'low' => $request->user()->tasks()->where('priority', 'low')->orderBy('due_date')->orderByDesc('created_at')->get(),
         ];
 
         return view('tasks.priority', compact('tasksByPriority'));
@@ -62,7 +61,7 @@ class TaskController extends Controller
 
     public function allTasks(Request $request)
     {
-        $query = Task::query();
+        $query = $request->user()->tasks();
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -98,8 +97,8 @@ class TaskController extends Controller
 
     private function taskPage(Request $request, array $page)
     {
-        $allTasks = Task::all();
-        $query = Task::query();
+        $allTasks = $request->user()->tasks()->get();
+        $query = $request->user()->tasks();
 
         $status = $page['status'] ?? $request->status;
         $priority = $page['priority'] ?? $request->priority;
@@ -158,7 +157,7 @@ class TaskController extends Controller
             'end_date' => 'nullable|date|after_or_equal:due_date',
         ]);
 
-        $validated['user_id'] = $this->defaultUser()->id;
+        $validated['user_id'] = $request->user()->id;
 
         $task = Task::create($validated);
 
@@ -171,16 +170,20 @@ class TaskController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Task $task)
+    public function show(Request $request, Task $task)
     {
-        //
+        $this->ensureTaskOwner($request, $task);
+
+        return redirect()->route('tasks.edit', $task);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Task $task)
+    public function edit(Request $request, Task $task)
     {
+        $this->ensureTaskOwner($request, $task);
+
         return view('tasks.edit', compact('task'));
     }
 
@@ -189,6 +192,7 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task)
     {
+        $this->ensureTaskOwner($request, $task);
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -200,23 +204,22 @@ class TaskController extends Controller
 
         $task->update($validated);
 
-        return redirect()->route('tasks.index')->with('success','Task Updated Successfully.');
+        return redirect()->route('tasks.index')->with('success', 'Task Updated Successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Task $task)
+    public function destroy(Request $request, Task $task)
     {
+        $this->ensureTaskOwner($request, $task);
         $task->delete();
-        return redirect()->route('tasks.index')->with('success','Task Deleted Successfully.');
+
+        return redirect()->route('tasks.index')->with('success', 'Task Deleted Successfully.');
     }
 
-    private function defaultUser(): User
+    private function ensureTaskOwner(Request $request, Task $task): void
     {
-        return User::firstOrCreate(
-            ['email' => 'local@example.com'],
-            ['name' => 'Local User', 'password' => 'password']
-        );
+        abort_unless($task->user_id === $request->user()->id, 404);
     }
 }

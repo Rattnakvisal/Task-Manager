@@ -111,6 +111,12 @@
             <path d="M14 11v6" />
             @break
 
+        @case('logout')
+            <path d="M10 17l5-5-5-5" />
+            <path d="M15 12H3" />
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            @break
+
         @case('x')
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ $mode === 'register' ? 'Create account' : 'Sign in' }} · Task Manager</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="auth-page" data-auth-mode="{{ $mode }}">
+    <main class="auth-switcher {{ $mode === 'register' ? 'show-register' : '' }}" data-auth-switcher>
+        <section class="auth-form-pane auth-register-pane" aria-labelledby="register-heading">
+            <div class="auth-form-content">
+                <p class="auth-eyebrow">Start planning</p>
+                <h1 id="register-heading">Create account</h1>
+                <p class="auth-subtitle">Build a private workspace for your tasks.</p>
+
+                <form method="POST" action="{{ route('register.store') }}" data-animated-form>
+                    @csrf
+                    <div class="auth-field">
+                        <label for="register-name">Full name</label>
+                        <input id="register-name" name="name" type="text" value="{{ old('name') }}" autocomplete="name" maxlength="100" required>
+                        @if ($mode === 'register') @error('name') <p class="auth-error" role="alert">{{ $message }}</p> @enderror @endif
+                    </div>
+                    <div class="auth-field">
+                        <label for="register-email">Email address</label>
+                        <input id="register-email" name="email" type="email" value="{{ old('email') }}" autocomplete="email" inputmode="email" required>
+                        @if ($mode === 'register') @error('email') <p class="auth-error" role="alert">{{ $message }}</p> @enderror @endif
+                    </div>
+                    <div class="auth-field">
+                        <label for="register-password">Password</label>
+                        <div class="auth-password-wrap">
+                            <input id="register-password" name="password" type="password" autocomplete="new-password" required>
+                            <button type="button" class="auth-password-toggle" data-password-toggle="register-password" aria-label="Show password" aria-pressed="false">
+                                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a17 17 0 0 1-2.1 3.1M6.6 6.6C3.5 8.5 2 12 2 12s3.5 8 10 8a10 10 0 0 0 4-.8"/></svg>
+                            </button>
+                        </div>
+                        @if ($mode === 'register') @error('password') <p class="auth-error" role="alert">{{ $message }}</p> @enderror @endif
+                    </div>
+                    <div class="auth-field">
+                        <label for="register-password-confirmation">Confirm password</label>
+                        <div class="auth-password-wrap">
+                            <input id="register-password-confirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
+                            <button type="button" class="auth-password-toggle" data-password-toggle="register-password-confirmation" aria-label="Show password" aria-pressed="false">
+                                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a17 17 0 0 1-2.1 3.1M6.6 6.6C3.5 8.5 2 12 2 12s3.5 8 10 8a10 10 0 0 0 4-.8"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="auth-hint">12+ characters with uppercase, lowercase, a number, and a symbol.</p>
+                    <button type="submit" class="auth-submit">Create account</button>
+                </form>
+
+                <button type="button" class="auth-mobile-switch" data-show-login>Already registered? <strong>Sign in</strong></button>
+            </div>
+        </section>
+
+        <section class="auth-form-pane auth-login-pane" aria-labelledby="login-heading">
+            <div class="auth-form-content">
+                <p class="auth-eyebrow">Welcome back</p>
+                <h1 id="login-heading">Sign in</h1>
+                <p class="auth-subtitle">Continue to your personal workspace.</p>
+
+                <form method="POST" action="{{ route('login.store') }}" data-animated-form>
+                    @csrf
+                    <div class="auth-field">
+                        <label for="login-email">Email address</label>
+                        <input id="login-email" name="email" type="email" value="{{ old('email') }}" autocomplete="email" inputmode="email" required>
+                        @if ($mode === 'login') @error('email') <p class="auth-error" role="alert">{{ $message }}</p> @enderror @endif
+                    </div>
+                    <div class="auth-field">
+                        <label for="login-password">Password</label>
+                        <div class="auth-password-wrap">
+                            <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+                            <button type="button" class="auth-password-toggle" data-password-toggle="login-password" aria-label="Show password" aria-pressed="false">
+                                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a17 17 0 0 1-2.1 3.1M6.6 6.6C3.5 8.5 2 12 2 12s3.5 8 10 8a10 10 0 0 0 4-.8"/></svg>
+                            </button>
+                        </div>
+                        @if ($mode === 'login') @error('password') <p class="auth-error" role="alert">{{ $message }}</p> @enderror @endif
+                    </div>
+                    <label class="auth-remember">
+                        <input type="checkbox" name="remember" value="1">
+                        <span>Keep me signed in</span>
+                    </label>
+                    <button type="submit" class="auth-submit">Sign in</button>
+                </form>
+
+                <button type="button" class="auth-mobile-switch" data-show-register>New to Task Manager? <strong>Create account</strong></button>
+            </div>
+        </section>
+
+        <aside class="auth-overlay" aria-live="polite">
+            <div class="auth-overlay-decoration auth-orb-one"></div>
+            <div class="auth-overlay-decoration auth-orb-two"></div>
+            <a href="{{ route('login') }}" class="auth-brand">
+                <span><x-icon name="task-logo" class="h-5 w-5" /></span>
+                Task Manager
+            </a>
+
+            <div class="auth-overlay-message auth-message-login">
+                <h2>Hey there!</h2>
+                <p>Welcome back. You are one step away from a more organized day.</p>
+                <span>Don't have an account?</span>
+                <button type="button" data-show-register>Create account</button>
+            </div>
+
+            <div class="auth-overlay-message auth-message-register">
+                <h2>Welcome back!</h2>
+                <p>Your tasks and priorities are ready when you are.</p>
+                <span>Already have an account?</span>
+                <button type="button" data-show-login>Sign in</button>
+            </div>
+        </aside>
+    </main>
+</body>
+</html>

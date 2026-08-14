@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Task Manager')</title>
 
@@ -46,7 +47,7 @@
             ],
         ];
 
-        $notificationTasks = \App\Models\Task::whereNotNull('end_date')
+        $notificationTasks = auth()->user()->tasks()->whereNotNull('end_date')
             ->where('status', '!=', 'completed')
             ->where(function ($query) {
                 $query->whereDate('end_date', now()->toDateString())
@@ -58,17 +59,17 @@
     @endphp
 
 
-    <div class="min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div class="app-shell min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]" data-app-shell>
 
         {{-- =========================================================
         DESKTOP SIDEBAR
     ========================================================== --}}
-        <aside
+        <aside id="app-sidebar"
             class="fixed inset-y-0 left-0 z-50 hidden w-[260px] flex-col
                border-r border-slate-200/80 bg-white lg:flex">
 
             {{-- Logo --}}
-            <div class="flex h-[72px] items-center border-b border-slate-100 px-5">
+            <div class="flex h-[72px] items-center justify-between border-b border-slate-100 px-5">
 
                 <a href="{{ route('dashboard') }}" class="group flex items-center gap-3">
 
@@ -85,7 +86,7 @@
                         </span>
                     </span>
 
-                    <div>
+                    <div class="sidebar-label">
                         <p class="text-[15px] font-bold tracking-tight text-slate-950">
                             Task Manager
                         </p>
@@ -97,20 +98,24 @@
 
                 </a>
 
+                <button type="button" data-sidebar-toggle class="sidebar-toggle hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:flex" aria-label="Collapse sidebar" aria-expanded="true">
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                </button>
+
             </div>
 
 
             {{-- Navigation --}}
             <div class="flex-1 overflow-y-auto px-4 py-6">
 
-                <p class="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                <p class="sidebar-label mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
                     Main Menu
                 </p>
 
                 <nav class="space-y-1.5">
 
                     @foreach ($navItems as $item)
-                        <a href="{{ route($item['route']) }}"
+                        <a href="{{ route($item['route']) }}" title="{{ $item['label'] }}"
                             class="
                             group relative flex h-11 items-center gap-3 rounded-xl px-3
                             text-sm font-semibold transition-all duration-200
@@ -141,13 +146,13 @@
                             </span>
 
 
-                            <span class="flex-1">
+                            <span class="sidebar-label flex-1">
                                 {{ $item['label'] }}
                             </span>
 
 
                             @if ($item['active'])
-                                <span class="h-1.5 w-1.5 rounded-full bg-blue-600"></span>
+                                <span class="sidebar-label h-1.5 w-1.5 rounded-full bg-blue-600"></span>
                             @endif
 
                         </a>
@@ -159,7 +164,7 @@
 
 
             {{-- Productivity Card --}}
-            <div class="px-4 pb-4">
+            <div class="sidebar-extra px-4 pb-4">
 
                 <div
                     class="relative overflow-hidden rounded-2xl
@@ -228,17 +233,24 @@
                     </span>
 
 
-                    <div class="min-w-0 flex-1">
+                    <div class="sidebar-label min-w-0 flex-1">
 
                         <p class="truncate text-xs font-bold text-slate-800">
-                            My Workspace
+                            {{ auth()->user()->name }}
                         </p>
 
                         <p class="truncate text-[11px] text-slate-400">
-                            Personal tasks
+                            {{ auth()->user()->email }}
                         </p>
 
                     </div>
+
+                    <form method="POST" action="{{ route('logout') }}" class="sidebar-extra">
+                        @csrf
+                        <button type="submit" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Sign out" aria-label="Sign out">
+                            <x-icon name="logout" class="h-4 w-4" />
+                        </button>
+                    </form>
 
                 </div>
 
@@ -345,6 +357,13 @@
 
                         {{-- Divider --}}
                         <div class="hidden h-7 w-px bg-slate-200 sm:block"></div>
+                        {{-- Theme --}}
+                        <button type="button" data-theme-toggle
+                            class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-white hover:text-slate-700 hover:shadow-sm"
+                            aria-label="Switch to dark mode" aria-pressed="false">
+                            <svg data-theme-sun viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
+                            <svg data-theme-moon viewBox="0 0 24 24" class="hidden h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+                        </button>
                         {{-- Notifications --}}
                         <div class="relative">
                             <button type="button"
@@ -438,7 +457,7 @@
             {{-- =========================================================
             MAIN CONTENT
         ========================================================== --}}
-            <main
+            <main data-page-content
                 class="mx-auto min-h-[calc(100vh-72px)] max-w-[1600px]
                    px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 

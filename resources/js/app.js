@@ -16,6 +16,148 @@ const shouldPreserveForm = modal?.dataset.hasErrors === 'true';
 let searchTimeout;
 let activeSearchController;
 
+const authSwitcher = document.querySelector('[data-auth-switcher]');
+const dashboard = document.querySelector('[data-dashboard]');
+const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
+const themeToggle = document.querySelector('[data-theme-toggle]');
+
+function applySidebarState(collapsed) {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggle?.setAttribute('aria-expanded', String(!collapsed));
+    sidebarToggle?.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+}
+
+function applyTheme(theme) {
+    const dark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', dark);
+    themeToggle?.setAttribute('aria-pressed', String(dark));
+    themeToggle?.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+const storedSidebarState = window.localStorage.getItem('task-manager-sidebar');
+applySidebarState(storedSidebarState === 'collapsed');
+
+const storedTheme = window.localStorage.getItem('task-manager-theme');
+const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+applyTheme(storedTheme ?? preferredTheme);
+
+sidebarToggle?.addEventListener('click', () => {
+    const collapsed = !document.body.classList.contains('sidebar-collapsed');
+    applySidebarState(collapsed);
+    window.localStorage.setItem('task-manager-sidebar', collapsed ? 'collapsed' : 'expanded');
+});
+
+themeToggle?.addEventListener('click', () => {
+    const nextTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    window.localStorage.setItem('task-manager-theme', nextTheme);
+});
+
+if (dashboard && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    dashboard.querySelectorAll('[data-dashboard-count]').forEach((counter) => {
+        const target = Number.parseInt(counter.dataset.dashboardCount, 10);
+
+        if (!Number.isFinite(target) || target <= 0) {
+            return;
+        }
+
+        const duration = 700;
+        const startTime = performance.now();
+        counter.textContent = '0';
+
+        const updateCounter = (currentTime) => {
+            const progress = Math.min((currentTime - startTime) / duration, 1);
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            counter.textContent = Math.round(target * easedProgress).toLocaleString();
+
+            if (progress < 1) {
+                window.requestAnimationFrame(updateCounter);
+            }
+        };
+
+        window.requestAnimationFrame(updateCounter);
+    });
+}
+
+function setAuthMode(mode) {
+    if (!authSwitcher) {
+        return;
+    }
+
+    const showRegister = mode === 'register';
+    authSwitcher.classList.toggle('show-register', showRegister);
+
+    const loginPane = authSwitcher.querySelector('.auth-login-pane');
+    const registerPane = authSwitcher.querySelector('.auth-register-pane');
+    loginPane?.toggleAttribute('inert', showRegister);
+    registerPane?.toggleAttribute('inert', !showRegister);
+
+    const nextUrl = showRegister ? '/sign-up' : '/sign-in';
+    window.history.replaceState({}, '', nextUrl);
+
+    window.setTimeout(() => {
+        authSwitcher.querySelector(showRegister ? '#register-name' : '#login-email')?.focus();
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 380);
+}
+
+if (authSwitcher) {
+    const startsWithRegister = authSwitcher.classList.contains('show-register');
+    authSwitcher.querySelector('.auth-login-pane')?.toggleAttribute('inert', startsWithRegister);
+    authSwitcher.querySelector('.auth-register-pane')?.toggleAttribute('inert', !startsWithRegister);
+
+    document.querySelectorAll('[data-show-register]').forEach((button) => {
+        button.addEventListener('click', () => setAuthMode('register'));
+    });
+
+    document.querySelectorAll('[data-show-login]').forEach((button) => {
+        button.addEventListener('click', () => setAuthMode('login'));
+    });
+}
+
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.passwordToggle);
+
+        if (!(input instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const isVisible = input.type === 'text';
+        input.type = isVisible ? 'password' : 'text';
+        button.setAttribute('aria-pressed', String(!isVisible));
+        button.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+        input.focus({ preventScroll: true });
+        input.setSelectionRange(input.value.length, input.value.length);
+    });
+});
+
+document.querySelectorAll('form').forEach((form) => {
+    const controls = form.querySelectorAll('input:not([type="hidden"]), select, textarea');
+
+    if (controls.length >= 2) {
+        form.dataset.animatedForm = '';
+
+        Array.from(form.children).forEach((child, index) => {
+            child.classList.add('form-motion-item');
+            child.style.setProperty('--form-index', index);
+        });
+    }
+
+    form.addEventListener('submit', (event) => {
+        if (event.defaultPrevented || !form.checkValidity()) {
+            return;
+        }
+
+        const submitButton = event.submitter;
+
+        if (submitButton instanceof HTMLButtonElement) {
+            submitButton.classList.add('is-submitting');
+            submitButton.disabled = true;
+            submitButton.setAttribute('aria-busy', 'true');
+        }
+    });
+});
+
 function clearTaskForm() {
     if (!taskForm || shouldPreserveForm) {
         return;
