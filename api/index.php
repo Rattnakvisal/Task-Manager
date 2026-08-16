@@ -23,6 +23,17 @@ register_shutdown_function(static function (): void {
     }
 });
 
+$appKey = getenv('APP_KEY');
+
+if ($appKey === false || trim($appKey) === '') {
+    error_log('[vercel-bootstrap] APP_KEY is missing. Add it in Vercel Project Settings > Environment Variables.');
+    http_response_code(503);
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo 'Application configuration is incomplete.';
+
+    return;
+}
+
 // Vercel Functions have a read-only project filesystem. Laravel's generated
 // views, logs, and temporary framework files must live in the writable /tmp.
 $storagePath = '/tmp/task-manager-storage';
@@ -69,6 +80,12 @@ if (! $hasRemoteDatabase) {
 
     if (! is_file($runtimeDatabase) && is_file($sourceDatabase)) {
         copy($sourceDatabase, $runtimeDatabase);
+    }
+
+    if (! is_file($runtimeDatabase)) {
+        touch($runtimeDatabase);
+        putenv('VERCEL_RUNTIME_MIGRATE=true');
+        $_ENV['VERCEL_RUNTIME_MIGRATE'] = $_SERVER['VERCEL_RUNTIME_MIGRATE'] = 'true';
     }
 
     putenv("DB_CONNECTION=sqlite");

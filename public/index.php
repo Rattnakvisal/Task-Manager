@@ -17,4 +17,14 @@ require __DIR__.'/../vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
+// A zero-configuration Vercel demo starts with a fresh SQLite file in /tmp.
+// Initialize its schema once per cold function instance. Production projects
+// should use PostgreSQL and run migrations as part of their release process.
+if (getenv('VERCEL_RUNTIME_MIGRATE') === 'true') {
+    $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+    $kernel->bootstrap();
+    Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    putenv('VERCEL_RUNTIME_MIGRATE=false');
+}
+
 $app->handleRequest(Request::capture());
