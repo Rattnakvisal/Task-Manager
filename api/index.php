@@ -2,6 +2,27 @@
 
 declare(strict_types=1);
 
+// Laravel cannot report failures that happen before its exception handler is
+// booted. Send those early fatals to Vercel Runtime Logs without exposing
+// details in the HTTP response.
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('error_log', 'php://stderr');
+
+register_shutdown_function(static function (): void {
+    $error = error_get_last();
+
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log(sprintf(
+            '[vercel-bootstrap] %s in %s:%d',
+            $error['message'],
+            $error['file'],
+            $error['line'],
+        ));
+    }
+});
+
 // Vercel Functions have a read-only project filesystem. Laravel's generated
 // views, logs, and temporary framework files must live in the writable /tmp.
 $storagePath = '/tmp/task-manager-storage';
@@ -71,4 +92,18 @@ if (getenv('LOG_CHANNEL') === false) {
     $_SERVER['LOG_CHANNEL'] = 'stderr';
 }
 
-require __DIR__.'/../public/index.php';
+try {
+    require __DIR__.'/../public/index.php';
+} catch (Throwable $exception) {
+    error_log(sprintf(
+        '[vercel-bootstrap] %s: %s in %s:%d%s%s',
+        $exception::class,
+        $exception->getMessage(),
+        $exception->getFile(),
+        $exception->getLine(),
+        PHP_EOL,
+        $exception->getTraceAsString(),
+    ));
+
+    http_response_code(500);
+}
