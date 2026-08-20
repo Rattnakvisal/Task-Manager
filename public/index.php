@@ -1,7 +1,9 @@
 <?php
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 
 define('LARAVEL_START', microtime(true));
 
@@ -21,9 +23,9 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 // Initialize its schema once per cold function instance. Production projects
 // should use PostgreSQL and run migrations as part of their release process.
 if (getenv('VERCEL_RUNTIME_MIGRATE') === 'true') {
-    $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+    $kernel = $app->make(Kernel::class);
     $kernel->bootstrap();
-    Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    Artisan::call('migrate', ['--force' => true]);
     putenv('VERCEL_RUNTIME_MIGRATE=false');
 }
 

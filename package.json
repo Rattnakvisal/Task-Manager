@@ -17,7 +17,6 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
-        "@vercel/toolbar": "^0.2.7",
         "fontaine": "^0.8.0"
     }
 }

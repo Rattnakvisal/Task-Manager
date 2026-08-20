@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class Task extends Model
 {
     use HasFactory;
@@ -19,7 +20,7 @@ class Task extends Model
         'end_date',
     ];
 
-    protected $casts =[
+    protected $casts = [
         'due_date' => 'date',
         'end_date' => 'date',
     ];
@@ -31,7 +32,7 @@ class Task extends Model
 
     public function scopeOverdue($query)
     {
-        return $query->where('status', '!=','completed')
+        return $query->where('status', '!=', 'completed')
             ->whereNotNull('due_date')
             ->where('due_date', '<', now());
     }

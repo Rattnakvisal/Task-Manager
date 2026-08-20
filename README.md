@@ -1,58 +1,89 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Task Manager
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A responsive task management application built with Laravel, Blade, Tailwind CSS, and SQLite. Each user has a private workspace for creating, organizing, filtering, and completing tasks.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- User registration, sign-in, and sign-out
+- Private tasks scoped to the signed-in user
+- Dashboard statistics and recent work
+- Calendar and priority views
+- Search and filtering by status or priority
+- Due dates, end dates, and task statuses
+- Responsive interface
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3 or newer
+- Composer
+- Node.js 20 or newer with npm
+- The PHP SQLite extensions (`pdo_sqlite` and `sqlite3`)
 
-## Learning Laravel
+## Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Run these commands from the project directory:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer run setup
+composer run dev
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The setup command installs dependencies, creates `.env`, generates the application key, prepares the SQLite database, runs migrations, and builds the frontend assets.
 
-## Contributing
+Open `http://127.0.0.1:8000`, create an account, and start adding tasks.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Manual installation
 
-## Code of Conduct
+If the automatic setup command is unavailable, run:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install
+npm run build
+php artisan serve
+```
 
-## Security Vulnerabilities
+On Windows Command Prompt, replace `cp .env.example .env` with `copy .env.example .env`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Development
+
+```bash
+composer run dev
+```
+
+This starts Laravel, the queue worker, and Vite together. To run the automated checks:
+
+```bash
+composer test
+vendor/bin/pint --test
+npm run build
+```
+
+## Database
+
+SQLite is configured by default. Laravel creates `database/database.sqlite` during setup. To use MySQL or PostgreSQL, update the `DB_*` values in `.env`, create the database, and run `php artisan migrate`.
+
+## Production checklist
+
+- Set `APP_ENV=production` and `APP_DEBUG=false`.
+- Set `APP_URL` to the public application URL.
+- Use a production database and secure credentials.
+- Run `php artisan migrate --force` and `npm run build`.
+- Point the web server document root to the `public` directory.
+- Never upload or share the local `.env` file.
+
+## Project structure
+
+- `app/` — application models, controllers, middleware, and providers
+- `database/` — migrations, factories, and seeders
+- `resources/` — Blade templates, CSS, and JavaScript
+- `routes/` — web and API route definitions
+- `tests/` — automated application tests
+- `public/` — public web entry point and compiled assets
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This purchase grants the usage rights stated on the product's Gumroad page. Third-party packages remain subject to their own licenses.

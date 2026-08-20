@@ -3,7 +3,6 @@
 .env
 .env.backup
 .env.production
-/vercel.env
 .phpactor.json
 .phpunit.result.cache
 /.codex
@@ -22,6 +21,7 @@
 /storage/*.key
 /storage/pail
 /vendor
+/database/*.sqlite
 _ide_helper.php
 Homestead.json
 Homestead.yaml

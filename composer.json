@@ -1,11 +1,11 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "task-manager/application",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "A responsive Laravel task management application.",
     "keywords": [
         "laravel",
-        "framework"
+        "task-manager"
     ],
     "license": "MIT",
     "require": {
@@ -41,6 +41,7 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
             "@php artisan migrate --force",
             "npm install --ignore-scripts",
             "npm run build"
