@@ -8,14 +8,30 @@ use Illuminate\Support\Facades\Hash;
 uses(RefreshDatabase::class);
 
 test('guests can view authentication forms', function () {
-    $this->get(route('login'))
+    $this->app->detectEnvironment(fn () => 'production');
+
+    $loginResponse = $this->get(route('login'))
         ->assertOk()
         ->assertSee('Sign in')
         ->assertSee('Create account')
+        ->assertSee('data-show-register', false)
+        ->assertDontSee('<script>', false)
         ->assertHeader('X-Frame-Options', 'DENY')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
         ->assertHeader('Cache-Control', 'no-store, private');
-    $this->get(route('register'))->assertOk()->assertSee('Create account')->assertSee('Sign in');
+
+    $contentSecurityPolicy = $loginResponse->headers->get('Content-Security-Policy');
+
+    expect(str_contains($contentSecurityPolicy, "script-src 'self'"))->toBeTrue()
+        ->and(str_contains($contentSecurityPolicy, "script-src 'self' 'unsafe-inline'"))->toBeFalse()
+        ->and(str_contains($contentSecurityPolicy, 'https://fonts.googleapis.com'))->toBeTrue()
+        ->and(str_contains($contentSecurityPolicy, 'https://fonts.gstatic.com'))->toBeTrue();
+
+    $this->get(route('register'))
+        ->assertOk()
+        ->assertSee('Create account')
+        ->assertSee('Sign in')
+        ->assertSee('data-show-login', false);
 });
 
 test('email addresses are normalized before authentication', function () {

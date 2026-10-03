@@ -8,17 +8,6 @@
 
     <title>@yield('title', 'Task Manager')</title>
 
-    <script>
-        (function() {
-            const theme = localStorage.getItem('task-manager-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        })();
-    </script>
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -622,26 +611,6 @@
 
     </div>
 
-
-    {{-- =============================================================
-    SMALL UI SCRIPTS
-============================================================== --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-
-            // Dismiss alerts
-            document.querySelectorAll('[data-dismiss-alert]').forEach(function(button) {
-                button.addEventListener('click', function() {
-                    const alert = button.closest('#success-alert');
-
-                    if (alert) {
-                        alert.remove();
-                    }
-                });
-            });
-
-        });
-    </script>
 
     {{-- =============================================================
         CREATE TASK MODAL (AVAILABLE GLOBALLY ON ALL PAGES)

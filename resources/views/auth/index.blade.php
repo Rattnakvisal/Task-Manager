@@ -5,16 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $mode === 'register' ? 'Create account' : 'Sign in' }} · Task Manager</title>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('task-manager-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        })();
-    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="auth-page relative" data-auth-mode="{{ $mode }}">
@@ -26,7 +16,8 @@
             <svg data-theme-moon viewBox="0 0 24 24" class="hidden h-4.5 w-4.5 text-blue-400 transition" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
         </button>
     </div>
-    <main class="auth-switcher {{ $mode === 'register' ? 'show-register' : '' }}" data-auth-switcher>
+    <main class="auth-switcher {{ $mode === 'register' ? 'show-register' : '' }}" data-auth-switcher
+        data-login-url="{{ route('login') }}" data-register-url="{{ route('register') }}">
         <section class="auth-form-pane auth-register-pane" aria-labelledby="register-heading">
             <div class="auth-form-content">
                 <p class="auth-eyebrow">Start planning</p>

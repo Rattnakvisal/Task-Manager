@@ -255,6 +255,92 @@ themeToggle?.addEventListener('click', () => {
 
 
 // ============================================================================
+// AUTHENTICATION & CSP-SAFE FORM CONTROLS
+// ============================================================================
+const authSwitcher = document.querySelector('[data-auth-switcher]');
+
+function setAuthMode(mode, updateUrl = true) {
+    if (!authSwitcher) return;
+
+    const showRegister = mode === 'register';
+    const registerPane = authSwitcher.querySelector('.auth-register-pane');
+    const loginPane = authSwitcher.querySelector('.auth-login-pane');
+
+    authSwitcher.classList.toggle('show-register', showRegister);
+    registerPane?.toggleAttribute('inert', !showRegister);
+    loginPane?.toggleAttribute('inert', showRegister);
+    registerPane?.setAttribute('aria-hidden', String(!showRegister));
+    loginPane?.setAttribute('aria-hidden', String(showRegister));
+
+    if (updateUrl) {
+        const url = showRegister ? authSwitcher.dataset.registerUrl : authSwitcher.dataset.loginUrl;
+        if (url) window.history.replaceState({}, '', url);
+    }
+
+    const activePane = showRegister ? registerPane : loginPane;
+    window.setTimeout(() => activePane?.querySelector('input')?.focus({ preventScroll: true }), 350);
+}
+
+if (authSwitcher) {
+    const initialMode = document.body.dataset.authMode === 'register' ? 'register' : 'login';
+    setAuthMode(initialMode, false);
+
+    document.querySelectorAll('[data-show-register]').forEach((button) => {
+        button.addEventListener('click', () => setAuthMode('register'));
+    });
+
+    document.querySelectorAll('[data-show-login]').forEach((button) => {
+        button.addEventListener('click', () => setAuthMode('login'));
+    });
+}
+
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.passwordToggle);
+        if (!input) return;
+
+        const reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(reveal));
+        button.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
+    });
+});
+
+document.querySelectorAll('[data-animated-form]').forEach((form) => {
+    form.querySelectorAll('.auth-field, .auth-hint, .auth-remember, .auth-submit').forEach((element) => {
+        element.classList.add('form-motion-item');
+    });
+});
+
+document.addEventListener('submit', (event) => {
+    const form = event.target.closest('form');
+    if (!form) return;
+
+    const confirmation = form.dataset.confirm;
+    if (confirmation && !window.confirm(confirmation)) {
+        event.preventDefault();
+        return;
+    }
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton && !event.defaultPrevented) {
+        submitButton.classList.add('is-submitting');
+        submitButton.disabled = true;
+    }
+});
+
+document.addEventListener('change', (event) => {
+    const control = event.target.closest('[data-submit-on-change]');
+    control?.form?.requestSubmit();
+});
+
+document.addEventListener('click', (event) => {
+    const dismissButton = event.target.closest('[data-dismiss-alert]');
+    dismissButton?.closest('#success-alert')?.remove();
+});
+
+
+// ============================================================================
 // 3. CONFETTI CELEBRATION & PLEASANT AUDIO CHIME
 // ============================================================================
 function playTaskChime() {
@@ -696,17 +782,17 @@ function renderCreateSubtasks() {
     container.innerHTML = createSubtasks.map((st, i) => `
         <div class="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800">
             <span class="text-xs text-slate-800 dark:text-slate-200">${escapeHtml(st.title)}</span>
-            <button type="button" class="text-slate-400 hover:text-rose-500" onclick="removeCreateSubtask(${i})">
+            <button type="button" class="text-slate-400 hover:text-rose-500" data-remove-create-subtask="${i}">
                 <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
     `).join('');
 }
 
-window.removeCreateSubtask = function(index) {
+function removeCreateSubtask(index) {
     createSubtasks.splice(index, 1);
     renderCreateSubtasks();
-};
+}
 
 document.getElementById('create-add-subtask-btn')?.addEventListener('click', () => {
     const input = document.getElementById('create-new-subtask-input');
@@ -728,27 +814,47 @@ function renderEditSubtasks() {
     container.innerHTML = editSubtasks.map((st, i) => `
         <div class="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-800">
             <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-800 dark:text-slate-200">
-                <input type="checkbox" ${st.completed ? 'checked' : ''} onchange="toggleEditSubtaskCompleted(${i}, this.checked)" class="rounded border-slate-300 text-blue-600">
+                <input type="checkbox" ${st.completed ? 'checked' : ''} data-toggle-edit-subtask="${i}" class="rounded border-slate-300 text-blue-600">
                 <span class="${st.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(st.title)}</span>
             </label>
-            <button type="button" class="text-slate-400 hover:text-rose-500" onclick="removeEditSubtask(${i})">
+            <button type="button" class="text-slate-400 hover:text-rose-500" data-remove-edit-subtask="${i}">
                 <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
     `).join('');
 }
 
-window.toggleEditSubtaskCompleted = function(index, checked) {
+function toggleEditSubtaskCompleted(index, checked) {
     if (editSubtasks[index]) {
         editSubtasks[index].completed = checked;
         renderEditSubtasks();
     }
-};
+}
 
-window.removeEditSubtask = function(index) {
+function removeEditSubtask(index) {
     editSubtasks.splice(index, 1);
     renderEditSubtasks();
-};
+}
+
+document.addEventListener('click', (event) => {
+    const createRemoveButton = event.target.closest('[data-remove-create-subtask]');
+    if (createRemoveButton) {
+        removeCreateSubtask(Number.parseInt(createRemoveButton.dataset.removeCreateSubtask, 10));
+        return;
+    }
+
+    const editRemoveButton = event.target.closest('[data-remove-edit-subtask]');
+    if (editRemoveButton) {
+        removeEditSubtask(Number.parseInt(editRemoveButton.dataset.removeEditSubtask, 10));
+    }
+});
+
+document.addEventListener('change', (event) => {
+    const checkbox = event.target.closest('[data-toggle-edit-subtask]');
+    if (checkbox) {
+        toggleEditSubtaskCompleted(Number.parseInt(checkbox.dataset.toggleEditSubtask, 10), checkbox.checked);
+    }
+});
 
 document.getElementById('edit-add-subtask-btn')?.addEventListener('click', () => {
     const input = document.getElementById('edit-new-subtask-input');

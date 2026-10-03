@@ -329,7 +329,7 @@
                                 </button>
 
                                 {{-- Delete --}}
-                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Are you sure you want to delete this task?');">
+                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" data-confirm="Are you sure you want to delete this task?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"

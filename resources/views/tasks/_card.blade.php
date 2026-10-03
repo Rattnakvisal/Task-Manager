@@ -145,7 +145,7 @@
                 <x-icon name="edit" class="h-3.5 w-3.5" />
             </button>
 
-            <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Delete this task?');" class="inline">
+            <form method="POST" action="{{ route('tasks.destroy', $task) }}" data-confirm="Delete this task?" class="inline">
                 @csrf
                 @method('DELETE')
                 <button

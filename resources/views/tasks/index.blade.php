@@ -246,7 +246,7 @@
                     {{-- Priority Filter --}}
                     <select
                         name="priority"
-                        onchange="this.form.submit()"
+                        data-submit-on-change
                         class="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                     >
                         <option value="" data-i18n="all_priority">All Priority</option>
@@ -258,7 +258,7 @@
                     {{-- Category Filter --}}
                     <select
                         name="category"
-                        onchange="this.form.submit()"
+                        data-submit-on-change
                         class="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                     >
                         <option value="" data-i18n="all_categories">All Categories</option>
@@ -455,7 +455,7 @@
                                 <a href="{{ route('tasks.edit', $task) }}" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-800" title="Edit">
                                     <x-icon name="edit" class="h-4 w-4" />
                                 </a>
-                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Delete this task?');">
+                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" data-confirm="Delete this task?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-slate-800" title="Delete">
