@@ -4,6 +4,7 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 
 uses(RefreshDatabase::class);
 
@@ -15,6 +16,9 @@ test('guests can view authentication forms', function () {
         ->assertSee('Sign in')
         ->assertSee('Create account')
         ->assertSee('data-show-register', false)
+        ->assertSee('data-register-url="/sign-up"', false)
+        ->assertSee('action="/sign-up"', false)
+        ->assertSee('action="/sign-in"', false)
         ->assertDontSee('<script>', false)
         ->assertHeader('X-Frame-Options', 'DENY')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
@@ -32,6 +36,18 @@ test('guests can view authentication forms', function () {
         ->assertSee('Create account')
         ->assertSee('Sign in')
         ->assertSee('data-show-login', false);
+});
+
+test('forwarded HTTPS requests generate secure absolute URLs', function () {
+    Route::get('/proxy-url-check', fn () => url('/sign-up'));
+
+    $this->withServerVariables([
+        'HTTP_X_FORWARDED_PROTO' => 'https',
+        'HTTP_X_FORWARDED_HOST' => 'tasks.example.com',
+        'HTTP_X_FORWARDED_PORT' => '443',
+    ])->get('http://internal.test/proxy-url-check')
+        ->assertOk()
+        ->assertSeeText('https://tasks.example.com/sign-up');
 });
 
 test('email addresses are normalized before authentication', function () {

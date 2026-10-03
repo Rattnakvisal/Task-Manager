@@ -274,7 +274,10 @@ function setAuthMode(mode, updateUrl = true) {
 
     if (updateUrl) {
         const url = showRegister ? authSwitcher.dataset.registerUrl : authSwitcher.dataset.loginUrl;
-        if (url) window.history.replaceState({}, '', url);
+        if (url) {
+            const targetUrl = new URL(url, window.location.href);
+            window.history.replaceState({}, '', `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`);
+        }
     }
 
     const activePane = showRegister ? registerPane : loginPane;

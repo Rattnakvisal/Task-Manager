@@ -17,14 +17,14 @@
         </button>
     </div>
     <main class="auth-switcher {{ $mode === 'register' ? 'show-register' : '' }}" data-auth-switcher
-        data-login-url="{{ route('login') }}" data-register-url="{{ route('register') }}">
+        data-login-url="{{ route('login', [], false) }}" data-register-url="{{ route('register', [], false) }}">
         <section class="auth-form-pane auth-register-pane" aria-labelledby="register-heading">
             <div class="auth-form-content">
                 <p class="auth-eyebrow">Start planning</p>
                 <h1 id="register-heading">Create account</h1>
                 <p class="auth-subtitle">Build a private workspace for your tasks.</p>
 
-                <form method="POST" action="{{ route('register.store') }}" data-animated-form>
+                <form method="POST" action="{{ route('register.store', [], false) }}" data-animated-form>
                     @csrf
                     <div class="auth-field">
                         <label for="register-name">Full name</label>
@@ -71,7 +71,7 @@
                 <h1 id="login-heading">Sign in</h1>
                 <p class="auth-subtitle">Continue to your personal workspace.</p>
 
-                <form method="POST" action="{{ route('login.store') }}" data-animated-form>
+                <form method="POST" action="{{ route('login.store', [], false) }}" data-animated-form>
                     @csrf
                     <div class="auth-field">
                         <label for="login-email">Email address</label>
@@ -103,7 +103,7 @@
         <aside class="auth-overlay" aria-live="polite">
             <div class="auth-overlay-decoration auth-orb-one"></div>
             <div class="auth-overlay-decoration auth-orb-two"></div>
-            <a href="{{ route('login') }}" class="auth-brand">
+            <a href="{{ route('login', [], false) }}" class="auth-brand">
                 <span><x-icon name="task-logo" class="h-5 w-5" /></span>
                 Task Manager
             </a>
