@@ -20,5 +20,10 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::get('/all-tasks', [TaskController::class, 'allTasks'])->name('all-tasks');
     Route::get('/completed', [TaskController::class, 'completed'])->name('completed');
     Route::post('/sign-out', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::post('/tasks/quick', [TaskController::class, 'quickStore'])->name('tasks.quick-store');
+    Route::patch('/tasks/{task}/toggle-status', [TaskController::class, 'toggleStatus'])->name('tasks.toggle-status');
+    Route::patch('/tasks/{task}/toggle-pin', [TaskController::class, 'togglePin'])->name('tasks.toggle-pin');
+    Route::patch('/tasks/{task}/subtasks/{subtaskId}/toggle', [TaskController::class, 'toggleSubtask'])->name('tasks.toggle-subtask');
+    Route::get('/tasks-export/{format}', [TaskController::class, 'export'])->name('tasks.export');
     Route::resource('tasks', TaskController::class);
 });

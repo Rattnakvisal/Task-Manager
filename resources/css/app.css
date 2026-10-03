@@ -1,10 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&display=swap');
 @import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Instrument Sans', 'Kantumruy Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
@@ -319,6 +322,14 @@ html.dark .bg-rose-50 { background-color: rgb(136 19 55 / 24%) !important; }
         #f4f7fc;
 }
 
+html.dark .auth-page {
+    color: #f1f5f9;
+    background:
+        radial-gradient(circle at 12% 18%, rgb(30 58 138 / 25%), transparent 26rem),
+        radial-gradient(circle at 88% 82%, rgb(30 27 75 / 30%), transparent 30rem),
+        #0b1120;
+}
+
 .auth-switcher {
     position: relative;
     display: grid;
@@ -332,6 +343,24 @@ html.dark .bg-rose-50 { background-color: rgb(136 19 55 / 24%) !important; }
     box-shadow: 0 30px 80px rgb(15 23 42 / 14%);
     animation: form-rise .55s cubic-bezier(.22, 1, .36, 1) both;
 }
+
+html.dark .auth-switcher {
+    border-color: #1e293b;
+    background: #111827;
+    box-shadow: 0 30px 80px rgb(0 0 0 / 45%);
+}
+
+html.dark .auth-form-content h1 { color: #f8fafc; }
+html.dark .auth-subtitle { color: #94a3b8; }
+html.dark .auth-field label { color: #cbd5e1; }
+html.dark .auth-field input { border-color: #334155; background: #0f172a; color: #f8fafc; }
+html.dark .auth-field input:hover { border-color: #475569; }
+html.dark .auth-field input:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgb(59 130 246 / 20%); }
+html.dark .auth-password-toggle { color: #64748b; }
+html.dark .auth-password-toggle:hover { color: #60a5fa; background: #1e293b; }
+html.dark .auth-remember { color: #94a3b8; }
+html.dark .auth-mobile-switch { color: #94a3b8; }
+html.dark .auth-mobile-switch strong { color: #60a5fa; }
 
 .auth-form-pane {
     display: flex;
@@ -654,3 +683,106 @@ html.dark .bg-rose-50 { background-color: rgb(136 19 55 / 24%) !important; }
 @media (prefers-reduced-motion: reduce) {
     .auth-switcher, .auth-overlay, .auth-overlay-message, .auth-form-pane { animation: none !important; transition: none !important; }
 }
+
+/* Kanban & Drag-and-Drop styles */
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.kanban-col {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 1.25rem;
+    padding: 1rem;
+    min-height: 520px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dark .kanban-col {
+    background: #0f172a;
+    border-color: #1e293b;
+}
+
+.kanban-col.drag-over {
+    background-color: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.dark .kanban-col.drag-over {
+    background-color: rgba(30, 58, 138, 0.3) !important;
+    border-color: #60a5fa !important;
+}
+
+.task-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+    cursor: grab;
+}
+
+.task-card:active {
+    cursor: grabbing;
+}
+
+.task-card.is-dragging {
+    opacity: 0.45;
+    transform: scale(0.97) rotate(1deg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.task-completed-text {
+    text-decoration: line-through;
+    opacity: 0.65;
+}
+
+/* Quick Add Task Bar */
+.quick-add-bar {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.quick-add-bar:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.12), 0 0 0 3px rgba(59, 130, 246, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Command Palette */
+#command-palette-modal.flex {
+    animation: form-rise 0.2s ease-out both;
+}
+
+#command-palette-modal.flex > div {
+    animation: modal-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cmd-item {
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.cmd-item.is-selected,
+.cmd-item:hover {
+    background-color: #f1f5f9;
+}
+
+.dark .cmd-item.is-selected,
+.dark .cmd-item:hover {
+    background-color: #1e293b;
+}
+
+/* Confetti container */
+#confetti-canvas {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999;
+}
+
+/* Smooth view transition */
+[data-view-panel] {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+

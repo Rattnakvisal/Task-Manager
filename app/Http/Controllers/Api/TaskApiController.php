@@ -175,6 +175,14 @@ class TaskApiController extends Controller
             'description' => $task->description,
             'priority' => $task->priority,
             'status' => $task->status,
+            'category' => $task->category,
+            'subtasks' => $task->subtasks ?? [],
+            'subtasks_count' => $task->subtasks_count,
+            'completed_subtasks_count' => $task->completed_subtasks_count,
+            'subtasks_progress' => $task->subtasks_progress,
+            'tags' => $task->tags ?? [],
+            'is_pinned' => (bool) $task->is_pinned,
+            'is_overdue' => (bool) $task->is_overdue,
             'due_date' => $task->due_date?->format('Y-m-d'),
             'end_date' => $task->end_date?->format('Y-m-d'),
             'created_at' => $task->created_at?->toISOString(),
@@ -184,14 +192,34 @@ class TaskApiController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'priority' => 'required|in:low,medium,high',
             'status' => 'required|in:pending,in_progress,completed',
             'due_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:due_date',
+            'category' => 'nullable|string|max:50',
+            'subtasks' => 'nullable',
+            'tags' => 'nullable',
+            'is_pinned' => 'nullable|boolean',
         ]);
+
+        if (isset($validated['subtasks']) && is_string($validated['subtasks'])) {
+            $decoded = json_decode($validated['subtasks'], true);
+            $validated['subtasks'] = is_array($decoded) ? $decoded : [];
+        }
+
+        if (isset($validated['tags']) && is_string($validated['tags'])) {
+            $decoded = json_decode($validated['tags'], true);
+            if (is_array($decoded)) {
+                $validated['tags'] = $decoded;
+            } else {
+                $validated['tags'] = array_values(array_filter(array_map('trim', explode(',', $validated['tags']))));
+            }
+        }
+
+        return $validated;
     }
 
     private function notificationTasks(Request $request)

@@ -8,10 +8,21 @@
 
     <title>@yield('title', 'Task Manager')</title>
 
+    <script>
+        (function() {
+            const theme = localStorage.getItem('task-manager-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-[#f6f8fc] text-slate-900 antialiased">
+<body class="min-h-screen bg-[#f6f8fc] text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
 
     @php
         $navItems = [
@@ -66,10 +77,10 @@
     ========================================================== --}}
         <aside id="app-sidebar"
             class="fixed inset-y-0 left-0 z-50 hidden w-[260px] flex-col
-               border-r border-slate-200/80 bg-white lg:flex">
+               border-r border-slate-200/80 bg-white lg:flex dark:border-slate-800 dark:bg-slate-900 transition-colors duration-200">
 
             {{-- Logo --}}
-            <div class="flex h-[72px] items-center justify-between border-b border-slate-100 px-5">
+            <div class="flex h-[72px] items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5">
 
                 <a href="{{ route('dashboard') }}" class="group flex items-center gap-3">
 
@@ -82,23 +93,23 @@
 
                         <span
                             class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5
-                               rounded-full border-2 border-white bg-blue-400">
+                               rounded-full border-2 border-white dark:border-slate-900 bg-blue-400">
                         </span>
                     </span>
 
                     <div class="sidebar-label">
-                        <p class="text-[15px] font-bold tracking-tight text-slate-950">
+                        <p class="text-[15px] font-bold tracking-tight text-slate-950 dark:text-white">
                             Task Manager
                         </p>
 
-                        <p class="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        <p class="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                             Workspace
                         </p>
                     </div>
 
                 </a>
 
-                <button type="button" data-sidebar-toggle class="sidebar-toggle hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:flex" aria-label="Collapse sidebar" aria-expanded="true">
+                <button type="button" data-sidebar-toggle class="sidebar-toggle hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:flex" aria-label="Collapse sidebar" aria-expanded="true">
                     <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
                 </button>
 
@@ -108,7 +119,7 @@
             {{-- Navigation --}}
             <div class="flex-1 overflow-y-auto px-4 py-6">
 
-                <p class="sidebar-label mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                <p class="sidebar-label mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                     Main Menu
                 </p>
 
@@ -120,7 +131,7 @@
                             group relative flex h-11 items-center gap-3 rounded-xl px-3
                             text-sm font-semibold transition-all duration-200
 
-                            {{ $item['active'] ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900' }}
+                            {{ $item['active'] ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100' }}
                        ">
 
                             {{-- Active indicator --}}
@@ -137,8 +148,8 @@
                                 transition
 
                                 {{ $item['active']
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-slate-400 group-hover:bg-white group-hover:text-slate-700 group-hover:shadow-sm' }}
+                                    ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-400'
+                                    : 'text-slate-400 group-hover:bg-white group-hover:text-slate-700 group-hover:shadow-sm dark:group-hover:bg-slate-800 dark:group-hover:text-slate-200' }}
                             ">
 
                                 <x-icon :name="$item['icon']" class="h-[17px] w-[17px]" />
@@ -168,7 +179,7 @@
 
                 <div
                     class="relative overflow-hidden rounded-2xl
-                       bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900
+                       bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 border border-transparent dark:border-slate-800
                        p-4 text-white shadow-lg shadow-blue-950/10">
 
                     {{-- Decoration --}}
@@ -222,24 +233,24 @@
 
 
             {{-- Sidebar Footer --}}
-            <div class="border-t border-slate-100 px-4 py-4">
+            <div class="border-t border-slate-100 dark:border-slate-800 px-4 py-4">
 
                 <div class="flex items-center gap-3 rounded-xl px-2 py-2">
 
                     <span
                         class="flex h-9 w-9 shrink-0 items-center justify-center
-                           rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                           rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                         TM
                     </span>
 
 
                     <div class="sidebar-label min-w-0 flex-1">
 
-                        <p class="truncate text-xs font-bold text-slate-800">
+                        <p class="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
                             {{ auth()->user()->name }}
                         </p>
 
-                        <p class="truncate text-[11px] text-slate-400">
+                        <p class="truncate text-[11px] text-slate-400 dark:text-slate-500">
                             {{ auth()->user()->email }}
                         </p>
 
@@ -247,7 +258,7 @@
 
                     <form method="POST" action="{{ route('logout') }}" class="sidebar-extra">
                         @csrf
-                        <button type="submit" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" title="Sign out" aria-label="Sign out">
+                        <button type="submit" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" title="Sign out" aria-label="Sign out">
                             <x-icon name="logout" class="h-4 w-4" />
                         </button>
                     </form>
@@ -270,7 +281,7 @@
         ====================================================== --}}
             <header
                 class="sticky top-0 z-40 border-b border-slate-200/80
-                   bg-white/90 backdrop-blur-xl">
+                   bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 transition-colors duration-200">
 
                 <div
                     class="mx-auto flex h-[72px] max-w-[1600px]
@@ -288,7 +299,7 @@
 
                         </span>
 
-                        <span class="text-sm font-bold text-slate-950">
+                        <span class="text-sm font-bold text-slate-950 dark:text-white">
                             Task Manager
                         </span>
 
@@ -298,15 +309,15 @@
                     {{-- Desktop breadcrumb/heading --}}
                     <div class="hidden items-center gap-2 lg:flex">
 
-                        <span class="text-sm font-medium text-slate-400">
+                        <span class="text-sm font-medium text-slate-400 dark:text-slate-500">
                             Workspace
                         </span>
 
-                        <span class="text-slate-300">
+                        <span class="text-slate-300 dark:text-slate-700">
                             /
                         </span>
 
-                        <span class="text-sm font-semibold text-slate-700">
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">
                             @if (request()->routeIs('dashboard') || request()->routeIs('home'))
                                 Dashboard
                             @elseif(request()->routeIs('tasks.*'))
@@ -338,53 +349,72 @@
                                     value="{{ request('q') }}"
                                     data-global-search
                                     placeholder="Search tasks..."
-                                    class="h-10 w-56 rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    class="h-10 w-56 rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:hover:bg-slate-750 dark:focus:ring-blue-900/40"
                                 >
-                                <kbd class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
+                                <kbd class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
                                     /
                                 </kbd>
                             </label>
 
                             <div
                                 data-search-results
-                                class="absolute right-0 top-12 z-50 hidden w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/10"
+                                class="absolute right-0 top-12 z-50 hidden w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                             >
-                                <div class="px-4 py-3 text-sm text-slate-500">
+                                <div class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
                                     Type to search tasks.
                                 </div>
                             </div>
                         </form>
 
                         {{-- Divider --}}
-                        <div class="hidden h-7 w-px bg-slate-200 sm:block"></div>
+                        <div class="hidden h-7 w-px bg-slate-200 dark:bg-slate-800 sm:block"></div>
+
+                        {{-- Command Palette Trigger --}}
+                        <button type="button" data-open-command-palette
+                            class="relative hidden sm:flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700/70 dark:hover:text-white"
+                            title="Command Palette (Ctrl + K)">
+                            <x-icon name="command" class="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <span class="hidden md:inline" data-i18n="commands">Commands</span>
+                            <kbd class="rounded border border-slate-200 bg-slate-100 px-1 py-0.5 text-[10px] text-slate-500 font-mono dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">⌘K</kbd>
+                        </button>
+
+                        {{-- Language Switcher --}}
+                        <button type="button" data-language-toggle
+                            class="relative flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700/70"
+                            title="Switch Language / ប្តូរភាសា" aria-label="Toggle language">
+                            <span data-lang-flag class="text-sm">🇰🇭</span>
+                            <span data-lang-text class="font-bold text-blue-700 dark:text-blue-400">ខ្មែរ</span>
+                        </button>
+
                         {{-- Theme --}}
                         <button type="button" data-theme-toggle
-                            class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-white hover:text-slate-700 hover:shadow-sm"
-                            aria-label="Switch to dark mode" aria-pressed="false">
-                            <svg data-theme-sun viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
-                            <svg data-theme-moon viewBox="0 0 24 24" class="hidden h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+                            class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700/70 dark:hover:text-white"
+                            aria-label="Switch to dark mode" aria-pressed="false" title="Toggle Theme">
+                            <svg data-theme-sun viewBox="0 0 24 24" class="h-4.5 w-4.5 text-amber-500 transition" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
+                            <svg data-theme-moon viewBox="0 0 24 24" class="hidden h-4.5 w-4.5 text-blue-400 transition" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
                         </button>
+
                         {{-- Notifications --}}
                         <div class="relative">
                             <button type="button"
                                 data-toggle-notifications
-                                class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-slate-500 transition hover:border-slate-200 hover:bg-white hover:text-slate-700 hover:shadow-sm"
+                                class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700/70 dark:hover:text-white"
                                 aria-label="Notifications">
 
                                 <x-icon name="bell" class="h-[18px] w-[18px]" />
 
                                 @if ($notificationTasks->isNotEmpty())
-                                    <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-blue-600 px-1 text-[10px] font-bold text-white">
+                                    <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 bg-blue-600 px-1 text-[10px] font-bold text-white">
                                         {{ $notificationTasks->count() }}
                                     </span>
                                 @endif
 
                             </button>
 
-                            <div data-notifications-panel class="absolute right-0 top-12 z-50 hidden w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/10">
-                                <div class="border-b border-slate-100 px-4 py-3">
-                                    <p class="text-sm font-bold text-slate-950">Notifications</p>
-                                    <p class="mt-0.5 text-xs text-slate-400">Tasks ending today or tomorrow.</p>
+                            <div data-notifications-panel class="absolute right-0 top-12 z-50 hidden w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                <div class="border-b border-slate-100 dark:border-slate-700 px-4 py-3">
+                                    <p class="text-sm font-bold text-slate-950 dark:text-white">Notifications</p>
+                                    <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-400">Tasks ending today or tomorrow.</p>
                                 </div>
 
                                 <div class="max-h-80 overflow-y-auto">
@@ -392,13 +422,13 @@
                                         @php
                                             $endsToday = $task->end_date->isToday();
                                         @endphp
-                                        <a href="{{ route('all-tasks', ['q' => $task->title]) }}" class="flex gap-3 border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 last:border-b-0">
-                                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ $endsToday ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600' }}">
+                                        <a href="{{ route('all-tasks', ['q' => $task->title]) }}" class="flex gap-3 border-b border-slate-100 dark:border-slate-700 px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-700/50 last:border-b-0">
+                                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ $endsToday ? 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' }}">
                                                 <x-icon name="bell" class="h-4 w-4" />
                                             </span>
                                             <span class="min-w-0">
-                                                <span class="block truncate text-sm font-bold text-slate-950">{{ $task->title }}</span>
-                                                <span class="mt-1 block text-xs leading-5 text-slate-500">
+                                                <span class="block truncate text-sm font-bold text-slate-950 dark:text-white">{{ $task->title }}</span>
+                                                <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
                                                     {{ $endsToday ? 'End date is today' : 'End date is tomorrow' }}
                                                     - {{ $task->end_date->format('M d, Y') }}
                                                 </span>
@@ -406,10 +436,10 @@
                                         </a>
                                     @empty
                                         <div class="px-4 py-8 text-center">
-                                            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                                            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
                                                 <x-icon name="check-circle" class="h-5 w-5" />
                                             </span>
-                                            <p class="mt-3 text-sm font-bold text-slate-900">No alerts</p>
+                                            <p class="mt-3 text-sm font-bold text-slate-900 dark:text-white">No alerts</p>
                                             <p class="mt-1 text-xs text-slate-400">No tasks end today or tomorrow.</p>
                                         </div>
                                     @endforelse
@@ -424,7 +454,7 @@
                 {{-- =====================================================
                 MOBILE NAVIGATION
             ====================================================== --}}
-                <div class="border-t border-slate-100 bg-white px-4 py-2 lg:hidden">
+                <div class="border-t border-slate-100 bg-white px-4 py-2 lg:hidden dark:border-slate-800 dark:bg-slate-900">
 
                     <nav
                         class="flex gap-2 overflow-x-auto pb-1
@@ -436,7 +466,7 @@
                                 inline-flex h-9 shrink-0 items-center gap-2
                                 rounded-lg px-3 text-xs font-semibold transition
 
-                                {{ $item['active'] ? 'bg-blue-950 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100' }}
+                                {{ $item['active'] ? 'bg-blue-950 text-white dark:bg-blue-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700' }}
                            ">
 
                                 <x-icon :name="$item['icon']" class="h-3.5 w-3.5" />
@@ -613,6 +643,236 @@
         });
     </script>
 
+    {{-- =============================================================
+        CREATE TASK MODAL (AVAILABLE GLOBALLY ON ALL PAGES)
+    ============================================================== --}}
+    <div
+        id="task-modal"
+        class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-slate-950/50 px-4 py-6 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-modal-title"
+    >
+        <div class="my-auto w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 dark:border-slate-800 dark:bg-slate-900">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                        <x-icon name="plus" class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <h2 id="task-modal-title" class="text-lg font-bold text-slate-950 sm:text-xl dark:text-white" data-i18n="create_task">
+                            Create New Task
+                        </h2>
+                        <p class="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400" data-i18n="create_task_sub">
+                            Add a new task with checklist, priority, and deadline.
+                        </p>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    data-close-task-modal
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    aria-label="Close"
+                >
+                    <x-icon name="x" class="h-5 w-5" />
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('tasks.store') }}" data-task-form autocomplete="off">
+                @csrf
+
+                <div class="max-h-[75vh] space-y-5 overflow-y-auto px-6 py-6">
+                    <div>
+                        <label for="create_title" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                                <x-icon name="clipboard" class="h-3.5 w-3.5" />
+                            </span>
+                            <span data-i18n="task_title">Task Title</span>
+                            <span class="text-rose-500">*</span>
+                        </label>
+                        <input
+                            id="create_title"
+                            type="text"
+                            name="title"
+                            placeholder="What needs to be done?"
+                            autocomplete="off"
+                            required
+                            class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                        >
+                    </div>
+
+                    <div>
+                        <div class="mb-2 flex items-center justify-between">
+                            <label for="create_description" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400">
+                                    <x-icon name="list" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="description">Description</span>
+                            </label>
+                            <span class="text-[11px] font-medium text-slate-400" data-i18n="optional">Optional</span>
+                        </div>
+                        <textarea
+                            id="create_description"
+                            name="description"
+                            rows="3"
+                            placeholder="Add notes, details, or useful information..."
+                            autocomplete="off"
+                            class="min-h-[90px] w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="create_category" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+                                    <x-icon name="layers" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="category">Category</span>
+                            </label>
+                            <select
+                                id="create_category"
+                                name="category"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
+                                <option value="" data-i18n="no_category">-- None --</option>
+                                <option value="Work">💼 Work (ការងារ)</option>
+                                <option value="Personal">🏠 Personal (ផ្ទាល់ខ្លួន)</option>
+                                <option value="Urgent">⚡ Urgent (បន្ទាន់)</option>
+                                <option value="Design">🎨 Design (រចនា)</option>
+                                <option value="Dev">💻 Dev (អភិវឌ្ឍន៍)</option>
+                                <option value="Study">📚 Study (ការសិក្សា)</option>
+                                <option value="Finance">💵 Finance (ហិរញ្ញវត្ថុ)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="create_priority" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+                                    <x-icon name="flag" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="priority">Priority</span>
+                            </label>
+                            <select
+                                id="create_priority"
+                                name="priority"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
+                                <option value="low" data-i18n="low">🟢 Low (ទាប)</option>
+                                <option value="medium" selected data-i18n="medium">🟡 Medium (មធ្យម)</option>
+                                <option value="high" data-i18n="high">🔴 High (ខ្ពស់)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="create_status" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                                    <x-icon name="check-circle" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="status">Status</span>
+                            </label>
+                            <select
+                                id="create_status"
+                                name="status"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
+                                <option value="pending" selected data-i18n="pending">Pending (មិនទាន់ធ្វើ)</option>
+                                <option value="in_progress" data-i18n="in_progress">In Progress (កំពុងដំណើរការ)</option>
+                                <option value="completed" data-i18n="completed">Completed (បានបញ្ចប់)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div class="mb-2 flex items-center justify-between">
+                                <label for="create_due_date" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                                        <x-icon name="calendar" class="h-3.5 w-3.5" />
+                                    </span>
+                                    <span data-i18n="due_date">Due Date</span>
+                                </label>
+                                <span class="text-[11px] font-medium text-slate-400" data-i18n="optional">Optional</span>
+                            </div>
+                            <input
+                                id="create_due_date"
+                                type="date"
+                                name="due_date"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
+                        </div>
+                    </div>
+
+                    {{-- Checklist / Subtasks --}}
+                    <div class="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+                        <div class="mb-2 flex items-center justify-between">
+                            <label class="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                                    <x-icon name="check" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="checklist">Checklist / Subtasks (កិច្ចការរង)</span>
+                            </label>
+                            <span class="text-[11px] text-slate-400" data-i18n="step_by_step">Add steps</span>
+                        </div>
+
+                        <div id="create-subtask-list" class="space-y-2 mb-3">
+                            {{-- Dynamically inserted items --}}
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input
+                                type="text"
+                                id="create-new-subtask-input"
+                                placeholder="Add a checklist item / បន្ថែមកិច្ចការរង..."
+                                class="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            >
+                            <button
+                                type="button"
+                                id="create-add-subtask-btn"
+                                class="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white transition hover:bg-blue-700"
+                            >
+                                <x-icon name="plus" class="h-3.5 w-3.5" />
+                                <span data-i18n="add">Add</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="subtasks" id="create-subtasks-payload" value="[]">
+                    </div>
+
+                    {{-- Pin to Top --}}
+                    <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-800/80">
+                        <input type="checkbox" name="is_pinned" value="1" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <div class="flex items-center gap-2">
+                            <x-icon name="pin" class="h-4 w-4 text-amber-500" />
+                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-200" data-i18n="pin_to_top">Pin to top of list (📌 ខ្ទាស់នៅខាងលើបង្អស់)</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4 sm:flex-row sm:justify-end dark:border-slate-800 dark:bg-slate-900/60">
+                    <button
+                        type="button"
+                        data-close-task-modal
+                        class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                        data-i18n="cancel"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-md shadow-blue-950/10 transition hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500"
+                    >
+                        <x-icon name="plus" class="h-4 w-4" />
+                        <span data-i18n="create_task">Create Task</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    {{-- =============================================================
+        EDIT TASK MODAL
+    ============================================================== --}}
     <div
         id="edit-task-modal"
         class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-slate-950/50 px-4 py-6 backdrop-blur-sm"
@@ -620,18 +880,18 @@
         aria-modal="true"
         aria-labelledby="edit-task-modal-title"
     >
-        <div class="my-auto w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20">
-            <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div class="my-auto w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 dark:border-slate-800 dark:bg-slate-900">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800">
                 <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
                         <x-icon name="edit" class="h-5 w-5" />
                     </span>
                     <div>
-                        <h2 id="edit-task-modal-title" class="text-lg font-bold text-slate-950 sm:text-xl">
+                        <h2 id="edit-task-modal-title" class="text-lg font-bold text-slate-950 sm:text-xl dark:text-white" data-i18n="edit_task">
                             Edit Task
                         </h2>
-                        <p class="mt-1 text-sm leading-5 text-slate-500">
-                            Update task details, priority, status and deadline.
+                        <p class="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400" data-i18n="edit_task_sub">
+                            Update task details, checklist, priority, and status.
                         </p>
                     </div>
                 </div>
@@ -639,8 +899,8 @@
                 <button
                     type="button"
                     data-close-edit-modal
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                    aria-label="Close edit form"
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    aria-label="Close"
                 >
                     <x-icon name="x" class="h-5 w-5" />
                 </button>
@@ -650,13 +910,13 @@
                 @csrf
                 @method('PUT')
 
-                <div class="space-y-5 px-6 py-6">
+                <div class="max-h-[75vh] space-y-5 overflow-y-auto px-6 py-6">
                     <div>
-                        <label for="edit_title" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+                        <label for="edit_title" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
                                 <x-icon name="clipboard" class="h-3.5 w-3.5" />
                             </span>
-                            Task Title
+                            <span data-i18n="task_title">Task Title</span>
                             <span class="text-rose-500">*</span>
                         </label>
                         <input
@@ -666,140 +926,303 @@
                             placeholder="What needs to be done?"
                             autocomplete="off"
                             required
-                            class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition-all duration-200 placeholder:font-normal placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
                         >
                     </div>
 
                     <div>
                         <div class="mb-2 flex items-center justify-between">
-                            <label for="edit_description" class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-violet-50 text-violet-600">
+                            <label for="edit_description" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400">
                                     <x-icon name="list" class="h-3.5 w-3.5" />
                                 </span>
-                                Description
+                                <span data-i18n="description">Description</span>
                             </label>
-                            <span class="text-[11px] font-medium text-slate-400">Optional</span>
+                            <span class="text-[11px] font-medium text-slate-400" data-i18n="optional">Optional</span>
                         </div>
                         <textarea
                             id="edit_description"
                             name="description"
-                            rows="4"
-                            placeholder="Add notes, details, or useful information about this task..."
+                            rows="3"
+                            placeholder="Add notes, details, or useful information..."
                             autocomplete="off"
-                            class="min-h-[120px] w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            class="min-h-[90px] w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
                         ></textarea>
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label for="edit_priority" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-600">
-                                    <x-icon name="flag" class="h-3.5 w-3.5" />
+                            <label for="edit_category" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+                                    <x-icon name="layers" class="h-3.5 w-3.5" />
                                 </span>
-                                Priority
+                                <span data-i18n="category">Category</span>
                             </label>
                             <select
-                                id="edit_priority"
-                                name="priority"
-                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                id="edit_category"
+                                name="category"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
                             >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
+                                <option value="" data-i18n="no_category">-- None --</option>
+                                <option value="Work">💼 Work (ការងារ)</option>
+                                <option value="Personal">🏠 Personal (ផ្ទាល់ខ្លួន)</option>
+                                <option value="Urgent">⚡ Urgent (បន្ទាន់)</option>
+                                <option value="Design">🎨 Design (រចនា)</option>
+                                <option value="Dev">💻 Dev (អភិវឌ្ឍន៍)</option>
+                                <option value="Study">📚 Study (ការសិក្សា)</option>
+                                <option value="Finance">💵 Finance (ហិរញ្ញវត្ថុ)</option>
                             </select>
                         </div>
 
                         <div>
-                            <label for="edit_status" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-                                    <x-icon name="check-circle" class="h-3.5 w-3.5" />
+                            <label for="edit_priority" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+                                    <x-icon name="flag" class="h-3.5 w-3.5" />
                                 </span>
-                                Status
+                                <span data-i18n="priority">Priority</span>
                             </label>
                             <select
-                                id="edit_status"
-                                name="status"
-                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                id="edit_priority"
+                                name="priority"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
                             >
-                                <option value="pending">Pending</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
+                                <option value="low" data-i18n="low">🟢 Low (ទាប)</option>
+                                <option value="medium" data-i18n="medium">🟡 Medium (មធ្យម)</option>
+                                <option value="high" data-i18n="high">🔴 High (ខ្ពស់)</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <div class="mb-2 flex items-center justify-between">
-                            <label for="edit_due_date" class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
-                                    <x-icon name="calendar" class="h-3.5 w-3.5" />
+                        <div>
+                            <label for="edit_status" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                                    <x-icon name="check-circle" class="h-3.5 w-3.5" />
                                 </span>
-                                Due Date
+                                <span data-i18n="status">Status</span>
                             </label>
-                            <span class="text-[11px] font-medium text-slate-400">Optional</span>
+                            <select
+                                id="edit_status"
+                                name="status"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
+                                <option value="pending" data-i18n="pending">Pending (មិនទាន់ធ្វើ)</option>
+                                <option value="in_progress" data-i18n="in_progress">In Progress (កំពុងដំណើរការ)</option>
+                                <option value="completed" data-i18n="completed">Completed (បានបញ្ចប់)</option>
+                            </select>
                         </div>
-                        <input
-                            id="edit_due_date"
-                            type="date"
-                            name="due_date"
-                            class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                        >
-                    </div>
 
-                    <div>
-                        <div class="mb-2 flex items-center justify-between">
-                            <label for="edit_end_date" class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-cyan-50 text-cyan-600">
-                                    <x-icon name="calendar" class="h-3.5 w-3.5" />
-                                </span>
-                                End Date
-                            </label>
-                            <span class="text-[11px] font-medium text-slate-400">Optional</span>
-                        </div>
-                        <input
-                            id="edit_end_date"
-                            type="date"
-                            name="end_date"
-                            class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                        >
-                    </div>
-                    </div>
-
-                    <div class="rounded-xl border border-blue-100 bg-blue-50/60 p-3.5">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
-                                <x-icon name="edit" class="h-4 w-4" />
-                            </span>
-                            <div>
-                                <p class="text-xs font-bold text-blue-900">Edit task details</p>
-                                <p class="mt-1 text-xs leading-5 text-blue-700/70">
-                                    Save changes to update this task in the database.
-                                </p>
+                        <div>
+                            <div class="mb-2 flex items-center justify-between">
+                                <label for="edit_due_date" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                                        <x-icon name="calendar" class="h-3.5 w-3.5" />
+                                    </span>
+                                    <span data-i18n="due_date">Due Date</span>
+                                </label>
+                                <span class="text-[11px] font-medium text-slate-400" data-i18n="optional">Optional</span>
                             </div>
+                            <input
+                                id="edit_due_date"
+                                type="date"
+                                name="due_date"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
                         </div>
                     </div>
+
+                    {{-- Checklist / Subtasks --}}
+                    <div class="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+                        <div class="mb-2 flex items-center justify-between">
+                            <label class="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                                    <x-icon name="check" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="checklist">Checklist / Subtasks (កិច្ចការរង)</span>
+                            </label>
+                            <span class="text-[11px] text-slate-400" data-i18n="step_by_step">Add steps</span>
+                        </div>
+
+                        <div id="edit-subtask-list" class="space-y-2 mb-3">
+                            {{-- Dynamically populated --}}
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input
+                                type="text"
+                                id="edit-new-subtask-input"
+                                placeholder="Add a checklist item / បន្ថែមកិច្ចការរង..."
+                                class="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            >
+                            <button
+                                type="button"
+                                id="edit-add-subtask-btn"
+                                class="inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white transition hover:bg-blue-700"
+                            >
+                                <x-icon name="plus" class="h-3.5 w-3.5" />
+                                <span data-i18n="add">Add</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="subtasks" id="edit-subtasks-payload" value="[]">
+                    </div>
+
+                    {{-- Pin to Top --}}
+                    <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-800/80">
+                        <input type="checkbox" id="edit_is_pinned" name="is_pinned" value="1" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <div class="flex items-center gap-2">
+                            <x-icon name="pin" class="h-4 w-4 text-amber-500" />
+                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-200" data-i18n="pin_to_top">Pin to top of list (📌 ខ្ទាស់នៅខាងលើបង្អស់)</span>
+                        </div>
+                    </label>
                 </div>
 
-                <div class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4 sm:flex-row sm:justify-end">
+                <div class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4 sm:flex-row sm:justify-end dark:border-slate-800 dark:bg-slate-900/60">
                     <button
                         type="button"
                         data-close-edit-modal
-                        class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+                        class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                        data-i18n="cancel"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
-                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-md shadow-blue-950/10 transition hover:bg-blue-900"
+                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-md shadow-blue-950/10 transition hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500"
                     >
                         <x-icon name="check" class="h-4 w-4" />
-                        Save Changes
+                        <span data-i18n="save_changes">Save Changes</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
+
+
+    {{-- =============================================================
+        COMMAND PALETTE (CTRL+K / CMD+K)
+    ============================================================== --}}
+    <div
+        id="command-palette-modal"
+        class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-950/50 p-4 pt-20 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div class="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div class="flex items-center gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                <x-icon name="search" class="h-5 w-5 text-slate-400" />
+                <input
+                    type="text"
+                    id="cmd-palette-input"
+                    placeholder="Type a command or search tasks... / វាយបញ្ជា ឬស្វែងរក..."
+                    class="h-10 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
+                    autocomplete="off"
+                >
+                <kbd class="rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 dark:border-slate-700 dark:bg-slate-800">ESC</kbd>
+            </div>
+
+            <div class="max-h-96 overflow-y-auto p-2" id="cmd-palette-list">
+                {{-- Quick Navigation & Actions --}}
+                <div class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400" data-i18n="quick_actions">
+                    Quick Actions / សកម្មភាពរហ័ស
+                </div>
+
+                <button type="button" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200" data-cmd="new-task">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                            <x-icon name="plus" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="create_task">Create New Task</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">N</kbd>
+                </button>
+
+                <a href="{{ route('dashboard') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                            <x-icon name="grid" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="dashboard">Dashboard</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G D</kbd>
+                </a>
+
+                <a href="{{ route('tasks.index') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                            <x-icon name="list" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="my_tasks">My Tasks</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G T</kbd>
+                </a>
+
+                <a href="{{ route('calendar') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                            <x-icon name="calendar" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="calendar">Calendar</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G C</kbd>
+                </a>
+
+                <a href="{{ route('priority') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+                            <x-icon name="flag" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="priority">Priority</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G P</kbd>
+                </a>
+
+                <div class="mt-2 border-t border-slate-100 pt-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800" data-i18n="tools_preferences">
+                    Tools & Preferences / ឧបករណ៍ & ចំណូលចិត្ត
+                </div>
+
+                <a href="{{ route('tasks.export', 'csv') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400">
+                            <x-icon name="download" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="export_csv">Export Tasks as CSV (ទាញយក CSV)</span>
+                    </span>
+                </a>
+
+                <a href="{{ route('tasks.export', 'json') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
+                            <x-icon name="download" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="export_json">Export Tasks as JSON (ទាញយក JSON)</span>
+                    </span>
+                </a>
+
+                <button type="button" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200" data-cmd="toggle-lang">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                            <x-icon name="globe" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="switch_lang">Switch Language (ភាសាខ្មែរ / English)</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">L</kbd>
+                </button>
+
+                <button type="button" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200" data-cmd="toggle-theme">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+                            <x-icon name="activity" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="toggle_dark">Toggle Dark / Light Mode</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">T</kbd>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Confetti canvas for celebrations --}}
+    <canvas id="confetti-canvas"></canvas>
 
 </body>
 
