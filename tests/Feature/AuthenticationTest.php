@@ -19,6 +19,8 @@ test('guests can view authentication forms', function () {
         ->assertSee('data-register-url="/sign-up"', false)
         ->assertSee('action="/sign-up"', false)
         ->assertSee('action="/sign-in"', false)
+        ->assertSee('minlength="12"', false)
+        ->assertSee('pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}"', false)
         ->assertDontSee('<script>', false)
         ->assertHeader('X-Frame-Options', 'DENY')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
