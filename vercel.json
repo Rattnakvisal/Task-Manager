@@ -11,19 +11,12 @@
     },
     "routes": [
         {
-            "handle": "filesystem"
-        },
-        {
             "src": "/build/(.*)",
-            "dest": "/public/build/$1"
+            "dest": "/build/$1"
         },
         {
-            "src": "/assets/(.*)",
-            "dest": "/public/assets/$1"
-        },
-        {
-            "src": "/(favicon\\.ico|robots\\.txt|manifest\\.json|fonts-manifest\\.json)",
-            "dest": "/public/$1"
+            "src": "/(favicon\\.ico|robots\\.txt)",
+            "dest": "/$1"
         },
         {
             "src": "/(.*)",
@@ -43,8 +36,11 @@
         "CACHE_STORE": "array",
         "LOG_CHANNEL": "stderr",
         "QUEUE_CONNECTION": "sync",
+        "DB_CONNECTION": "sqlite",
+        "DB_DATABASE": "/tmp/database.sqlite",
         "SESSION_DRIVER": "cookie",
-        "SESSION_SECURE_COOKIE": "true"
+        "SESSION_SECURE_COOKIE": "true",
+        "VERCEL_RUNTIME_MIGRATE": "true"
     }
 }
 

@@ -23,6 +23,12 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 // Initialize its schema once per cold function instance. Production projects
 // should use PostgreSQL and run migrations as part of their release process.
 if (getenv('VERCEL_RUNTIME_MIGRATE') === 'true') {
+    $database = getenv('DB_DATABASE');
+
+    if (is_string($database) && $database !== '' && ! file_exists($database)) {
+        touch($database);
+    }
+
     $kernel = $app->make(Kernel::class);
     $kernel->bootstrap();
     Artisan::call('migrate', ['--force' => true]);
