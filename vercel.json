@@ -40,8 +40,8 @@
         "CACHE_STORE": "array",
         "LOG_CHANNEL": "stderr",
         "QUEUE_CONNECTION": "sync",
-        "DB_CONNECTION": "sqlite",
-        "DB_DATABASE": "/tmp/database.sqlite",
+        "DB_CONNECTION": "pgsql",
+        "DATABASE_URL": "postgresql://postgres.pdtyrvnhxalbqagzjrhb:Wq_76wZtR2aPRmq@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres?sslmode=require",
         "SESSION_DRIVER": "cookie",
         "SESSION_SECURE_COOKIE": "true",
         "VERCEL_RUNTIME_MIGRATE": "true"
