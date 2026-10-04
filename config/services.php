@@ -40,4 +40,10 @@ return [
         'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
     ],
 
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'publishable_key' => env('SUPABASE_ANON_KEY'),
+        'secret_key' => env('SUPABASE_SERVICE_ROLE_KEY'),
+    ],
+
 ];

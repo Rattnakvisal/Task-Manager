@@ -24,23 +24,43 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 // should use PostgreSQL and run migrations as part of their release process.
 if (getenv('VERCEL_RUNTIME_MIGRATE') === 'true') {
     $hasPgsql = (bool) (getenv('DATABASE_URL') || (getenv('DB_URL') && str_starts_with((string) getenv('DB_URL'), 'postgres')) || getenv('DB_CONNECTION') === 'pgsql');
-    $database = getenv('DB_DATABASE');
+    $database = getenv('DB_DATABASE') ?: '/tmp/database.sqlite';
 
-    if (! $hasPgsql && is_string($database) && $database !== '' && ! file_exists($database)) {
+    $kernel = $app->make(Kernel::class);
+    $kernel->bootstrap();
+
+    $connected = false;
+    if ($hasPgsql) {
+        try {
+            Illuminate\Support\Facades\DB::connection('pgsql')->getPdo();
+            Artisan::call('migrate', ['--force' => true]);
+            $connected = true;
+        } catch (Throwable $e) {
+            error_log('[vercel-migrate] PostgreSQL connection failed: '.$e->getMessage().'. Falling back to SQLite.');
+            putenv('DB_CONNECTION=sqlite');
+            putenv('DATABASE_URL=');
+            putenv('DB_URL=');
+            Illuminate\Support\Facades\Config::set('database.default', 'sqlite');
+            Illuminate\Support\Facades\Config::set('database.connections.sqlite.database', $database);
+            Illuminate\Support\Facades\DB::purge();
+        }
+    }
+
+    if (! $connected) {
         $dir = dirname($database);
         if (! is_dir($dir)) {
             @mkdir($dir, 0755, true);
         }
-        @touch($database);
+        if (! file_exists($database)) {
+            @touch($database);
+        }
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+        } catch (Throwable $e) {
+            error_log('[vercel-migrate] SQLite migration error: '.$e->getMessage());
+        }
     }
 
-    try {
-        $kernel = $app->make(Kernel::class);
-        $kernel->bootstrap();
-        Artisan::call('migrate', ['--force' => true]);
-    } catch (Throwable $e) {
-        error_log('[vercel-migrate] Migration notice: '.$e->getMessage());
-    }
     putenv('VERCEL_RUNTIME_MIGRATE=false');
 }
 
