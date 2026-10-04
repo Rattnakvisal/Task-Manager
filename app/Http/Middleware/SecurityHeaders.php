@@ -22,7 +22,7 @@ class SecurityHeaders
         if (app()->isProduction()) {
             $response->headers->set(
                 'Content-Security-Policy',
-                "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; upgrade-insecure-requests"
+                "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; upgrade-insecure-requests"
             );
         }
 
@@ -30,7 +30,14 @@ class SecurityHeaders
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
-        if ($request->user() || $request->routeIs('login', 'register')) {
+        $user = null;
+        try {
+            $user = $request->user();
+        } catch (Throwable) {
+            // Database might be initializing or credentials pending reset
+        }
+
+        if ($user || $request->routeIs('login', 'register')) {
             $response->headers->set('Cache-Control', 'no-store, private');
             $response->headers->set('Pragma', 'no-cache');
         }
