@@ -90,7 +90,7 @@
                         <span data-i18n="dashboard">Dashboard</span>
                     </a>
 
-                    <a href="{{ route('tasks.index') }}#new-task" data-open-task-modal
+                    <a href="{{ route('tasks.create') }}" data-open-task-modal
                         class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/10 transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500">
                         <x-icon name="plus" class="h-4 w-4" />
                         <span data-i18n="new_task">Add Task</span>
@@ -234,7 +234,7 @@
                             </a>
                         @endif
 
-                        <a href="{{ route('tasks.index') }}#new-task" data-open-task-modal
+                        <a href="{{ route('tasks.create') }}" data-open-task-modal
                             class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-950 px-4 text-sm font-semibold text-white transition hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500">
                             <x-icon name="plus" class="h-4 w-4" />
                             <span data-i18n="create_task">Create Task</span>
@@ -262,7 +262,7 @@
 
                                 <div class="min-w-0 flex-1">
                                     <p class="truncate text-sm font-bold text-slate-950 sm:text-base dark:text-white">
-                                        {{ $task->title }}
+                                        <a href="{{ route('tasks.show', $task) }}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ $task->title }}</a>
                                     </p>
 
                                     @if ($task->description)
@@ -320,6 +320,14 @@
 
                             {{-- ACTIONS --}}
                             <div class="flex items-center gap-2 lg:justify-end">
+                                {{-- AI Breakdown --}}
+                                <button type="button" data-ai-card-breakdown="{{ $task->id }}"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-purple-200 bg-white text-purple-600 transition duration-200 hover:border-purple-300 hover:bg-purple-50 dark:border-purple-900/50 dark:bg-slate-800 dark:text-purple-400 dark:hover:bg-purple-950/40"
+                                    title="✨ AI Magic Breakdown"
+                                    aria-label="AI Breakdown for {{ $task->title }}">
+                                    <x-icon name="sparkles" class="h-4 w-4" />
+                                </button>
+
                                 {{-- Edit Modal / Page --}}
                                 <button type="button" data-edit-task-id="{{ $task->id }}"
                                     class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-blue-400"
@@ -355,7 +363,7 @@
                         {{ Str::plural('task', $tasks->count()) }}
                     </p>
 
-                    <a href="{{ route('tasks.index') }}#new-task" data-open-task-modal
+                    <a href="{{ route('tasks.create') }}" data-open-task-modal
                         class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 transition hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
                         <x-icon name="plus" class="h-3.5 w-3.5" />
                         <span data-i18n="create_task">Add another task</span>

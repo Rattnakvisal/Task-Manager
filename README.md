@@ -8,9 +8,29 @@ A responsive task management application built with Laravel, Blade, Tailwind CSS
 - Private tasks scoped to the signed-in user
 - Dashboard statistics and recent work
 - Calendar and priority views
+- Today, overdue, and completed task pages with search, priority filters, and pagination
+- Task detail pages with checklist, completion, and pin actions
 - Search and filtering by status or priority
 - Due dates, end dates, and task statuses
 - Responsive interface
+
+## Task pages
+
+| URL | Purpose |
+| --- | --- |
+| `/dashboard` | Task overview (`/` redirects here) |
+| `/tasks` | My Tasks board with Kanban, list, and grid views |
+| `/all-tasks` | Search and filter all your tasks |
+| `/tasks/today` | Tasks due today, including completed tasks |
+| `/tasks/overdue` | Unfinished tasks due before today |
+| `/tasks/completed` | Completed tasks, with an option to reopen them |
+| `/tasks/create` | Create a task using a standalone form |
+| `/tasks/{task}` | Task details and checklist |
+| `/tasks/{task}/edit` | Edit a task |
+| `/calendar` | Scheduled tasks |
+| `/priority` | Tasks grouped by priority |
+
+All task pages require sign-in and show only the signed-in user's tasks. The old `/completed` web route has been replaced by `/tasks/completed`. Sidebar placeholders for Projects, Team, Analytics, and Settings have been removed.
 
 ## Requirements
 

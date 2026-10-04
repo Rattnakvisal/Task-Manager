@@ -11,39 +11,51 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-[#f6f8fc] text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
+<body class="task-manager-ui min-h-screen bg-[#f6f8fc] text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 {{ request()->routeIs('dashboard', 'home') ? 'dashboard-page' : '' }}">
 
     @php
         $navItems = [
             [
                 'label' => 'Dashboard',
+                'key' => 'dashboard',
                 'route' => 'dashboard',
                 'icon' => 'grid',
                 'active' => request()->routeIs('dashboard') || request()->routeIs('home'),
             ],
             [
                 'label' => 'My Tasks',
+                'key' => 'my_tasks',
                 'route' => 'tasks.index',
-                'icon' => 'list',
-                'active' => request()->routeIs('tasks.*'),
+                'icon' => 'kanban',
+                'active' => request()->routeIs('tasks.index', 'tasks.create', 'tasks.show', 'tasks.edit', 'all-tasks'),
+            ],
+            [
+                'label' => 'Projects',
+                'key' => 'projects',
+                'route' => 'projects',
+                'icon' => 'project',
+                'active' => request()->routeIs('projects'),
             ],
             [
                 'label' => 'Calendar',
+                'key' => 'calendar',
                 'route' => 'calendar',
                 'icon' => 'calendar',
                 'active' => request()->routeIs('calendar'),
             ],
             [
                 'label' => 'Priority',
+                'key' => 'priority',
                 'route' => 'priority',
                 'icon' => 'flag',
                 'active' => request()->routeIs('priority'),
             ],
             [
-                'label' => 'All Tasks',
-                'route' => 'all-tasks',
-                'icon' => 'list',
-                'active' => request()->routeIs('all-tasks'),
+                'label' => 'Analytics',
+                'key' => 'analytics',
+                'route' => 'analytics',
+                'icon' => 'analytics',
+                'active' => request()->routeIs('analytics'),
             ],
         ];
 
@@ -69,7 +81,7 @@
                border-r border-slate-200/80 bg-white lg:flex dark:border-slate-800 dark:bg-slate-900 transition-colors duration-200">
 
             {{-- Logo --}}
-            <div class="flex h-[72px] items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5">
+            <div class="sidebar-brand flex h-[72px] items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5">
 
                 <a href="{{ route('dashboard') }}" class="group flex items-center gap-3">
 
@@ -106,11 +118,7 @@
 
 
             {{-- Navigation --}}
-            <div class="flex-1 overflow-y-auto px-4 py-6">
-
-                <p class="sidebar-label mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                    Main Menu
-                </p>
+            <div class="sidebar-navigation flex-1 overflow-y-auto px-4 py-6">
 
                 <nav class="space-y-1.5">
 
@@ -146,7 +154,7 @@
                             </span>
 
 
-                            <span class="sidebar-label flex-1">
+                            <span class="sidebar-label flex-1" data-i18n="{{ $item['key'] ?? strtolower(str_replace(' ', '_', $item['label'])) }}">
                                 {{ $item['label'] }}
                             </span>
 
@@ -164,7 +172,7 @@
 
 
             {{-- Productivity Card --}}
-            <div class="sidebar-extra px-4 pb-4">
+            <div class="sidebar-productivity sidebar-extra px-4 pb-4">
 
                 <div
                     class="relative overflow-hidden rounded-2xl
@@ -203,16 +211,17 @@
                         </p>
 
 
-                        <a href="{{ route('tasks.index') }}#new-task" data-open-task-modal
-                            class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white">
+                        <button type="button"
+                            data-open-task-modal
+                            class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white transition hover:underline">
 
-                            Create task
+                            <span data-i18n="create_task">Create task</span>
 
                             <span aria-hidden="true">
                                 →
                             </span>
 
-                        </a>
+                        </button>
 
                     </div>
 
@@ -245,7 +254,7 @@
 
                     </div>
 
-                    <form method="POST" action="{{ route('logout') }}" class="sidebar-extra">
+                    <form method="POST" action="{{ route('logout') }}" class="sidebar-extra" data-confirm-logout>
                         @csrf
                         <button type="submit" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" title="Sign out" aria-label="Sign out">
                             <x-icon name="logout" class="h-4 w-4" />
@@ -309,14 +318,26 @@
                         <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">
                             @if (request()->routeIs('dashboard') || request()->routeIs('home'))
                                 Dashboard
-                            @elseif(request()->routeIs('tasks.*'))
+                            @elseif(request()->routeIs('tasks.today'))
+                                Today
+                            @elseif(request()->routeIs('tasks.overdue'))
+                                Overdue
+                            @elseif(request()->routeIs('tasks.completed'))
+                                Completed
+                            @elseif(request()->routeIs('tasks.create'))
+                                Create Task
+                            @elseif(request()->routeIs('tasks.show'))
+                                Task Details
+                            @elseif(request()->routeIs('tasks.edit'))
+                                Edit Task
+                            @elseif(request()->routeIs('tasks.index'))
                                 My Tasks
                             @elseif(request()->routeIs('calendar'))
                                 Calendar
                             @elseif(request()->routeIs('priority'))
                                 Priority
-                            @elseif(request()->routeIs('completed'))
-                                Completed
+                            @elseif(request()->routeIs('all-tasks'))
+                                All Tasks
                             @else
                                 Tasks
                             @endif
@@ -337,7 +358,7 @@
                                     name="q"
                                     value="{{ request('q') }}"
                                     data-global-search
-                                    placeholder="Search tasks..."
+                            placeholder="Search tasks..."
                                     class="h-10 w-56 rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:hover:bg-slate-750 dark:focus:ring-blue-900/40"
                                 >
                                 <kbd class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
@@ -355,6 +376,14 @@
                             </div>
                         </form>
 
+                        {{-- New Task Button (Modal Trigger) --}}
+                        <button type="button" data-open-task-modal
+                            class="flex h-10 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700 active:scale-95"
+                            title="Create New Task">
+                            <x-icon name="plus" class="h-3.5 w-3.5" />
+                            <span class="hidden sm:inline" data-i18n="new_task">New Task</span>
+                        </button>
+
                         {{-- Divider --}}
                         <div class="hidden h-7 w-px bg-slate-200 dark:bg-slate-800 sm:block"></div>
 
@@ -371,8 +400,8 @@
                         <button type="button" data-language-toggle
                             class="relative flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700/70"
                             title="Switch Language / ប្តូរភាសា" aria-label="Toggle language">
-                            <span data-lang-flag class="text-sm">🇰🇭</span>
-                            <span data-lang-text class="font-bold text-blue-700 dark:text-blue-400">ខ្មែរ</span>
+                            <x-icon name="globe" class="h-4 w-4" />
+                            <span data-lang-text class="font-bold text-blue-700 dark:text-blue-400">EN</span>
                         </button>
 
                         {{-- Theme --}}
@@ -435,6 +464,7 @@
                                 </div>
                             </div>
                         </div>
+                        <button type="button" class="header-avatar" data-open-workspace-profile aria-label="Open your workspace profile">TM</button>
                     </div>
 
                 </div>
@@ -460,7 +490,7 @@
 
                                 <x-icon :name="$item['icon']" class="h-3.5 w-3.5" />
 
-                                {{ $item['label'] }}
+                                <span data-i18n="{{ $item['key'] ?? strtolower(str_replace(' ', '_', $item['label'])) }}">{{ $item['label'] }}</span>
 
                             </a>
                         @endforeach
@@ -481,8 +511,18 @@
                    px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
                 {{-- =====================================================
-                SUCCESS MESSAGE
+                FLASH MESSAGES FOR SWEETALERT & PAGE
             ====================================================== --}}
+                @if (session('success'))
+                    <div id="flash-session-success" data-message="{{ session('success') }}" class="hidden"></div>
+                @endif
+                @if (session('error'))
+                    <div id="flash-session-error" data-message="{{ session('error') }}" class="hidden"></div>
+                @endif
+                @if ($errors->any())
+                    <div id="flash-session-errors" data-errors="{{ json_encode($errors->all()) }}" class="hidden"></div>
+                @endif
+
                 @if (session('success'))
                     <div id="success-alert"
                         class="
@@ -648,18 +688,29 @@
                 </button>
             </div>
 
-            <form method="POST" action="{{ route('tasks.store') }}" data-task-form autocomplete="off">
+            <form method="POST" action="{{ route('tasks.store') }}" data-task-form novalidate autocomplete="off">
                 @csrf
 
                 <div class="max-h-[75vh] space-y-5 overflow-y-auto px-6 py-6">
                     <div>
-                        <label for="create_title" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-                                <x-icon name="clipboard" class="h-3.5 w-3.5" />
-                            </span>
-                            <span data-i18n="task_title">Task Title</span>
-                            <span class="text-rose-500">*</span>
-                        </label>
+                        <div class="mb-2 flex items-center justify-between">
+                            <label for="create_title" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                                    <x-icon name="clipboard" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="task_title">Task Title</span>
+                                <span class="text-rose-500">*</span>
+                            </label>
+                            <button
+                                type="button"
+                                id="create-ai-suggest-btn"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-purple-200/90 bg-purple-50/90 px-2.5 py-1 text-[11px] font-semibold text-purple-700 shadow-2xs transition hover:bg-purple-100 hover:border-purple-300 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300"
+                                title="Auto-detect category & priority"
+                            >
+                                <x-icon name="sparkles" class="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                <span data-i18n="ai_suggest">✨ AI Suggest</span>
+                            </button>
+                        </div>
                         <input
                             id="create_title"
                             type="text"
@@ -781,7 +832,15 @@
                                 </span>
                                 <span data-i18n="checklist">Checklist / Subtasks (កិច្ចការរង)</span>
                             </label>
-                            <span class="text-[11px] text-slate-400" data-i18n="step_by_step">Add steps</span>
+                            <button
+                                type="button"
+                                id="create-ai-breakdown-btn"
+                                class="ai-btn-magic inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs"
+                                title="Generate structured subtasks with AI"
+                            >
+                                <x-icon name="sparkles" class="h-3 w-3" />
+                                <span data-i18n="ai_magic_breakdown">✨ AI Magic Breakdown</span>
+                            </button>
                         </div>
 
                         <div id="create-subtask-list" class="space-y-2 mb-3">
@@ -875,19 +934,30 @@
                 </button>
             </div>
 
-            <form method="POST" action="" data-edit-task-form autocomplete="off">
+            <form method="POST" action="" data-edit-task-form novalidate autocomplete="off">
                 @csrf
                 @method('PUT')
 
                 <div class="max-h-[75vh] space-y-5 overflow-y-auto px-6 py-6">
                     <div>
-                        <label for="edit_title" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-                                <x-icon name="clipboard" class="h-3.5 w-3.5" />
-                            </span>
-                            <span data-i18n="task_title">Task Title</span>
-                            <span class="text-rose-500">*</span>
-                        </label>
+                        <div class="mb-2 flex items-center justify-between">
+                            <label for="edit_title" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                                    <x-icon name="clipboard" class="h-3.5 w-3.5" />
+                                </span>
+                                <span data-i18n="task_title">Task Title</span>
+                                <span class="text-rose-500">*</span>
+                            </label>
+                            <button
+                                type="button"
+                                id="edit-ai-suggest-btn"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-purple-200/90 bg-purple-50/90 px-2.5 py-1 text-[11px] font-semibold text-purple-700 shadow-2xs transition hover:bg-purple-100 hover:border-purple-300 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300"
+                                title="Auto-detect category & priority"
+                            >
+                                <x-icon name="sparkles" class="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                                <span data-i18n="ai_suggest">✨ AI Suggest</span>
+                            </button>
+                        </div>
                         <input
                             id="edit_title"
                             type="text"
@@ -1009,7 +1079,15 @@
                                 </span>
                                 <span data-i18n="checklist">Checklist / Subtasks (កិច្ចការរង)</span>
                             </label>
-                            <span class="text-[11px] text-slate-400" data-i18n="step_by_step">Add steps</span>
+                            <button
+                                type="button"
+                                id="edit-ai-breakdown-btn"
+                                class="ai-btn-magic inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs"
+                                title="Generate structured subtasks with AI"
+                            >
+                                <x-icon name="sparkles" class="h-3 w-3" />
+                                <span data-i18n="ai_magic_breakdown">✨ AI Magic Breakdown</span>
+                            </button>
                         </div>
 
                         <div id="edit-subtask-list" class="space-y-2 mb-3">
@@ -1105,6 +1183,26 @@
                     <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">N</kbd>
                 </button>
 
+                <button type="button" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200" data-cmd="open-ai-chat">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                            <x-icon name="sparkles" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="ai_chatbot">AI Copilot Chatbot (ជជែកជាមួយ AI)</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">Shift + A</kbd>
+                </button>
+
+                <button type="button" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200" data-cmd="ai-standup">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400">
+                            <x-icon name="activity" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="ai_briefing_title">AI Daily Standup Briefing (សង្ខេប AI)</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">B</kbd>
+                </button>
+
                 <a href="{{ route('dashboard') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
                     <span class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
@@ -1125,6 +1223,16 @@
                     <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G T</kbd>
                 </a>
 
+                <a href="{{ route('projects') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                            <x-icon name="project" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="projects">Projects & Categories</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G R</kbd>
+                </a>
+
                 <a href="{{ route('calendar') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
                     <span class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -1143,6 +1251,31 @@
                         <span data-i18n="priority">Priority</span>
                     </span>
                     <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G P</kbd>
+                </a>
+
+                <a href="{{ route('analytics') }}" class="cmd-item flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex items-center gap-3">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                            <x-icon name="analytics" class="h-4 w-4" />
+                        </span>
+                        <span data-i18n="analytics">Analytics & Insights</span>
+                    </span>
+                    <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">G A</kbd>
+                </a>
+
+                <a href="{{ route('tasks.today') }}" class="cmd-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"><x-icon name="clock" class="h-4 w-4" /></span>
+                    Today's Tasks
+                </a>
+
+                <a href="{{ route('tasks.overdue') }}" class="cmd-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400"><x-icon name="clock" class="h-4 w-4" /></span>
+                    Overdue Tasks
+                </a>
+
+                <a href="{{ route('tasks.completed') }}" class="cmd-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-800 transition dark:text-slate-200">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"><x-icon name="check-circle" class="h-4 w-4" /></span>
+                    Completed Tasks
                 </a>
 
                 <div class="mt-2 border-t border-slate-100 pt-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800" data-i18n="tools_preferences">
@@ -1189,6 +1322,183 @@
             </div>
         </div>
     </div>
+
+    {{-- =============================================================
+        AI TASK COPILOT CHATBOT (DRAWER & FLOATING LAUNCHER)
+    ============================================================== --}}
+
+    {{-- 1. Floating Launcher Button (FAB) --}}
+    <div id="ai-chatbot-launcher" class="fixed bottom-6 right-6 z-40">
+        <button
+            type="button"
+            id="ai-chatbot-launcher-btn"
+            class="gemini-fab-btn group relative flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xl shadow-slate-900/10 border border-slate-200/90 dark:border-slate-800 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:border-indigo-400 dark:hover:border-indigo-500 focus:outline-none"
+            aria-label="Open Gemini AI"
+            title="Open Gemini AI (Shift + A)"
+        >
+            {{-- Online status dot --}}
+            <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5 z-20">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 bg-emerald-500"></span>
+            </span>
+
+            {{-- NIU Lottie Animation Logo Container --}}
+            <div class="pointer-events-none relative z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl p-0.5 group-hover:scale-110 transition-transform duration-300" data-lottie="niu"></div>
+        </button>
+    </div>
+
+    {{-- 2. Clean & Minimalist Chatbot Drawer --}}
+    <div
+        id="ai-chatbot-drawer"
+        class="ai-chat-drawer fixed bottom-6 right-6 z-50 hidden flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5 sm:w-[420px] w-[calc(100vw-2rem)] h-[620px] max-h-[calc(100vh-3rem)] dark:border-slate-800 dark:bg-slate-900 dark:ring-white/10 dark:shadow-slate-950/70"
+        role="dialog"
+        aria-labelledby="ai-chat-title"
+    >
+        {{-- Drawer Header (Clean & Simple) --}}
+        <div class="relative flex items-center justify-between border-b border-slate-100 bg-white px-4 py-3.5 text-slate-800 shadow-2xs dark:border-slate-800 dark:bg-slate-900 dark:text-white">
+            <div class="flex items-center gap-3">
+                {{-- Bot Avatar with animated niu.json logo --}}
+                <div class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 overflow-hidden p-0.5 shadow-2xs">
+                    <div class="h-8 w-8 flex items-center justify-center pointer-events-none" data-lottie="niu"></div>
+                </div>
+                <div>
+                    <h3 id="ai-chat-title" class="text-sm font-bold text-slate-900 dark:text-white leading-tight">Gemini</h3>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium" data-i18n="ai_chatbot_status">Online Assistant</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Header Actions --}}
+            <div class="flex items-center gap-1">
+                {{-- Clear chat history button --}}
+                <button
+                    type="button"
+                    id="ai-chat-clear-btn"
+                    class="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
+                    title="Clear Chat History"
+                    aria-label="Clear chat history"
+                >
+                    <x-icon name="trash" class="h-3.5 w-3.5" />
+                </button>
+
+                {{-- Close / Minimize button --}}
+                <button
+                    type="button"
+                    id="ai-chat-close-btn"
+                    class="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                    title="Close"
+                    aria-label="Close chat"
+                >
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        {{-- Messages Stream Container --}}
+        <div id="ai-chat-messages" class="ai-chat-scrollbar flex-1 space-y-3.5 overflow-y-auto p-4 text-xs">
+            {{-- Welcome Card (Clean, Simple & Friendly) --}}
+            <div id="ai-chat-welcome" class="flex flex-col items-center justify-center text-center py-6 px-3">
+                {{-- Centerpiece Animated niu.json Mascot --}}
+                <div class="relative mb-3 flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 p-1 shadow-sm">
+                    <div class="relative z-10 flex h-16 w-16 items-center justify-center overflow-hidden pointer-events-none" data-lottie="niu"></div>
+                </div>
+
+                <h4 class="text-base font-bold text-slate-900 dark:text-white" data-i18n="ai_welcome_title">
+                    How can I help you today?
+                </h4>
+                <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400 max-w-xs" data-i18n="ai_welcome_desc">
+                    Ask me anything about your tasks, or try one of the suggestions below.
+                </p>
+
+                {{-- Clean Suggestion Pills --}}
+                <div class="mt-5 flex flex-wrap justify-center gap-2 max-w-xs">
+                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="standup">
+                        <span>☀️</span> Daily Standup
+                    </button>
+                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="overdue">
+                        <span>⚠️</span> Check Overdue
+                    </button>
+                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="create task: ">
+                        <span>➕</span> Create Task
+                    </button>
+                </div>
+            </div>
+
+            {{-- Dynamic Message Bubbles rendered by JavaScript --}}
+            <div id="ai-chat-thread" class="space-y-3"></div>
+
+            {{-- Typing Indicator with Animated niu.json Logo --}}
+            <div id="ai-chat-typing" class="hidden items-center gap-2.5 pt-1 text-slate-400">
+                <div class="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-xl overflow-hidden bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 p-0.5" data-lottie="niu"></div>
+                <div class="flex items-center gap-1.5 rounded-2xl rounded-tl-xs bg-slate-100 px-3.5 py-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
+                    <span class="text-[11px] font-semibold mr-1 text-indigo-600 dark:text-indigo-400" data-i18n="ai_thinking">Gemini is thinking</span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Quick suggestion pills strip above input --}}
+        <div class="ai-prompts-bar no-scrollbar flex items-center gap-1.5 overflow-x-auto border-t border-slate-100 bg-slate-50/70 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/60">
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="standup">
+                <span>☀️</span> Standup
+            </button>
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="overdue">
+                <span>⚠️</span> Overdue
+            </button>
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="create task: ">
+                <span>➕</span> New Task
+            </button>
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="breakdown: ">
+                <span>📋</span> Breakdown
+            </button>
+        </div>
+
+        {{-- Input Footer Form --}}
+        <div class="border-t border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+            <form id="ai-chat-form" class="flex items-center gap-2">
+                <div class="relative flex-1 flex items-center">
+                    <input
+                        type="text"
+                        id="ai-chat-input"
+                        placeholder="Ask Gemini, or type 'create task: ...'"
+                        class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-3.5 pr-8 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-indigo-900/30"
+                        autocomplete="off"
+                    >
+                    <span class="pointer-events-none absolute right-3 text-slate-400">
+                        <kbd class="text-[9.5px] font-sans text-slate-400 border border-slate-200 rounded px-1 py-0.5 dark:border-slate-700">↵</kbd>
+                    </span>
+                </div>
+                <button
+                    type="submit"
+                    id="ai-chat-send-btn"
+                    class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm transition hover:bg-indigo-700 active:scale-95 disabled:opacity-50"
+                    aria-label="Send message"
+                >
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+            <div class="mt-2 flex items-center justify-between px-1 text-[10px] text-slate-400">
+                <span>Shift+A to toggle</span>
+                <span class="font-medium text-slate-500 dark:text-slate-400">Powered by Gemini</span>
+            </div>
+        </div>
+    </div>
+
+    <dialog id="workspace-profile" class="workspace-profile-dialog">
+        <div class="panel-heading"><h2>Your Workspace</h2><button type="button" data-close-workspace-profile aria-label="Close workspace"><x-icon name="x" /></button></div>
+        <p class="workspace-profile-description">Your tasks belong to your private workspace.</p>
+        <div class="workspace-member"><span class="workspace-avatar">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr(auth()->user()->name, 0, 1)) }}</span><div><strong>{{ auth()->user()->name }}</strong><p>{{ auth()->user()->email }}</p></div><span class="count-badge">Owner</span></div>
+    </dialog>
 
     {{-- Confetti canvas for celebrations --}}
     <canvas id="confetti-canvas"></canvas>

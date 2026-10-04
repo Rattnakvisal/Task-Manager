@@ -4,344 +4,158 @@
 
 @section('content')
     @php
-        $priorityColors = [
-            'low' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-300',
-            'medium' => 'bg-amber-50 text-amber-700 ring-amber-600/10 dark:bg-amber-950/40 dark:text-amber-300',
-            'high' => 'bg-rose-50 text-rose-700 ring-rose-600/10 dark:bg-rose-950/40 dark:text-rose-300',
-        ];
-
-        $priorityDots = [
-            'low' => 'bg-emerald-500',
-            'medium' => 'bg-amber-500',
-            'high' => 'bg-rose-500',
-        ];
-
-        $statusColors = [
-            'pending' => 'bg-amber-50 text-amber-700 ring-amber-600/10 dark:bg-amber-950/40 dark:text-amber-300',
-            'in_progress' => 'bg-blue-50 text-blue-700 ring-blue-600/10 dark:bg-blue-950/40 dark:text-blue-300',
-            'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-300',
-        ];
-
-        $totalTasks = $stats['Total Tasks']['value'] ?? 0;
-        $completedTasks = $stats['Completed']['value'] ?? 0;
+        $total = $stats['Total Tasks']['value'];
+        $completed = $stats['Completed']['value'];
+        $inProgress = $stats['In Progress']['value'];
+        $pending = $stats['Pending']['value'];
+        $completedPercent = $total ? $completed / $total * 100 : 0;
+        $activePercent = $total ? $inProgress / $total * 100 : 0;
+        $calendarStart = $calendarMonth->copy()->startOfWeek(\Carbon\Carbon::SUNDAY);
+        $calendarDays = (int) (ceil(($calendarMonth->dayOfWeek + $calendarMonth->daysInMonth) / 7) * 7);
+        $tones = ['blue', 'amber', 'teal', 'purple'];
     @endphp
 
-    <div class="dashboard-motion min-h-screen space-y-7" data-dashboard>
-        <div class="mx-auto max-w-[1600px] space-y-7">
-
-            {{-- =========================================================
-                HEADER / HERO
-            ========================================================== --}}
-            <section class="dashboard-hero relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8 lg:p-9 dark:border-slate-800 dark:bg-slate-900">
-                {{-- Decorative background --}}
-                <div class="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl dark:bg-blue-900/20"></div>
-                <div class="pointer-events-none absolute right-44 top-16 h-36 w-36 rounded-full bg-indigo-100/50 blur-3xl dark:bg-indigo-900/20"></div>
-
-                <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="max-w-2xl">
-                        <div class="mb-4 flex items-center gap-2">
-                            <span class="inline-flex h-8 items-center rounded-full bg-blue-50 px-3 text-xs font-bold uppercase tracking-wider text-blue-700 dark:bg-blue-950/60 dark:text-blue-400" data-i18n="workspace">
-                                Workspace
-                            </span>
-                            <span class="text-xs font-medium text-slate-400" data-i18n="task_overview">
-                                Task Overview
-                            </span>
-                        </div>
-
-                        <h1 class="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl dark:text-white" data-i18n="welcome_dashboard">
-                            Welcome to your Dashboard
-                        </h1>
-
-                        <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400" data-i18n="dashboard_sub">
-                            Stay focused on what matters most. Track deadlines, priority tasks, productivity insights, and team progress.
-                        </p>
+    <div class="reference-dashboard" data-dashboard>
+        <div class="overview-grid">
+            <section class="welcome-banner" aria-labelledby="welcome-heading">
+                <img class="welcome-art" src="{{ asset('images/Task.png') }}" alt="Blue task clipboard with a small calendar and green plant" fetchpriority="high">
+                <div class="welcome-copy">
+                    <p class="welcome-greeting">Good morning,</p>
+                    <h1 id="welcome-heading">{{ auth()->user()->name }} <span class="welcome-wave">👋</span></h1>
+                    <p class="welcome-description">Stay focused on what matters most. Track deadlines, priority tasks,<br class="wide-break"> and make progress every day.</p>
+                    <div class="welcome-actions">
+                        <a href="{{ route('tasks.create') }}" data-open-task-modal class="dashboard-button primary"><x-icon name="plus" /> <span data-i18n="new_task">New Task</span></a>
+                        <a class="dashboard-button secondary" href="{{ route('calendar') }}"><x-icon name="calendar" /> Open Calendar</a>
                     </div>
+                </div>
+            </section>
 
-                    <div class="flex flex-wrap items-center gap-3">
-                        <a href="{{ route('calendar') }}"
-                            class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                            <x-icon name="calendar" class="h-4 w-4" />
-                            <span data-i18n="calendar">Calendar</span>
+            <section class="dashboard-surface mini-calendar" aria-label="Task calendar" data-mini-calendar data-month="{{ $calendarMonth->format('Y-m') }}" data-today="{{ now()->toDateString() }}" data-events="{{ $calendarEvents->toJson() }}" data-calendar-url="{{ route('calendar') }}">
+                <div class="panel-heading calendar-heading">
+                    <h2 data-calendar-title>{{ $calendarMonth->format('F Y') }}</h2>
+                    <div class="calendar-controls">
+                        <div class="calendar-arrows">
+                            <button type="button" data-calendar-step="-1" aria-label="Previous month">‹</button>
+                            <button type="button" data-calendar-step="1" aria-label="Next month">›</button>
+                        </div>
+                        <button type="button" class="subtle-button" data-calendar-today>Today</button>
+                    </div>
+                </div>
+                <div class="calendar-weekdays">@foreach (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $day)<span>{{ $day }}</span>@endforeach</div>
+                <div class="calendar-dates" data-calendar-dates>
+                    @for ($i = 0; $i < $calendarDays; $i++)
+                        @php $date = $calendarStart->copy()->addDays($i); @endphp
+                        <a href="{{ route('calendar') }}#date-{{ $date->toDateString() }}" class="calendar-date {{ $date->month !== $calendarMonth->month ? 'outside-month' : '' }} {{ $date->isToday() ? 'is-today' : '' }}" aria-label="{{ $date->format('F j, Y') }}" @if($date->isToday()) aria-current="date" @endif>
+                            <span>{{ $date->day }}</span>
+                            <span class="calendar-event-dots">@foreach (($calendarEvents[$date->toDateString()] ?? collect())->take(3) as $priority)<i class="priority-dot {{ $priority }}"></i>@endforeach</span>
                         </a>
-
-                        <button type="button" data-open-task-modal
-                            class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/10 transition hover:-translate-y-0.5 hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500">
-                            <x-icon name="plus" class="h-4 w-4" />
-                            <span data-i18n="new_task">Add New Task</span>
-                        </button>
-                    </div>
+                    @endfor
                 </div>
             </section>
+        </div>
 
-            {{-- =========================================================
-                OVERDUE TASKS BANNER (IF ANY)
-            ========================================================== --}}
-            @if (!empty($overdueCount) && $overdueCount > 0)
-                <div class="flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-800 shadow-sm dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/60 dark:text-rose-300">
-                            <x-icon name="flag" class="h-5 w-5" />
-                        </span>
-                        <div>
-                            <h3 class="text-sm font-bold" data-i18n="overdue_alert">
-                                Attention: You have {{ $overdueCount }} overdue task{{ $overdueCount === 1 ? '' : 's' }}!
-                            </h3>
-                            <p class="text-xs text-rose-600 dark:text-rose-300" data-i18n="overdue_desc">
-                                Some tasks missed their due dates. Review or reschedule them now.
-                            </p>
-                        </div>
+        <section class="metrics-grid" aria-label="Task statistics">
+            @foreach ($stats as $label => $stat)
+                @php
+                    $tone = $tones[$loop->index];
+                    $max = max(1, ...$stat['series']);
+                    $chartValues = array_map(fn ($count) => round(48 - ($count / $max * 36), 2), $stat['series']);
+                    $chartPath = 'M 0 '.$chartValues[0];
+                    for ($point = 1; $point < count($chartValues); $point++) {
+                        $chartPath .= ' C '.($point * 20 - 10).' '.$chartValues[$point - 1].', '.($point * 20 - 10).' '.$chartValues[$point].', '.($point * 20).' '.$chartValues[$point];
+                    }
+                @endphp
+                <article class="dashboard-surface metric-card {{ $tone }}">
+                    <span class="metric-icon"><x-icon :name="$stat['icon']" /></span>
+                    <div class="metric-copy">
+                        <h2>{{ $label }}</h2>
+                        <strong class="metric-value" data-dashboard-count="{{ $stat['value'] }}">{{ $stat['value'] }}</strong>
+                        <span class="metric-change {{ ($stat['change'] ?? 0) < 0 ? 'negative' : '' }}">@if($stat['change'] !== null){{ $stat['change'] < 0 ? '↓' : '↑' }} {{ abs($stat['change']) }}%@else — @endif</span>
+                        <p>from last week</p>
                     </div>
-                    <a href="{{ route('tasks.index', ['status' => 'pending']) }}"
-                        class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700">
-                        <span data-i18n="view_overdue">View Tasks</span>
-                    </a>
+                    <svg class="metric-chart" viewBox="0 0 120 62" role="img" aria-label="{{ $label }} created over the last seven days">
+                        <defs><linearGradient id="metric-fill-{{ $loop->index }}" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="currentColor" stop-opacity=".18"/><stop offset="100%" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>
+                        <path d="{{ $chartPath }} L 120 62 L 0 62 Z" fill="url(#metric-fill-{{ $loop->index }})"/>
+                        <path d="{{ $chartPath }}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                </article>
+            @endforeach
+        </section>
+
+        <div class="dashboard-detail-grid">
+            <section class="dashboard-surface today-panel">
+                <div class="panel-heading today-heading">
+                    <div class="heading-with-count"><h2>Today's Tasks</h2><span class="count-badge">{{ $todayTasks->count() }} {{ \Illuminate\Support\Str::plural('task', $todayTasks->count()) }}</span></div>
+                    <a class="panel-link" href="{{ route('tasks.today') }}">View All <span>→</span></a>
                 </div>
-            @endif
-
-            {{-- =========================================================
-                STAT CARDS & PRODUCTIVITY GAUGES
-            ========================================================== --}}
-            <section class="dashboard-stats grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach ($stats as $label => $stat)
-                    <div class="dashboard-stat group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                                    {{ $label }}
-                                </p>
-                                <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white" data-dashboard-count="{{ $stat['value'] }}">
-                                    {{ $stat['value'] }}
-                                </p>
-                                <p class="mt-2 text-xs font-medium text-slate-400">
-                                    {{ $stat['label'] }}
-                                </p>
-                            </div>
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ $stat['tone'] }} transition duration-300 group-hover:scale-105">
-                                <x-icon :name="$stat['icon']" class="h-5 w-5" />
-                            </span>
+                <div class="today-task-list">
+                    @forelse ($todayTasks->take(5) as $task)
+                        <div class="today-task-row {{ $task->status === 'completed' ? 'task-is-complete' : '' }}">
+                            <form method="POST" action="{{ route('tasks.toggle-status', $task) }}">
+                                @csrf @method('PATCH')
+                                <button class="task-check" type="submit" aria-label="{{ $task->status === 'completed' ? 'Reopen' : 'Complete' }} {{ $task->title }}" aria-pressed="{{ $task->status === 'completed' ? 'true' : 'false' }}">@if($task->status === 'completed')<x-icon name="check" />@endif</button>
+                            </form>
+                            <span class="priority-dot {{ $task->priority }}"></span>
+                            <a class="task-row-copy" href="{{ route('tasks.show', $task) }}"><strong>{{ $task->title }}</strong><span><x-icon name="clipboard" /> {{ $task->category ?: 'General' }}</span></a>
+                            <span class="task-due"><x-icon name="calendar" /> Today</span>
+                            <a href="{{ route('tasks.edit', $task) }}" class="task-more" aria-label="Edit {{ $task->title }}"><x-icon name="more-vertical" /></a>
                         </div>
-                    </div>
-                @endforeach
+                    @empty
+                        <div class="dashboard-empty"><span class="empty-icon"><x-icon name="check-circle" /></span><h3>A little room to focus</h3><p>You have no tasks scheduled for today.</p><a href="{{ route('tasks.create') }}" data-open-task-modal class="panel-link">Create a task <span>→</span></a></div>
+                    @endforelse
+                </div>
+                @if($todayTasks->count() > 5)<a class="today-overflow panel-link" href="{{ route('tasks.today') }}">View {{ $todayTasks->count() - 5 }} more tasks →</a>@endif
             </section>
 
-            {{-- =========================================================
-                PRODUCTIVITY INSIGHTS: CHARTS & STREAK
-            ========================================================== --}}
-            <section class="grid gap-6 lg:grid-cols-3">
-                {{-- 7-Day Activity Chart --}}
-                <div class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm lg:col-span-2 dark:border-slate-800 dark:bg-slate-900">
-                    <div class="mb-4 flex items-center justify-between">
-                        <div>
-                            <h3 class="text-base font-bold text-slate-950 dark:text-white" data-i18n="weekly_activity">
-                                7-Day Activity & Progress
-                            </h3>
-                            <p class="text-xs text-slate-400" data-i18n="weekly_activity_sub">
-                                Daily completed vs created tasks
-                            </p>
-                        </div>
-                        <div class="flex items-center gap-4 text-xs font-semibold">
-                            <span class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                                <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span> Created
-                            </span>
-                            <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                                <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> Completed
-                            </span>
-                        </div>
-                    </div>
-
-                    {{-- SVG Bar Chart --}}
-                    <div class="mt-6 flex h-48 items-end justify-between gap-2 pt-6">
-                        @foreach ($weeklyActivity as $item)
-                            @php
-                                $maxHeight = 120;
-                                $createdHeight = max(8, min(120, $item['created'] * 24));
-                                $completedHeight = max(8, min(120, $item['completed'] * 24));
-                            @endphp
-                            <div class="flex flex-1 flex-col items-center gap-2">
-                                <div class="flex h-36 w-full items-end justify-center gap-1">
-                                    {{-- Created bar --}}
-                                    <div
-                                        class="w-3 rounded-t-md bg-blue-400/80 transition-all hover:bg-blue-600 dark:bg-blue-600"
-                                        style="height: {{ $createdHeight }}px"
-                                        title="{{ $item['created'] }} created on {{ $item['date'] }}"
-                                    ></div>
-                                    {{-- Completed bar --}}
-                                    <div
-                                        class="w-3 rounded-t-md bg-emerald-500 transition-all hover:bg-emerald-600"
-                                        style="height: {{ $completedHeight }}px"
-                                        title="{{ $item['completed'] }} completed on {{ $item['date'] }}"
-                                    ></div>
-                                </div>
-                                <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ $item['day'] }}</span>
-                            </div>
+            <section class="dashboard-surface progress-panel" id="task-progress">
+                <div class="panel-heading"><h2>Task Progress</h2><a href="{{ route('all-tasks') }}" class="subtle-button">All Tasks</a></div>
+                <div class="progress-content">
+                    <div class="task-donut {{ $total === 0 ? 'is-empty' : '' }}" style="--completed: {{ $completedPercent }}%; --active: {{ $completedPercent + $activePercent }}%" role="img" aria-label="{{ $total }} tasks: {{ $completed }} completed, {{ $inProgress }} in progress, {{ $pending }} pending"><div><strong>{{ $total }}</strong><span>Tasks</span></div></div>
+                    <div class="progress-legend">
+                        @foreach ([['Completed', $completed, 'completed'], ['In Progress', $inProgress, 'in-progress'], ['Pending', $pending, 'pending'], ['Overdue', $overdueCount, 'overdue']] as [$label, $count, $status])
+                            <div><span class="legend-dot {{ $status }}"></span><span>{{ $label }}</span><strong>{{ $count }}</strong><span class="legend-percent">{{ $total ? round($count / $total * 100) : 0 }}%</span></div>
                         @endforeach
                     </div>
                 </div>
+            </section>
 
-                {{-- Productivity Gauge & Streak Card --}}
-                <div class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <div>
-                        <h3 class="text-base font-bold text-slate-950 dark:text-white" data-i18n="completion_rate">
-                            Completion Rate
-                        </h3>
-                        <p class="text-xs text-slate-400" data-i18n="productivity_score">
-                            Your overall workspace productivity
-                        </p>
-
-                        {{-- Circular Progress Gauge --}}
-                        <div class="relative my-6 flex items-center justify-center">
-                            <svg class="h-32 w-32 -rotate-90 transform" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" class="text-slate-100 dark:text-slate-800" fill="transparent"/>
-                                <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="10" stroke-linecap="round"
-                                    class="text-blue-600 transition-all duration-1000 dark:text-blue-400"
-                                    fill="transparent"
-                                    stroke-dasharray="251.2"
-                                    stroke-dashoffset="{{ 251.2 - (251.2 * ($completionRate ?? 0)) / 100 }}"
-                                />
-                            </svg>
-                            <div class="absolute flex flex-col items-center">
-                                <span class="text-2xl font-extrabold text-slate-950 dark:text-white">{{ $completionRate }}%</span>
-                                <span class="text-[10px] font-semibold text-slate-400" data-i18n="completed">Done</span>
-                            </div>
+            <section class="dashboard-surface priority-panel">
+                <div class="panel-heading"><h2>Priority Tasks</h2><a class="panel-link" href="{{ route('priority') }}">View All <span>→</span></a></div>
+                <div class="priority-task-list">
+                    @forelse($priorityTasks as $task)
+                        <div class="priority-task-row">
+                            <x-icon name="flag" class="priority-flag {{ $task->priority }}" />
+                            <a class="task-row-copy" href="{{ route('tasks.show', $task) }}"><strong>{{ $task->title }}</strong><span>{{ $task->due_date?->isToday() ? 'Today' : ($task->due_date?->isTomorrow() ? 'Tomorrow' : ($task->due_date?->format('M j') ?? 'No due date')) }}</span></a>
+                            <span class="priority-badge {{ $task->priority }}">{{ ucfirst($task->priority) }}</span>
+                            <a class="task-more" href="{{ route('tasks.edit', $task) }}" aria-label="Edit {{ $task->title }}"><x-icon name="more-vertical" /></a>
                         </div>
-                    </div>
-
-                    {{-- Streak Badge --}}
-                    <div class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 dark:border-amber-900/60 dark:bg-amber-950/40">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-lg dark:bg-amber-900/60">
-                            🔥
-                        </span>
-                        <div>
-                            <p class="text-xs font-bold text-amber-900 dark:text-amber-200">
-                                {{ $streakDays }} <span data-i18n="day_streak">Day Productivity Streak!</span>
-                            </p>
-                            <p class="text-[11px] text-amber-700/80 dark:text-amber-400" data-i18n="keep_streak">
-                                Keep finishing tasks daily to maintain momentum.
-                            </p>
-                        </div>
-                    </div>
+                    @empty
+                        <p class="compact-empty">All clear. No priority tasks right now.</p>
+                    @endforelse
                 </div>
             </section>
 
-            {{-- =========================================================
-                MAIN GRID: PINNED, UPCOMING, & PRIORITY
-            ========================================================== --}}
-            <section class="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(340px,.8fr)]">
-
-                {{-- Left Column: Upcoming Tasks --}}
-                <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
-                                <x-icon name="calendar" class="h-5 w-5" />
-                            </span>
-                            <div>
-                                <h3 class="text-base font-bold text-slate-950 dark:text-white" data-i18n="upcoming_schedule">
-                                    Upcoming Schedule
-                                </h3>
-                                <p class="text-xs text-slate-400" data-i18n="next_deadlines">
-                                    Your next deadlines and scheduled tasks.
-                                </p>
-                            </div>
-                        </div>
-
-                        <a href="{{ route('calendar') }}"
-                            class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                            <span data-i18n="view_calendar">View Calendar</span> →
-                        </a>
-                    </div>
-
-                    @if ($upcomingTasks->isEmpty())
-                        <div class="flex min-h-[300px] flex-col items-center justify-center p-8 text-center">
-                            <x-icon name="calendar" class="h-10 w-10 text-slate-300 dark:text-slate-600" />
-                            <p class="mt-3 text-sm font-bold text-slate-800 dark:text-slate-200" data-i18n="no_upcoming">No upcoming tasks scheduled</p>
-                            <p class="mt-1 text-xs text-slate-400" data-i18n="add_due_dates">Add due dates to your tasks to see them here.</p>
-                        </div>
-                    @else
-                        <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                            @foreach ($upcomingTasks as $task)
-                                <div class="flex items-center justify-between p-4 px-6 transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <div class="flex items-center gap-4 min-w-0">
-                                        <button type="button" data-toggle-complete-id="{{ $task->id }}"
-                                            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white hover:border-emerald-500 dark:border-slate-700 dark:bg-slate-800">
-                                        </button>
-                                        <div class="min-w-0">
-                                            <p class="truncate text-sm font-bold text-slate-900 dark:text-white">{{ $task->title }}</p>
-                                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                                                <span class="inline-flex items-center gap-1 {{ $task->is_overdue ? 'text-rose-600 font-bold' : '' }}">
-                                                    <x-icon name="calendar" class="h-3 w-3" />
-                                                    {{ $task->due_date->format('M d, Y') }}
-                                                </span>
-                                                @if ($task->category)
-                                                    <span>•</span>
-                                                    <span class="font-semibold text-slate-600 dark:text-slate-300">{{ $task->category }}</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold {{ $priorityColors[$task->priority] }}">
-                                        {{ ucfirst($task->priority) }}
-                                    </span>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+            <section class="dashboard-surface activity-panel">
+                <div class="panel-heading"><h2>Recent Activity</h2><a class="panel-link" href="{{ route('all-tasks') }}">View All <span>→</span></a></div>
+                <div class="compact-list">
+                    @forelse($recentTasks as $task)
+                        @php $isNew = $task->created_at->equalTo($task->updated_at); $done = $task->status === 'completed'; @endphp
+                        <a class="activity-row" href="{{ route('tasks.edit', $task) }}"><span class="activity-icon {{ $done ? 'done' : ($isNew ? 'new' : 'updated') }}"><x-icon :name="$done ? 'check' : ($isNew ? 'clipboard' : 'edit')" /></span><span>You {{ $done ? 'completed' : ($isNew ? 'created' : 'updated') }} a task <strong>{{ $task->title }}</strong></span><time datetime="{{ $task->updated_at->toIso8601String() }}">{{ $task->updated_at->diffForHumans() }}</time></a>
+                    @empty
+                        <p class="compact-empty">Your task activity will appear here.</p>
+                    @endforelse
                 </div>
+            </section>
 
-                {{-- Right Column: High Priority Tasks --}}
-                <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
-                                <x-icon name="flag" class="h-5 w-5" />
-                            </span>
-                            <div>
-                                <h3 class="text-base font-bold text-slate-950 dark:text-white" data-i18n="high_priority">
-                                    High Priority
-                                </h3>
-                                <p class="text-xs text-slate-400" data-i18n="critical_work">
-                                    Critical items needing attention.
-                                </p>
-                            </div>
-                        </div>
-
-                        <a href="{{ route('priority') }}"
-                            class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                            <span data-i18n="view_all">View All</span> →
-                        </a>
-                    </div>
-
-                    @if ($priorityTasks->isEmpty())
-                        <div class="flex min-h-[300px] flex-col items-center justify-center p-8 text-center">
-                            <x-icon name="flag" class="h-10 w-10 text-slate-300 dark:text-slate-600" />
-                            <p class="mt-3 text-sm font-bold text-slate-800 dark:text-slate-200" data-i18n="no_high_priority">No high priority tasks</p>
-                        </div>
-                    @else
-                        <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                            @foreach ($priorityTasks as $task)
-                                <div class="flex items-center justify-between p-4 px-6 transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <div class="min-w-0 pr-3">
-                                        <p class="truncate text-sm font-bold text-slate-900 dark:text-white">{{ $task->title }}</p>
-                                        <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                                            @if ($task->due_date)
-                                                <span>Due {{ $task->due_date->format('M d') }}</span>
-                                            @endif
-                                            @if ($task->category)
-                                                <span>•</span>
-                                                <span class="font-semibold text-slate-600 dark:text-slate-300">{{ $task->category }}</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    <button type="button" data-edit-task-id="{{ $task->id }}"
-                                        class="rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-800">
-                                        <x-icon name="edit" class="h-4 w-4" />
-                                    </button>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+            <section class="dashboard-surface schedule-panel">
+                <div class="panel-heading"><h2>Upcoming Schedule</h2><a class="panel-link" href="{{ route('calendar') }}">View Calendar <span>→</span></a></div>
+                <div class="compact-list">
+                    @forelse($upcomingTasks as $task)
+                        <a class="schedule-row" href="{{ route('tasks.edit', $task) }}"><span class="priority-dot {{ $task->priority }}"></span><strong>{{ $task->title }}</strong><time datetime="{{ $task->due_date->toDateString() }}">{{ $task->due_date->isToday() ? 'Today' : ($task->due_date->isTomorrow() ? 'Tomorrow' : $task->due_date->format('M j')) }}</time></a>
+                    @empty
+                        <p class="compact-empty">No upcoming tasks. Enjoy the breathing room.</p>
+                    @endforelse
                 </div>
-
             </section>
         </div>
     </div>

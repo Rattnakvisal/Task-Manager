@@ -36,11 +36,15 @@ test('the task edit page is available without javascript', function () {
         ->assertSee(route('tasks.update', $task), false);
 });
 
-test('the task show route leads to the edit page', function () {
+test('the task show route displays task details and an edit link', function () {
     $task = createTaskForCrudTest(['user_id' => $this->user->id]);
 
     $this->get(route('tasks.show', $task))
-        ->assertRedirect(route('tasks.edit', $task));
+        ->assertOk()
+        ->assertSee('Task Details')
+        ->assertSee($task->title)
+        ->assertSee($task->description)
+        ->assertSee(route('tasks.edit', $task), false);
 });
 
 test('a task can be updated from the edit form', function () {
@@ -165,5 +169,3 @@ test('tasks can be exported to csv and json', function () {
         ->assertHeader('Content-Type', 'application/json');
     expect($jsonResponse->streamedContent())->toContain('Task A', 'Task B');
 });
-
-

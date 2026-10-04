@@ -2,6 +2,24 @@
 
 <svg {{ $attributes->merge(['class' => $class]) }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     @switch($name)
+        @case('clock')
+            <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+            @break
+        @case('circle')
+            <circle cx="12" cy="12" r="9" />
+            @break
+        @case('more-vertical')
+            <circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" />
+            @break
+        @case('project')
+            <path d="m12 3 8 4v10l-8 4-8-4V7Z" /><path d="m4 7 8 4 8-4M12 11v10M8 5l8 4" />
+            @break
+        @case('analytics')
+            <path d="M3 3v18h18M7 16v-4M12 16V9M17 16V6M6 9l5-4 5 2 5-5" />
+            @break
+        @case('settings')
+            <path d="m9 3-1 3-3 1-2 3 2 2-1 3 3 2 1 3h4l1-3 3-1 2-3-2-2 1-3-3-2-1-3Z" /><circle cx="10" cy="11.5" r="3" />
+            @break
         @case('activity')
             <path d="M22 12h-4l-3 8-6-16-3 8H2" />
             @break
@@ -152,6 +170,33 @@
 
         @case('command')
             <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
+            @break
+
+        @case('bot')
+            <path d="M12 8V4H8" />
+            <rect width="16" height="12" x="4" y="8" rx="2" />
+            <path d="M2 14h2" />
+            <path d="M20 14h2" />
+            <path d="M15 13v2" />
+            <path d="M9 13v2" />
+            @break
+
+        @case('zap')
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            @break
+
+        @case('refresh-cw')
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M8 16H3v5" />
+            @break
+
+        @case('wand')
+            <path d="m15 4-2 4 4-2-2-2Z" />
+            <path d="m8 9-5 5 1.5 1.5 5-5L8 9Z" />
+            <path d="m18 11 1.5 1.5-2.5 2.5-1.5-1.5 2.5-2.5Z" />
+            <path d="m19 2 2 2-14 14-2-2L19 2Z" />
             @break
     @endswitch
 </svg>

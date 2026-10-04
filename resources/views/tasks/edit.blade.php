@@ -11,7 +11,7 @@
             <h1 class="mt-4 text-3xl font-bold tracking-tight text-slate-950 dark:text-white" data-i18n="edit_task">Edit Task</h1>
             <p class="mt-2 text-sm text-slate-500 dark:text-slate-400" data-i18n="edit_task_sub">Update this task's details and progress.</p>
         </div>
-        <form method="POST" action="{{ route('tasks.update', $task) }}" class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors duration-200" autocomplete="off">
+        <form method="POST" action="{{ route('tasks.update', $task) }}" data-edit-task-form class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors duration-200" autocomplete="off">
             @csrf
             @method('PUT')
             @include('tasks._form', ['task' => $task])

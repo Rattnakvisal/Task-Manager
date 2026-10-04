@@ -32,15 +32,33 @@ class TaskController extends Controller
         $completionRate = $total > 0 ? (int) round(($completed / $total) * 100) : 0;
 
         $stats = [
-            'Total Tasks' => ['value' => $total, 'label' => 'All tasks', 'icon' => 'clipboard', 'tone' => 'bg-blue-50 text-blue-600'],
-            'Pending' => ['value' => $pending, 'label' => 'Needs attention', 'icon' => 'list', 'tone' => 'bg-amber-50 text-amber-600'],
-            'In Progress' => ['value' => $inProgress, 'label' => 'Active work', 'icon' => 'layers', 'tone' => 'bg-cyan-50 text-cyan-600'],
-            'Completed' => ['value' => $completed, 'label' => 'Tasks done', 'icon' => 'check-circle', 'tone' => 'bg-emerald-50 text-emerald-600'],
+            'Total Tasks' => ['value' => $total, 'label' => 'All tasks', 'icon' => 'clipboard', 'tone' => 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'],
+            'Pending' => ['value' => $pending, 'label' => 'Needs attention', 'icon' => 'list', 'tone' => 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400'],
+            'In Progress' => ['value' => $inProgress, 'label' => 'Active work', 'icon' => 'layers', 'tone' => 'bg-cyan-50 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400'],
+            'Completed' => ['value' => $completed, 'label' => 'Tasks done', 'icon' => 'check-circle', 'tone' => 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'],
         ];
 
-        $upcomingTasks = $tasks->whereNotNull('due_date')->where('status', '!=', 'completed')->take(5);
-        $priorityTasks = $tasks->where('priority', 'high')->where('status', '!=', 'completed')->take(5);
-        $recentTasks = $request->user()->tasks()->latest()->take(5)->get();
+        $todayTasks = $tasks->filter(fn (Task $task) => $task->due_date?->isToday())->values();
+        $upcomingTasks = $tasks->filter(fn (Task $task) => $task->due_date && $task->due_date->gte(Carbon::today()) && $task->status !== 'completed')->take(3);
+        $priorityTasks = $tasks->whereIn('priority', ['high', 'medium'])->where('status', '!=', 'completed')
+            ->sortBy(fn (Task $task) => $task->priority === 'high' ? 0 : 1)->take(3);
+        $recentTasks = $request->user()->tasks()->latest('updated_at')->take(3)->get();
+        $calendarEvents = $tasks->whereNotNull('due_date')->groupBy(fn (Task $task) => $task->due_date->toDateString())
+            ->map(fn ($items) => $items->pluck('priority')->unique()->values());
+        $calendarMonth = Carbon::today()->startOfMonth();
+
+        // Compare task creation in the last seven days with the preceding seven days.
+        foreach ($stats as $label => &$stat) {
+            $status = match ($label) {
+                'Pending' => 'pending', 'In Progress' => 'in_progress', 'Completed' => 'completed', default => null,
+            };
+            $matchingTasks = $status ? $tasks->where('status', $status) : $tasks;
+            $currentWeek = $matchingTasks->filter(fn (Task $task) => $task->created_at->gte(Carbon::today()->subDays(6)))->count();
+            $previousWeek = $matchingTasks->filter(fn (Task $task) => $task->created_at->gte(Carbon::today()->subDays(13)) && $task->created_at->lt(Carbon::today()->subDays(6)))->count();
+            $stat['change'] = $previousWeek > 0 ? (int) round(($currentWeek - $previousWeek) / $previousWeek * 100) : null;
+            $stat['series'] = collect(range(6, 0))->map(fn ($days) => $matchingTasks->filter(fn (Task $task) => $task->created_at->isSameDay(Carbon::today()->subDays($days)))->count())->all();
+        }
+        unset($stat);
         $pinnedTasks = $tasks->where('is_pinned', true);
         $overdueTasks = $tasks->filter->is_overdue->take(5);
 
@@ -64,6 +82,9 @@ class TaskController extends Controller
 
         return view('tasks.dashboard', compact(
             'stats',
+            'todayTasks',
+            'calendarEvents',
+            'calendarMonth',
             'upcomingTasks',
             'priorityTasks',
             'recentTasks',
@@ -78,14 +99,13 @@ class TaskController extends Controller
 
     public function calendar(Request $request)
     {
-        $tasks = $request->user()->tasks()->whereNotNull('due_date')
-            ->orderBy('due_date')
-            ->orderByDesc('created_at')
-            ->get();
+        $allTasks = $request->user()->tasks()->get();
+        $tasks = $allTasks->whereNotNull('due_date')->sortBy('due_date');
         $groupedTasks = $tasks->groupBy(fn (Task $task) => $task->due_date->format('Y-m-d'));
-        $unscheduledTasks = $request->user()->tasks()->whereNull('due_date')->orderByDesc('created_at')->get();
+        $unscheduledTasks = $allTasks->whereNull('due_date')->sortByDesc('created_at')->values();
+        $calendarMonth = $request->filled('month') ? Carbon::parse($request->month)->startOfMonth() : Carbon::today()->startOfMonth();
 
-        return view('tasks.calendar', compact('groupedTasks', 'unscheduledTasks'));
+        return view('tasks.calendar', compact('groupedTasks', 'unscheduledTasks', 'calendarMonth', 'allTasks'));
     }
 
     public function priority(Request $request)
@@ -97,6 +117,132 @@ class TaskController extends Controller
         ];
 
         return view('tasks.priority', compact('tasksByPriority'));
+    }
+
+    public function projects(Request $request)
+    {
+        $tasks = $request->user()->tasks()->orderBy('due_date')->orderByDesc('created_at')->get();
+
+        $defaultCategories = ['Work', 'Dev', 'Design', 'Personal', 'Urgent', 'Finance', 'Study'];
+        $userCategories = $tasks->pluck('category')->filter()->unique()->values();
+        $allCategories = $userCategories->merge($defaultCategories)->unique()->values();
+
+        $projects = [];
+        foreach ($allCategories as $category) {
+            $catTasks = $tasks->where('category', $category)->values();
+            $catTotal = $catTasks->count();
+            $catCompleted = $catTasks->where('status', 'completed')->count();
+            $catInProgress = $catTasks->where('status', 'in_progress')->count();
+            $catPending = $catTasks->where('status', 'pending')->count();
+            $catOverdue = $catTasks->filter->is_overdue->count();
+            $catHighPriority = $catTasks->where('priority', 'high')->where('status', '!=', 'completed')->count();
+            $progress = $catTotal > 0 ? (int) round(($catCompleted / $catTotal) * 100) : 0;
+
+            $projects[] = [
+                'name' => $category,
+                'total' => $catTotal,
+                'completed' => $catCompleted,
+                'in_progress' => $catInProgress,
+                'pending' => $catPending,
+                'overdue' => $catOverdue,
+                'high_priority' => $catHighPriority,
+                'progress' => $progress,
+                'tasks' => $catTasks->take(3),
+            ];
+        }
+
+        $totalProjects = count($projects);
+        $totalTasks = $tasks->count();
+        $overallCompleted = $tasks->where('status', 'completed')->count();
+        $overallProgress = $totalTasks > 0 ? (int) round(($overallCompleted / $totalTasks) * 100) : 0;
+
+        return view('tasks.projects', compact(
+            'projects',
+            'totalProjects',
+            'totalTasks',
+            'overallCompleted',
+            'overallProgress'
+        ));
+    }
+
+    public function analytics(Request $request)
+    {
+        $tasks = $request->user()->tasks()->get();
+        $total = $tasks->count();
+        $completed = $tasks->where('status', 'completed')->count();
+        $inProgress = $tasks->where('status', 'in_progress')->count();
+        $pending = $tasks->where('status', 'pending')->count();
+        $overdueCount = $tasks->filter->is_overdue->count();
+        $completionRate = $total > 0 ? (int) round(($completed / $total) * 100) : 0;
+
+        $highCount = $tasks->where('priority', 'high')->count();
+        $mediumCount = $tasks->where('priority', 'medium')->count();
+        $lowCount = $tasks->where('priority', 'low')->count();
+
+        // 7-day activity chart
+        $weeklyActivity = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::today()->subDays($i);
+            $dateStr = $date->toDateString();
+            $createdCount = $tasks->filter(fn ($t) => $t->created_at && $t->created_at->toDateString() === $dateStr)->count();
+            $completedCount = $tasks->filter(fn ($t) => $t->status === 'completed' && $t->updated_at && $t->updated_at->toDateString() === $dateStr)->count();
+            $weeklyActivity[] = [
+                'day' => $date->format('D'),
+                'date' => $date->format('M d'),
+                'created' => $createdCount,
+                'completed' => $completedCount,
+            ];
+        }
+
+        // Category breakdown
+        $categories = ['Work', 'Personal', 'Dev', 'Design', 'Urgent', 'Finance', 'Study'];
+        $existingCategories = $tasks->pluck('category')->filter()->unique()->values();
+        $allCategories = $existingCategories->merge($categories)->unique()->values();
+
+        $categoryStats = [];
+        foreach ($allCategories as $cat) {
+            $catTasks = $tasks->where('category', $cat);
+            if ($catTasks->isEmpty() && !in_array($cat, ['Work', 'Personal', 'Dev', 'Design'])) {
+                continue;
+            }
+            $catTotal = $catTasks->count();
+            $catCompleted = $catTasks->where('status', 'completed')->count();
+            $catRate = $catTotal > 0 ? (int) round(($catCompleted / $catTotal) * 100) : 0;
+            $categoryStats[] = [
+                'name' => $cat,
+                'total' => $catTotal,
+                'completed' => $catCompleted,
+                'in_progress' => $catTasks->where('status', 'in_progress')->count(),
+                'pending' => $catTasks->where('status', 'pending')->count(),
+                'overdue' => $catTasks->filter->is_overdue->count(),
+                'rate' => $catRate,
+            ];
+        }
+
+        // On-time performance and productivity score
+        $onTimeTasks = $tasks->where('status', 'completed')->filter(function ($t) {
+            return !$t->due_date || ($t->updated_at && $t->updated_at->lte($t->due_date->endOfDay()));
+        })->count();
+        $onTimeRate = $completed > 0 ? (int) round(($onTimeTasks / $completed) * 100) : 100;
+        $productivityScore = $total > 0
+            ? min(100, (int) round(($completionRate * 0.6) + ($onTimeRate * 0.25) + min(15, $inProgress * 3)))
+            : 0;
+
+        return view('tasks.analytics', compact(
+            'total',
+            'completed',
+            'inProgress',
+            'pending',
+            'overdueCount',
+            'completionRate',
+            'onTimeRate',
+            'productivityScore',
+            'highCount',
+            'mediumCount',
+            'lowCount',
+            'weeklyActivity',
+            'categoryStats'
+        ));
     }
 
     public function allTasks(Request $request)
@@ -130,15 +276,55 @@ class TaskController extends Controller
         return view('tasks.all', compact('tasks', 'categories'));
     }
 
+    public function today(Request $request)
+    {
+        return $this->focusedPage($request, 'today', 'Today', 'Your tasks scheduled for today.');
+    }
+
+    public function overdue(Request $request)
+    {
+        return $this->focusedPage($request, 'overdue', 'Overdue', 'Catch up on unfinished tasks whose due dates have passed.');
+    }
+
     public function completed(Request $request)
     {
-        return $this->taskPage($request, [
-            'section' => 'completed',
-            'title' => 'Completed Tasks',
-            'subtitle' => 'Review finished work and completed milestones.',
-            'eyebrow' => 'Done',
-            'status' => 'completed',
+        return $this->focusedPage($request, 'completed', 'Completed', 'Review your finished work or reopen a task.');
+    }
+
+    private function focusedPage(Request $request, string $section, string $title, string $subtitle)
+    {
+        $filters = $request->validate([
+            'q' => 'nullable|string|max:255',
+            'priority' => 'nullable|in:low,medium,high',
         ]);
+        $query = $request->user()->tasks();
+
+        match ($section) {
+            'today' => $query->whereDate('due_date', Carbon::today()),
+            'overdue' => $query->overdue(),
+            'completed' => $query->where('status', 'completed'),
+        };
+
+        $total = (clone $query)->count();
+
+        if (! empty($filters['q'])) {
+            $search = $filters['q'];
+            $query->where(function ($builder) use ($search) {
+                $builder->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+
+        if (! empty($filters['priority'])) {
+            $query->where('priority', $filters['priority']);
+        }
+
+        $query->orderByDesc('is_pinned');
+        $section === 'completed' ? $query->latest('updated_at') : $query->orderBy('due_date');
+        $tasks = $query->orderByDesc('id')->paginate(12)->withQueryString();
+
+        return view('tasks.focused', compact('tasks', 'section', 'title', 'subtitle', 'total'));
     }
 
     private function taskPage(Request $request, array $page)
@@ -161,6 +347,18 @@ class TaskController extends Controller
 
         if ($category) {
             $query->where('category', $category);
+        }
+
+        if ($request->filled('due')) {
+            if ($request->due === 'today') {
+                $query->whereDate('due_date', Carbon::today());
+            } elseif ($request->due === 'overdue') {
+                $query->overdue();
+            }
+        }
+
+        if ($request->boolean('pinned')) {
+            $query->where('is_pinned', true);
         }
 
         if ($request->filled('q')) {
@@ -267,7 +465,7 @@ class TaskController extends Controller
             return response()->json(['task' => $task]);
         }
 
-        return redirect()->route('tasks.edit', $task);
+        return view('tasks.show', compact('task'));
     }
 
     /**
@@ -335,7 +533,7 @@ class TaskController extends Controller
     {
         $this->ensureTaskOwner($request, $task);
 
-        $task->is_pinned = !$task->is_pinned;
+        $task->is_pinned = ! $task->is_pinned;
         $task->save();
 
         if ($request->wantsJson()) {
@@ -361,7 +559,7 @@ class TaskController extends Controller
 
         foreach ($subtasks as &$item) {
             if ((string) ($item['id'] ?? '') === $subtaskId) {
-                $item['completed'] = !($item['completed'] ?? false);
+                $item['completed'] = ! ($item['completed'] ?? false);
                 $found = true;
                 break;
             }
@@ -370,6 +568,12 @@ class TaskController extends Controller
         if ($found) {
             $task->subtasks = $subtasks;
             $task->save();
+        }
+
+        if (! $request->wantsJson()) {
+            abort_unless($found, 404);
+
+            return back()->with('success', 'Checklist updated.');
         }
 
         return response()->json([
@@ -391,7 +595,7 @@ class TaskController extends Controller
         if ($format === 'json') {
             return response()->streamDownload(function () use ($tasks) {
                 echo json_encode($tasks->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            }, 'tasks-' . date('Y-m-d') . '.json', [
+            }, 'tasks-'.date('Y-m-d').'.json', [
                 'Content-Type' => 'application/json',
             ]);
         }
@@ -417,7 +621,7 @@ class TaskController extends Controller
             }
 
             fclose($handle);
-        }, 'tasks-' . date('Y-m-d') . '.csv', [
+        }, 'tasks-'.date('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }

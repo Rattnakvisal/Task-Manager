@@ -126,17 +126,17 @@
             <form id="quick-add-form" class="flex flex-col gap-3 sm:flex-row sm:items-center">
                 @csrf
                 <div class="relative flex-1">
-                    <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400">
-                        <x-icon name="plus" class="h-4 w-4" />
+                    <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-600 dark:text-purple-400">
+                        <x-icon name="sparkles" class="h-4 w-4" />
                     </span>
                     <input
                         type="text"
                         name="title"
                         id="quick-add-title"
-                        placeholder="Add a new task... (Press Enter to save) / បន្ថែម Task ថ្មីរហ័ស..."
+                        placeholder="✨ Smart AI Input: Type e.g. 'Fix login auth bug by Friday priority high #Dev' / បន្ថែម Task..."
                         required
                         autocomplete="off"
-                        class="h-11 w-full rounded-xl border border-transparent bg-slate-50 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                        class="h-11 w-full rounded-xl border border-transparent bg-slate-50 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-purple-500 focus:bg-white focus:ring-2 focus:ring-purple-100 dark:bg-slate-800 dark:text-white dark:focus:ring-purple-900/40"
                     >
                 </div>
 
@@ -186,6 +186,18 @@
                     </button>
                 </div>
             </form>
+
+            {{-- AI Natural Language Live Detection Preview --}}
+            <div id="quick-add-nlp-preview" class="hidden mt-2.5 flex flex-wrap items-center gap-2 rounded-xl border border-purple-200/70 bg-purple-50/80 px-3 py-2 text-xs text-purple-900 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-200">
+                <span class="flex items-center gap-1 font-bold text-purple-700 dark:text-purple-300">
+                    <x-icon name="sparkles" class="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                    <span data-i18n="ai_copilot_detected">AI Copilot detected:</span>
+                </span>
+                <span id="nlp-chip-title" class="font-semibold text-slate-800 dark:text-slate-200"></span>
+                <span id="nlp-chip-date" class="hidden inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300"></span>
+                <span id="nlp-chip-priority" class="hidden inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950/70 dark:text-amber-300"></span>
+                <span id="nlp-chip-category" class="hidden inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-bold text-blue-800 dark:bg-blue-950/70 dark:text-blue-300"></span>
+            </div>
         </section>
 
         {{-- =========================================================
@@ -267,6 +279,32 @@
                         @endforeach
                     </select>
                 </form>
+            </div>
+
+            {{-- Quick Workflow Presets --}}
+            <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Quick Filters:</span>
+                <a href="{{ route('tasks.index', request('due') === 'today' ? request()->except('due') : array_merge(request()->all(), ['due' => 'today'])) }}"
+                   class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition {{ request('due') === 'today' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300' }}">
+                    <span>☀️ Today</span>
+                </a>
+                <a href="{{ route('tasks.index', request('due') === 'overdue' ? request()->except('due') : array_merge(request()->all(), ['due' => 'overdue'])) }}"
+                   class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition {{ request('due') === 'overdue' ? 'bg-rose-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300' }}">
+                    <span>⚠️ Overdue</span>
+                </a>
+                <a href="{{ route('tasks.index', request()->boolean('pinned') ? request()->except('pinned') : array_merge(request()->all(), ['pinned' => '1'])) }}"
+                   class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition {{ request()->boolean('pinned') ? 'bg-amber-500 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300' }}">
+                    <span>📌 Pinned</span>
+                </a>
+                <a href="{{ route('tasks.index', request('priority') === 'high' ? request()->except('priority') : array_merge(request()->all(), ['priority' => 'high'])) }}"
+                   class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition {{ request('priority') === 'high' ? 'bg-rose-500 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300' }}">
+                    <span>🔴 High Priority</span>
+                </a>
+                @if (request()->hasAny(['due', 'pinned', 'priority', 'status', 'category', 'q']))
+                    <a href="{{ route('tasks.index') }}" class="ml-auto font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                        Clear all filters
+                    </a>
+                @endif
             </div>
         </section>
 
@@ -401,7 +439,7 @@
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
                                     <p class="truncate text-sm font-bold text-slate-900 dark:text-white {{ $task->status === 'completed' ? 'task-completed-text' : '' }}" id="task-title-{{ $task->id }}">
-                                        {{ $task->title }}
+                                        <a href="{{ route('tasks.show', $task) }}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ $task->title }}</a>
                                     </p>
                                 </div>
                                 @if ($task->subtasks_count > 0)

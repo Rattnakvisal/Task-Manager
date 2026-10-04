@@ -281,6 +281,14 @@
     </div>
 
 
+    <div>
+        <label for="end_date" class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">End Date <span class="font-normal text-slate-400">(optional)</span></label>
+        <input id="end_date" type="date" name="end_date" value="{{ old('end_date', $task?->end_date?->format('Y-m-d')) }}" class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+        @error('end_date')
+            <p class="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">{{ $message }}</p>
+        @enderror
+    </div>
+
     {{-- =========================================================
         SMALL INFO CARD
     ========================================================== --}}

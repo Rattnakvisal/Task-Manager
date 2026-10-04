@@ -16,6 +16,15 @@
             <svg data-theme-moon viewBox="0 0 24 24" class="hidden h-4.5 w-4.5 text-blue-400 transition" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
         </button>
     </div>
+    @if (session('success'))
+        <div id="flash-session-success" data-message="{{ session('success') }}" class="hidden"></div>
+    @endif
+    @if (session('error'))
+        <div id="flash-session-error" data-message="{{ session('error') }}" class="hidden"></div>
+    @endif
+    @if ($errors->any())
+        <div id="flash-session-errors" data-errors="{{ json_encode($errors->all()) }}" class="hidden"></div>
+    @endif
     <main class="auth-switcher {{ $mode === 'register' ? 'show-register' : '' }}" data-auth-switcher
         data-login-url="{{ route('login', [], false) }}" data-register-url="{{ route('register', [], false) }}">
         <section class="auth-form-pane auth-register-pane" aria-labelledby="register-heading">

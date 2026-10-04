@@ -76,7 +76,7 @@
         class="text-sm font-bold text-slate-950 transition dark:text-white {{ $task->status === 'completed' ? 'task-completed-text' : '' }}"
         id="card-title-{{ $task->id }}"
     >
-        {{ $task->title }}
+        <a href="{{ route('tasks.show', $task) }}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ $task->title }}</a>
     </h4>
 
     {{-- Description --}}
@@ -86,23 +86,39 @@
         </p>
     @endif
 
-    {{-- Subtasks / Checklist preview --}}
+    {{-- 1-Click AI Breakdown Trigger when no subtasks --}}
+    @if ($task->subtasks_count === 0 && $task->status !== 'completed')
+        <div class="mt-2.5" id="ai-breakdown-slot-{{ $task->id }}">
+            <button
+                type="button"
+                data-ai-card-breakdown="{{ $task->id }}"
+                class="ai-card-btn inline-flex items-center gap-1.5 rounded-lg border border-purple-200/80 bg-purple-50/70 px-2.5 py-1 text-[11px] font-semibold text-purple-700 transition hover:bg-purple-100 hover:border-purple-300 hover:shadow-xs dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:bg-purple-900/60"
+                title="Generate smart subtasks with AI"
+            >
+                <x-icon name="sparkles" class="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                <span class="ai-btn-text">✨ AI Breakdown</span>
+            </button>
+        </div>
+    @endif
+
+    {{-- Subtasks / Checklist container slot (for dynamic live insertion) --}}
+    <div id="card-subtasks-container-{{ $task->id }}">
     @if ($task->subtasks_count > 0)
         <div class="mt-3 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 dark:border-slate-800 dark:bg-slate-800/40">
             <div class="flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300">
                 <span class="flex items-center gap-1.5">
                     <x-icon name="check-circle" class="h-3 w-3 text-emerald-500" />
-                    <span>Checklist ({{ $task->completed_subtasks_count }}/{{ $task->subtasks_count }})</span>
+                    <span>Checklist (<span id="card-completed-count-{{ $task->id }}">{{ $task->completed_subtasks_count }}</span>/<span id="card-total-count-{{ $task->id }}">{{ $task->subtasks_count }}</span>)</span>
                 </span>
-                <span class="text-slate-400">{{ $task->subtasks_progress }}%</span>
+                <span class="text-slate-400" id="card-progress-text-{{ $task->id }}">{{ $task->subtasks_progress }}%</span>
             </div>
 
             <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                <div class="h-full bg-emerald-500 transition-all duration-300" style="width: {{ $task->subtasks_progress }}%"></div>
+                <div id="card-progress-bar-{{ $task->id }}" class="h-full bg-emerald-500 transition-all duration-300" style="width: {{ $task->subtasks_progress }}%"></div>
             </div>
 
             {{-- Subtasks items list --}}
-            <div class="mt-2 space-y-1.5">
+            <div class="mt-2 space-y-1.5" id="card-subtasks-list-{{ $task->id }}">
                 @foreach ($task->subtasks as $st)
                     <label class="flex items-center gap-2 cursor-pointer text-[11px] text-slate-600 dark:text-slate-400">
                         <input
@@ -120,6 +136,7 @@
             </div>
         </div>
     @endif
+    </div>
 
     {{-- Card Footer: Date & Actions --}}
     <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-400 dark:border-slate-800">
@@ -136,6 +153,15 @@
         </div>
 
         <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100">
+            <button
+                type="button"
+                data-ai-card-breakdown="{{ $task->id }}"
+                class="rounded-lg p-1.5 text-purple-600 transition hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-950/50"
+                title="✨ AI Magic Breakdown"
+            >
+                <x-icon name="sparkles" class="h-3.5 w-3.5" />
+            </button>
+
             <button
                 type="button"
                 data-edit-task-id="{{ $task->id }}"

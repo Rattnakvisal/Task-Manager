@@ -1,73 +1,66 @@
 @extends('layouts.app')
 
+@section('title', 'Priority Matrix - Task Manager')
+
 @section('content')
     @php
         $columns = [
             'high' => [
                 'title' => 'High Priority',
-                'description' => 'Urgent tasks that need attention first.',
-                'iconTone' => 'bg-rose-50 text-rose-600 ring-rose-600/10 dark:bg-rose-950/40 dark:text-rose-400',
-                'badgeTone' => 'bg-rose-50 text-rose-700 ring-rose-600/10 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-800',
-                'dot' => 'bg-rose-500',
+                'description' => 'Critical & urgent items needing attention first.',
+                'tone' => 'rose',
+                'badge' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 ring-rose-500/20',
+                'header_bg' => 'from-rose-50/80 to-rose-100/40 dark:from-rose-950/40 dark:to-rose-900/20',
+                'border' => 'border-rose-200/80 dark:border-rose-900/60',
                 'bar' => 'bg-rose-500',
+                'dot' => 'bg-rose-500',
             ],
-
             'medium' => [
                 'title' => 'Medium Priority',
-                'description' => 'Important work to complete soon.',
-                'iconTone' => 'bg-amber-50 text-amber-600 ring-amber-600/10 dark:bg-amber-950/40 dark:text-amber-400',
-                'badgeTone' => 'bg-amber-50 text-amber-700 ring-amber-600/10 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-800',
-                'dot' => 'bg-amber-500',
+                'description' => 'Important milestones and scheduled deliverables.',
+                'tone' => 'amber',
+                'badge' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 ring-amber-500/20',
+                'header_bg' => 'from-amber-50/80 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20',
+                'border' => 'border-amber-200/80 dark:border-amber-900/60',
                 'bar' => 'bg-amber-500',
+                'dot' => 'bg-amber-500',
             ],
-
             'low' => [
                 'title' => 'Low Priority',
-                'description' => 'Routine work with flexible deadlines.',
-                'iconTone' => 'bg-emerald-50 text-emerald-600 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-400',
-                'badgeTone' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/10 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-800',
-                'dot' => 'bg-emerald-500',
+                'description' => 'Routine tasks and flexible improvements.',
+                'tone' => 'emerald',
+                'badge' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 ring-emerald-500/20',
+                'header_bg' => 'from-emerald-50/80 to-emerald-100/40 dark:from-emerald-950/40 dark:to-emerald-900/20',
+                'border' => 'border-emerald-200/80 dark:border-emerald-900/60',
                 'bar' => 'bg-emerald-500',
+                'dot' => 'bg-emerald-500',
             ],
-        ];
-
-        $statusColors = [
-            'pending' => 'bg-slate-100 text-slate-600 ring-slate-500/10 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
-            'in_progress' => 'bg-blue-50 text-blue-700 ring-blue-600/10 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-800',
-            'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/10 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-800',
-        ];
-
-        $statusDots = [
-            'pending' => 'bg-slate-400',
-            'in_progress' => 'bg-blue-500',
-            'completed' => 'bg-emerald-500',
         ];
 
         $highCount = $tasksByPriority['high']->count();
         $mediumCount = $tasksByPriority['medium']->count();
         $lowCount = $tasksByPriority['low']->count();
-
         $totalPriorityTasks = $highCount + $mediumCount + $lowCount;
     @endphp
 
-
-    <div class="mx-auto max-w-[1500px]">
+    <div class="mx-auto max-w-[1500px] space-y-6">
 
         {{-- =========================================================
             HERO HEADER
         ========================================================== --}}
-        <section class="relative mb-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-
-            {{-- Decorative background --}}
+        <section class="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors duration-200">
             <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-rose-100/50 blur-3xl dark:bg-rose-900/20"></div>
-            <div class="pointer-events-none absolute right-48 top-10 h-36 w-36 rounded-full bg-blue-100/50 blur-3xl dark:bg-blue-900/20"></div>
+            <div class="pointer-events-none absolute right-48 top-10 h-36 w-36 rounded-full bg-amber-100/50 blur-3xl dark:bg-amber-900/20"></div>
 
             <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <div class="mb-3 flex items-center gap-2">
-                        <span class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-400">
-                            <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-                            Priority
+                        <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 dark:bg-rose-950/70 dark:text-rose-400">
+                            <span class="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                            <span data-i18n="priority">Priority Matrix</span>
+                        </span>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {{ $totalPriorityTasks }} Total Tasks
                         </span>
                     </div>
 
@@ -75,246 +68,197 @@
                         Priority Board
                     </h1>
 
-                    <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400" data-i18n="critical_work">
-                        Organize your workload by importance and focus on the tasks that matter most.
+                    <p class="mt-2 max-w-xl text-sm leading-6 text-slate-500 sm:text-base dark:text-slate-400" data-i18n="critical_work">
+                        Focus your energy where it creates the greatest impact with visual priority tiers.
                     </p>
                 </div>
 
-                <div class="flex flex-wrap gap-3">
-                    <a href="{{ route('all-tasks') }}"
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ route('tasks.index') }}"
                         class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                        <x-icon name="list" class="h-4 w-4" />
-                        <span data-i18n="all_tasks">All Tasks</span>
+                        <x-icon name="kanban" class="h-4 w-4" />
+                        <span data-i18n="my_tasks">Kanban Board</span>
                     </a>
 
-                    <a href="{{ route('tasks.index') }}#new-task" data-open-task-modal
+                    <button type="button" data-open-task-modal
                         class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-950/10 transition duration-200 hover:-translate-y-0.5 hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500">
                         <x-icon name="plus" class="h-4 w-4" />
                         <span data-i18n="new_task">Add Task</span>
-                    </a>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Priority Summary Strip --}}
+            <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="flex items-center gap-3 rounded-2xl bg-rose-50/60 p-4 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-500 text-white shadow-sm shadow-rose-500/20">
+                        <x-icon name="flag" class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <span class="text-xs font-bold text-rose-800 dark:text-rose-300">High Priority</span>
+                        <p class="text-2xl font-extrabold text-rose-950 dark:text-white">{{ $highCount }} <span class="text-xs font-medium text-slate-400">({{ $totalPriorityTasks > 0 ? (int)round($highCount/$totalPriorityTasks*100) : 0 }}%)</span></p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 rounded-2xl bg-amber-50/60 p-4 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
+                        <x-icon name="flag" class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <span class="text-xs font-bold text-amber-800 dark:text-amber-300">Medium Priority</span>
+                        <p class="text-2xl font-extrabold text-amber-950 dark:text-white">{{ $mediumCount }} <span class="text-xs font-medium text-slate-400">({{ $totalPriorityTasks > 0 ? (int)round($mediumCount/$totalPriorityTasks*100) : 0 }}%)</span></p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 rounded-2xl bg-emerald-50/60 p-4 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm shadow-emerald-500/20">
+                        <x-icon name="flag" class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300">Low Priority</span>
+                        <p class="text-2xl font-extrabold text-emerald-950 dark:text-white">{{ $lowCount }} <span class="text-xs font-medium text-slate-400">({{ $totalPriorityTasks > 0 ? (int)round($lowCount/$totalPriorityTasks*100) : 0 }}%)</span></p>
+                    </div>
                 </div>
             </div>
         </section>
 
         {{-- =========================================================
-            SUMMARY
+            PRIORITY MATRIX COLUMNS (3 COLUMNS)
         ========================================================== --}}
-        <section class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {{-- Total --}}
-            <div class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                            Total Tasks
-                        </p>
-                        <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
-                            {{ $totalPriorityTasks }}
-                        </p>
-                        <p class="mt-1.5 text-xs font-medium text-slate-400">
-                            Across all priorities
-                        </p>
-                    </div>
-                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
-                        <x-icon name="clipboard" class="h-5 w-5" />
-                    </span>
-                </div>
-            </div>
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            @foreach ($columns as $key => $column)
+                @php
+                    $tasks = $tasksByPriority[$key];
+                    $completedInTier = $tasks->where('status', 'completed')->count();
+                    $tierProgress = $tasks->count() > 0 ? (int) round(($completedInTier / $tasks->count()) * 100) : 0;
+                @endphp
 
-            {{-- High --}}
-            <div class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                            High Priority
-                        </p>
-                        <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
-                            {{ $highCount }}
-                        </p>
-                        <p class="mt-1.5 text-xs font-medium text-slate-400">
-                            Needs attention
-                        </p>
-                    </div>
-                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
-                        <x-icon name="flag" class="h-5 w-5" />
-                    </span>
-                </div>
-            </div>
+                <div class="flex flex-col rounded-3xl border {{ $column['border'] }} bg-white shadow-sm dark:bg-slate-900 transition-colors duration-200 overflow-hidden">
 
-            {{-- Medium --}}
-            <div class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                            Medium Priority
-                        </p>
-                        <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
-                            {{ $mediumCount }}
-                        </p>
-                        <p class="mt-1.5 text-xs font-medium text-slate-400">
-                            Plan to complete
-                        </p>
-                    </div>
-                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
-                        <x-icon name="flag" class="h-5 w-5" />
-                    </span>
-                </div>
-            </div>
-
-            {{-- Low --}}
-            <div class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                            Low Priority
-                        </p>
-                        <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
-                            {{ $lowCount }}
-                        </p>
-                        <p class="mt-1.5 text-xs font-medium text-slate-400">
-                            Flexible tasks
-                        </p>
-                    </div>
-                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                        <x-icon name="flag" class="h-5 w-5" />
-                    </span>
-                </div>
-            </div>
-        </section>
-
-        {{-- =========================================================
-            PRIORITY BOARD
-        ========================================================== --}}
-        <section class="grid items-start gap-5 xl:grid-cols-3">
-            @foreach ($columns as $priority => $column)
-                <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    {{-- COLUMN HEADER --}}
-                    <div class="relative border-b border-slate-100 px-5 py-5 dark:border-slate-800">
-                        <div class="absolute inset-x-0 top-0 h-1 {{ $column['bar'] }}"></div>
-
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset {{ $column['iconTone'] }}">
-                                    <x-icon name="flag" class="h-5 w-5" />
-                                </span>
-
-                                <div>
-                                    <h2 class="font-bold text-slate-950 dark:text-white">
-                                        {{ $column['title'] }}
-                                    </h2>
-                                    <p class="mt-1 max-w-[220px] text-xs leading-5 text-slate-500 dark:text-slate-400">
-                                        {{ $column['description'] }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {{-- Count --}}
-                            <span class="inline-flex min-w-8 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-bold ring-1 ring-inset {{ $column['badgeTone'] }}">
-                                {{ $tasksByPriority[$priority]->count() }}
+                    {{-- Column Header --}}
+                    <div class="bg-gradient-to-r {{ $column['header_bg'] }} p-5 border-b border-slate-100 dark:border-slate-800/80">
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold ring-1 {{ $column['badge'] }}">
+                                <x-icon name="flag" class="h-3.5 w-3.5" />
+                                {{ $column['title'] }}
                             </span>
+                            <span class="text-xs font-extrabold text-slate-900 dark:text-white">
+                                {{ $tasks->count() }} {{ Str::plural('task', $tasks->count()) }}
+                            </span>
+                        </div>
+
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                            {{ $column['description'] }}
+                        </p>
+
+                        {{-- Progress bar --}}
+                        <div class="mt-3.5 flex items-center justify-between text-[11px] text-slate-400">
+                            <span>Completed</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200">{{ $completedInTier }}/{{ $tasks->count() }} ({{ $tierProgress }}%)</span>
+                        </div>
+                        <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/70 dark:bg-slate-800">
+                            <div class="h-full rounded-full {{ $column['bar'] }} transition-all duration-500" style="width: {{ $tierProgress }}%"></div>
                         </div>
                     </div>
 
-                    {{-- TASK LIST --}}
-                    <div class="space-y-3 bg-slate-50/40 p-4 dark:bg-slate-950/40">
-                        @forelse ($tasksByPriority[$priority] as $task)
-                            <article class="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
-                                {{-- Left priority line --}}
-                                <span class="absolute bottom-0 left-0 top-0 w-1 {{ $column['bar'] }}"></span>
+                    {{-- Column Cards --}}
+                    <div class="flex-1 p-4 space-y-3.5 max-h-[750px] overflow-y-auto">
+                        @forelse ($tasks as $task)
+                            @php
+                                $isCompleted = $task->status === 'completed';
+                                $subtasksTotal = is_array($task->subtasks) ? count($task->subtasks) : 0;
+                                $subtasksDone = is_array($task->subtasks) ? collect($task->subtasks)->where('completed', true)->count() : 0;
+                            @endphp
 
+                            <div class="group relative rounded-2xl border border-slate-200/80 bg-white p-4.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-850 dark:hover:border-slate-700">
+                                {{-- Card Top --}}
                                 <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0 flex-1">
-                                        <h3 class="line-clamp-1 text-sm font-bold text-slate-950 dark:text-white">
-                                            {{ $task->title }}
-                                        </h3>
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        <form method="POST" action="{{ route('tasks.toggle-status', $task) }}" class="mt-0.5">
+                                            @csrf @method('PATCH')
+                                            <button type="submit"
+                                                class="flex h-5.5 w-5.5 items-center justify-center rounded-lg border transition {{ $isCompleted ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-700 text-transparent hover:text-slate-400 hover:border-slate-400' }}">
+                                                <x-icon name="check" class="h-3 w-3" />
+                                            </button>
+                                        </form>
 
-                                        @if ($task->description)
-                                            <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                                {{ $task->description }}
-                                            </p>
-                                        @else
-                                            <p class="mt-2 text-xs italic text-slate-400 dark:text-slate-500">
-                                                No description
-                                            </p>
-                                        @endif
+                                        <div class="min-w-0">
+                                            <a href="{{ route('tasks.show', $task) }}"
+                                               class="text-sm font-bold text-slate-900 dark:text-white hover:text-blue-600 transition block truncate {{ $isCompleted ? 'line-through text-slate-400 dark:text-slate-500' : '' }}">
+                                                {{ $task->title }}
+                                            </a>
+
+                                            @if ($task->category)
+                                                <span class="mt-1 inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-750 dark:text-slate-300">
+                                                    {{ $task->category }}
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
 
-                                    {{-- Edit --}}
-                                    <a href="{{ route('tasks.edit', $task) }}"
-                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 opacity-100 transition hover:bg-blue-50 hover:text-blue-600 lg:opacity-0 lg:group-hover:opacity-100 dark:hover:bg-slate-800 dark:hover:text-blue-400"
-                                        aria-label="Edit {{ $task->title }}" title="Edit task">
-                                        <x-icon name="edit" class="h-3.5 w-3.5" />
-                                    </a>
+                                    @if ($task->is_pinned)
+                                        <x-icon name="pin" class="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                    @endif
                                 </div>
 
-                                {{-- BADGES --}}
-                                <div class="mt-4 flex flex-wrap items-center gap-2">
-                                    <span class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-bold ring-1 ring-inset {{ $column['badgeTone'] }}">
-                                        <span class="h-1.5 w-1.5 rounded-full {{ $column['dot'] }}"></span>
-                                        {{ ucfirst($priority) }}
-                                    </span>
+                                @if ($task->description)
+                                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                                        {{ $task->description }}
+                                    </p>
+                                @endif
 
-                                    <span class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-bold ring-1 ring-inset {{ $statusColors[$task->status] }}">
-                                        <span class="h-1.5 w-1.5 rounded-full {{ $statusDots[$task->status] }}"></span>
-                                        {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                    </span>
-                                </div>
+                                {{-- Subtasks progress indicator --}}
+                                @if ($subtasksTotal > 0)
+                                    <div class="mt-3 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/60">
+                                        <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                            <span>Subtasks</span>
+                                            <span>{{ $subtasksDone }}/{{ $subtasksTotal }}</span>
+                                        </div>
+                                        <div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                                            <div class="h-full bg-blue-500 rounded-full" style="width: {{ (int)($subtasksDone/$subtasksTotal*100) }}%"></div>
+                                        </div>
+                                    </div>
+                                @endif
 
-                                {{-- FOOTER --}}
-                                <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-                                    <span class="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-400">
-                                        <x-icon name="calendar" class="h-3.5 w-3.5 shrink-0" />
+                                {{-- Card Footer --}}
+                                <div class="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                                    <div class="flex items-center gap-1.5">
                                         @if ($task->due_date)
-                                            <span class="truncate">
-                                                {{ $task->due_date->format('M d, Y') }}
-                                                @if ($task->end_date)
-                                                    - {{ $task->end_date->format('M d, Y') }}
-                                                @endif
+                                            <span class="flex items-center gap-1 {{ $task->is_overdue ? 'text-rose-500 font-bold' : '' }}">
+                                                <x-icon name="clock" class="h-3.5 w-3.5" />
+                                                {{ $task->due_date->format('M d') }}
                                             </span>
                                         @else
                                             <span>No due date</span>
                                         @endif
-                                    </span>
+                                    </div>
 
-                                    @if ($task->status === 'completed')
-                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                            <x-icon name="check-circle" class="h-3.5 w-3.5" />
-                                            Done
-                                        </span>
-                                    @endif
+                                    <div class="flex items-center gap-1">
+                                        <a href="{{ route('tasks.edit', $task) }}" class="rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
+                                            <x-icon name="edit" class="h-3.5 w-3.5" />
+                                        </a>
+                                    </div>
                                 </div>
-                            </article>
+                            </div>
                         @empty
-                            <div class="flex min-h-[220px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white/60 p-6 text-center dark:border-slate-800 dark:bg-slate-900/60">
-                                <span class="flex h-11 w-11 items-center justify-center rounded-xl {{ $column['iconTone'] }}">
-                                    <x-icon name="flag" class="h-5 w-5" />
-                                </span>
-                                <p class="mt-3 text-sm font-bold text-slate-800 dark:text-slate-200">
-                                    No {{ $priority }} priority tasks
-                                </p>
-                                <p class="mt-1 max-w-[210px] text-xs leading-5 text-slate-400">
-                                    Tasks marked as {{ $priority }} priority will appear in this column.
-                                </p>
-                                <a href="{{ route('tasks.index') }}#new-task" data-open-task-modal
-                                    class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 transition hover:text-blue-800 dark:text-blue-400">
-                                    <x-icon name="plus" class="h-3.5 w-3.5" />
-                                    Add Task
-                                </a>
+                            <div class="py-12 text-center text-xs text-slate-400">
+                                No {{ $key }} priority tasks.
                             </div>
                         @endforelse
                     </div>
 
-                    {{-- COLUMN FOOTER --}}
-                    @if ($tasksByPriority[$priority]->isNotEmpty())
-                        <div class="border-t border-slate-100 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-                            <a href="{{ route('tasks.index', ['priority' => $priority]) }}"
-                                class="flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400">
-                                View {{ ucfirst($priority) }} Tasks
-                                <span aria-hidden="true">→</span>
-                            </a>
-                        </div>
-                    @endif
+                    {{-- Add task to this tier --}}
+                    <div class="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-center">
+                        <button type="button" data-open-task-modal
+                                class="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 py-2.5 text-xs font-bold text-slate-600 transition hover:border-slate-400 hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                            <x-icon name="plus" class="h-3.5 w-3.5" />
+                            <span>Add {{ ucfirst($key) }} Priority Task</span>
+                        </button>
+                    </div>
+
                 </div>
             @endforeach
-        </section>
+        </div>
+
     </div>
 @endsection
