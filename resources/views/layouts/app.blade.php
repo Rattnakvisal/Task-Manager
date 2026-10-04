@@ -785,7 +785,7 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-3">
                         <div>
                             <label for="create_status" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                 <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
@@ -818,6 +818,24 @@
                                 id="create_due_date"
                                 type="date"
                                 name="due_date"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
+                        </div>
+
+                        <div>
+                            <div class="mb-2 flex items-center justify-between">
+                                <label for="create_end_date" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+                                        <x-icon name="calendar" class="h-3.5 w-3.5" />
+                                    </span>
+                                    <span data-i18n="end_date">End Date</span>
+                                </label>
+                                <span class="text-[11px] font-medium text-slate-400" data-i18n="optional">Optional</span>
+                            </div>
+                            <input
+                                id="create_end_date"
+                                type="date"
+                                name="end_date"
                                 class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
                             >
                         </div>
@@ -887,7 +905,7 @@
                     </button>
                     <button
                         type="submit"
-                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-md shadow-blue-950/10 transition hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500"
+                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-500"
                     >
                         <x-icon name="plus" class="h-4 w-4" />
                         <span data-i18n="create_task">Create Task</span>
@@ -1032,7 +1050,7 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-3">
                         <div>
                             <label for="edit_status" class="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                 <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
@@ -1065,6 +1083,24 @@
                                 id="edit_due_date"
                                 type="date"
                                 name="due_date"
+                                class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
+                            >
+                        </div>
+
+                        <div>
+                            <div class="mb-2 flex items-center justify-between">
+                                <label for="edit_end_date" class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+                                        <x-icon name="calendar" class="h-3.5 w-3.5" />
+                                    </span>
+                                    <span data-i18n="end_date">End Date</span>
+                                </label>
+                                <span class="text-[11px] font-medium text-slate-400" data-i18n="optional">Optional</span>
+                            </div>
+                            <input
+                                id="edit_end_date"
+                                type="date"
+                                name="end_date"
                                 class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition-all duration-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
                             >
                         </div>
@@ -1134,7 +1170,7 @@
                     </button>
                     <button
                         type="submit"
-                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 text-sm font-semibold text-white shadow-md shadow-blue-950/10 transition hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-500"
+                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-500"
                     >
                         <x-icon name="check" class="h-4 w-4" />
                         <span data-i18n="save_changes">Save Changes</span>

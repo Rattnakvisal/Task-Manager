@@ -234,7 +234,7 @@
                                     </div>
 
                                     <div class="flex items-center gap-1">
-                                        <a href="{{ route('tasks.edit', $task) }}" class="rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
+                                        <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">
                                             <x-icon name="edit" class="h-3.5 w-3.5" />
                                         </a>
                                     </div>

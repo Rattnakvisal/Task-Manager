@@ -12,7 +12,7 @@
                     <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Task Details</p>
                     <h1 class="mt-3 break-words text-3xl font-bold text-slate-950 dark:text-white">{{ $task->title }}</h1>
                 </div>
-                <a href="{{ route('tasks.edit', $task) }}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"><x-icon name="edit" class="h-4 w-4" /> Edit Task</a>
+                <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"><x-icon name="edit" class="h-4 w-4" /> Edit Task</a>
             </div>
 
             <dl class="mt-6 grid gap-5 rounded-xl bg-slate-50 p-5 text-sm sm:grid-cols-3 dark:bg-slate-800/60">

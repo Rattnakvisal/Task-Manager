@@ -299,6 +299,7 @@
                                         {{-- Actions --}}
                                         <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                                             <a href="{{ route('tasks.edit', $task) }}"
+                                               data-edit-task-id="{{ $task->id }}"
                                                class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
                                                title="Edit Task">
                                                 <x-icon name="edit" class="h-4 w-4" />
@@ -348,7 +349,7 @@
                                 </div>
                                 <div class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
                                     <span>{{ $task->category ?: 'General' }}</span>
-                                    <a href="{{ route('tasks.edit', $task) }}" class="font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                                    <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="font-bold text-blue-600 dark:text-blue-400 hover:underline">
                                         Set Date →
                                     </a>
                                 </div>

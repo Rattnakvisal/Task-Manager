@@ -98,7 +98,7 @@
                             <span class="priority-dot {{ $task->priority }}"></span>
                             <a class="task-row-copy" href="{{ route('tasks.show', $task) }}"><strong>{{ $task->title }}</strong><span><x-icon name="clipboard" /> {{ $task->category ?: 'General' }}</span></a>
                             <span class="task-due"><x-icon name="calendar" /> Today</span>
-                            <a href="{{ route('tasks.edit', $task) }}" class="task-more" aria-label="Edit {{ $task->title }}"><x-icon name="more-vertical" /></a>
+                            <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="task-more" aria-label="Edit {{ $task->title }}"><x-icon name="more-vertical" /></a>
                         </div>
                     @empty
                         <div class="dashboard-empty"><span class="empty-icon"><x-icon name="check-circle" /></span><h3>A little room to focus</h3><p>You have no tasks scheduled for today.</p><a href="{{ route('tasks.create') }}" data-open-task-modal class="panel-link">Create a task <span>→</span></a></div>
@@ -127,7 +127,7 @@
                             <x-icon name="flag" class="priority-flag {{ $task->priority }}" />
                             <a class="task-row-copy" href="{{ route('tasks.show', $task) }}"><strong>{{ $task->title }}</strong><span>{{ $task->due_date?->isToday() ? 'Today' : ($task->due_date?->isTomorrow() ? 'Tomorrow' : ($task->due_date?->format('M j') ?? 'No due date')) }}</span></a>
                             <span class="priority-badge {{ $task->priority }}">{{ ucfirst($task->priority) }}</span>
-                            <a class="task-more" href="{{ route('tasks.edit', $task) }}" aria-label="Edit {{ $task->title }}"><x-icon name="more-vertical" /></a>
+                            <a class="task-more" href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" aria-label="Edit {{ $task->title }}"><x-icon name="more-vertical" /></a>
                         </div>
                     @empty
                         <p class="compact-empty">All clear. No priority tasks right now.</p>

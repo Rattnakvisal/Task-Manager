@@ -289,6 +289,15 @@
         @enderror
     </div>
 
+    {{-- Pin to Top --}}
+    <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-800/80">
+        <input type="checkbox" name="is_pinned" value="1" @checked(old('is_pinned', $task->is_pinned ?? false)) class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+        <div class="flex items-center gap-2">
+            <x-icon name="pin" class="h-4 w-4 text-amber-500" />
+            <span class="text-sm font-semibold text-slate-800 dark:text-slate-200" data-i18n="pin_to_top">Pin to top of list (📌 ខ្ទាស់នៅខាងលើបង្អស់)</span>
+        </div>
+    </label>
+
     {{-- =========================================================
         SMALL INFO CARD
     ========================================================== --}}

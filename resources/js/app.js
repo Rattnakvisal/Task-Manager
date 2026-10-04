@@ -52,6 +52,7 @@ const i18n = {
         priority_label: 'កម្រិតអាទិភាព',
         status: 'ស្ថានភាព',
         due_date: 'ថ្ងៃផុតកំណត់',
+        end_date: 'ថ្ងៃបញ្ចប់',
         optional: 'មិនទាមទារ',
         checklist: 'កិច្ចការរង (Checklist)',
         step_by_step: 'ជំហាននីមួយៗ',
@@ -171,6 +172,7 @@ const i18n = {
         priority_label: 'Priority',
         status: 'Status',
         due_date: 'Due Date',
+        end_date: 'End Date',
         optional: 'Optional',
         checklist: 'Checklist / Subtasks',
         step_by_step: 'Add steps',
@@ -1457,12 +1459,18 @@ editModal?.addEventListener('click', (e) => {
     if (e.target === editModal) closeEditModal();
 });
 
-// Auto-open modal if URL query param ?create=1 or ?open_create=1 is present
+// Auto-open modal if URL query param ?create=1 or ?open_create=1 or ?edit=ID is present
 try {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('create') || urlParams.has('open_create')) {
         const cat = urlParams.get('category');
         setTimeout(() => openTaskModal(cat), 150);
+    }
+    if (urlParams.has('edit') || urlParams.has('open_edit')) {
+        const editId = urlParams.get('edit') || urlParams.get('open_edit');
+        if (editId) {
+            setTimeout(() => openEditById(editId), 150);
+        }
     }
 } catch (_) {}
 
@@ -1478,13 +1486,19 @@ async function openEditById(taskId) {
         const task = data.task;
 
         editForm.action = `/tasks/${task.id}`;
-        editForm.querySelector('[name="title"]').value = task.title ?? '';
-        editForm.querySelector('[name="description"]').value = task.description ?? '';
-        editForm.querySelector('[name="category"]').value = task.category ?? '';
-        editForm.querySelector('[name="priority"]').value = task.priority ?? 'medium';
-        editForm.querySelector('[name="status"]').value = task.status ?? 'pending';
-        editForm.querySelector('[name="due_date"]').value = task.due_date ?? '';
-        editForm.querySelector('[name="end_date"]').value = task.end_date ?? '';
+
+        const setVal = (selector, val) => {
+            const el = editForm.querySelector(selector);
+            if (el) el.value = val ?? '';
+        };
+
+        setVal('[name="title"]', task.title);
+        setVal('[name="description"]', task.description);
+        setVal('[name="category"]', task.category);
+        setVal('[name="priority"]', task.priority ?? 'medium');
+        setVal('[name="status"]', task.status ?? 'pending');
+        setVal('[name="due_date"]', task.due_date);
+        setVal('[name="end_date"]', task.end_date);
 
         const pinCheck = editForm.querySelector('[name="is_pinned"]');
         if (pinCheck) pinCheck.checked = Boolean(task.is_pinned);
@@ -1494,15 +1508,23 @@ async function openEditById(taskId) {
 
         openEditModal();
     } catch (_err) {
+        console.error('Failed to open edit modal, falling back to page edit:', _err);
         window.location.href = `/tasks/${taskId}/edit`;
     }
 }
 
 document.addEventListener('click', (e) => {
-    const editBtn = e.target.closest('[data-edit-task-id]');
-    if (editBtn) {
-        e.preventDefault();
-        openEditById(editBtn.dataset.editTaskId);
+    const editBtn = e.target.closest('[data-edit-task-id], a[href*="/tasks/"][href$="/edit"]');
+    if (editBtn && editModal) {
+        let taskId = editBtn.dataset.editTaskId;
+        if (!taskId && editBtn.tagName === 'A' && editBtn.href) {
+            const match = editBtn.href.match(/\/tasks\/(\d+)\/edit/);
+            if (match) taskId = match[1];
+        }
+        if (taskId) {
+            e.preventDefault();
+            openEditById(taskId);
+        }
     }
 });
 

@@ -52,7 +52,7 @@
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $task->category ?: 'General' }} · {{ ucfirst(str_replace('_', ' ', $task->status)) }} · {{ ucfirst($task->priority) }} priority</p>
                         <p class="mt-1 text-xs {{ $task->is_overdue ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400' }}">{{ $task->due_date ? 'Due ' . $task->due_date->format('M j, Y') : 'No due date' }}@if($task->is_pinned) · Pinned @endif</p>
                     </div>
-                    <a href="{{ route('tasks.edit', $task) }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300"><x-icon name="edit" class="h-4 w-4" /> Edit</a>
+                    <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300"><x-icon name="edit" class="h-4 w-4" /> Edit</a>
                 </article>
             @empty
                 <div class="px-6 py-16 text-center">

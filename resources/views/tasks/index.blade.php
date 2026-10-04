@@ -490,7 +490,7 @@
 
                             {{-- Actions --}}
                             <div class="flex items-center justify-end gap-1">
-                                <a href="{{ route('tasks.edit', $task) }}" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-800" title="Edit">
+                                <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-800" title="Edit">
                                     <x-icon name="edit" class="h-4 w-4" />
                                 </a>
                                 <form method="POST" action="{{ route('tasks.destroy', $task) }}" data-confirm="Delete this task?">
