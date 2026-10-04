@@ -31,6 +31,41 @@ if (is_string($compiledViewPath) && $compiledViewPath !== '' && ! is_dir($compil
     }
 }
 
+// Fallback: If a request for an existing public asset reaches PHP, serve it directly.
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+if ($requestPath !== '' && $requestPath !== '/' && $requestPath !== '/index.php') {
+    $publicDir = realpath(__DIR__.'/../public');
+    $assetPath = realpath(__DIR__.'/../public'.$requestPath);
+
+    if ($publicDir !== false && $assetPath !== false && str_starts_with($assetPath, $publicDir) && is_file($assetPath)) {
+        $ext = strtolower(pathinfo($assetPath, PATHINFO_EXTENSION));
+        $contentTypes = [
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            'webp' => 'image/webp',
+            'ico' => 'image/x-icon',
+            'json' => 'application/json',
+            'css' => 'text/css; charset=UTF-8',
+            'js' => 'application/javascript; charset=UTF-8',
+            'woff' => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf' => 'font/ttf',
+            'txt' => 'text/plain; charset=UTF-8',
+        ];
+
+        $contentType = $contentTypes[$ext] ?? (mime_content_type($assetPath) ?: 'application/octet-stream');
+
+        header('Content-Type: '.$contentType);
+        header('Content-Length: '.(string) filesize($assetPath));
+        header('Cache-Control: public, max-age=31536000, immutable');
+        readfile($assetPath);
+        exit;
+    }
+}
+
 try {
     require __DIR__.'/../public/index.php';
 } catch (Throwable $exception) {
