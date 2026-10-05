@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Services\AiTaskCopilotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AiCopilotController extends Controller
 {
@@ -45,8 +46,13 @@ class AiCopilotController extends Controller
     {
         abort_unless($task->user_id === $request->user()->id, 404);
 
-        $lang = $request->input('lang', 'en');
-        $planType = $request->input('plan_type', 'auto');
+        $validated = $request->validate([
+            'lang' => 'nullable|string|in:en,km',
+            'plan_type' => 'nullable|string|in:auto,task,learning,project,personal',
+        ]);
+
+        $lang = $validated['lang'] ?? 'en';
+        $planType = $validated['plan_type'] ?? 'auto';
         $result = $this->aiService->breakdown(
             $task->title,
             $task->description,
@@ -55,11 +61,34 @@ class AiCopilotController extends Controller
             $planType
         );
 
-        $existingSubtasks = $task->subtasks ?? [];
+        $existingSubtasks = is_array($task->subtasks) ? $task->subtasks : [];
         $newSubtasks = $result['subtasks'] ?? [];
 
-        // Append new subtasks, keeping existing ones
-        $merged = array_merge($existingSubtasks, $newSubtasks);
+        // Keep this action idempotent: repeated AI clicks must not duplicate the same checklist.
+        $knownTitles = collect($existingSubtasks)
+            ->pluck('title')
+            ->filter(fn ($title) => is_string($title) && trim($title) !== '')
+            ->map(fn ($title) => Str::lower(preg_replace('/\s+/u', ' ', trim($title))))
+            ->flip();
+        $uniqueNewSubtasks = collect($newSubtasks)
+            ->filter(function ($subtask) use ($knownTitles) {
+                if (! is_array($subtask) || ! is_string($subtask['title'] ?? null)) {
+                    return false;
+                }
+
+                $normalizedTitle = Str::lower(preg_replace('/\s+/u', ' ', trim($subtask['title'])));
+                if ($normalizedTitle === '' || $knownTitles->has($normalizedTitle)) {
+                    return false;
+                }
+
+                $knownTitles->put($normalizedTitle, true);
+
+                return true;
+            })
+            ->values()
+            ->all();
+
+        $merged = array_merge($existingSubtasks, $uniqueNewSubtasks);
         $task->subtasks = $merged;
 
         if (empty($task->category) && ! empty($result['suggested_category'])) {
@@ -70,9 +99,12 @@ class AiCopilotController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $lang === 'km' ? 'បានបង្កើតកិច្ចការរងដោយជោគជ័យ!' : 'AI Subtasks generated successfully!',
+            'message' => empty($uniqueNewSubtasks)
+                ? ($lang === 'km' ? 'មិនមានជំហានថ្មីដែលត្រូវបន្ថែមទេ។' : 'No new checklist steps were needed.')
+                : ($lang === 'km' ? 'បានបង្កើតកិច្ចការរងដោយជោគជ័យ!' : 'AI Subtasks generated successfully!'),
             'task' => $task->fresh(),
             'subtasks' => $task->subtasks,
+            'added_subtasks_count' => count($uniqueNewSubtasks),
             'subtasks_count' => $task->subtasks_count,
             'completed_subtasks_count' => $task->completed_subtasks_count,
             'subtasks_progress' => $task->subtasks_progress,
@@ -123,7 +155,10 @@ class AiCopilotController extends Controller
      */
     public function standupBrief(Request $request): JsonResponse
     {
-        $lang = $request->input('lang', 'en');
+        $validated = $request->validate([
+            'lang' => 'nullable|string|in:en,km',
+        ]);
+        $lang = $validated['lang'] ?? 'en';
         $tasks = $request->user()->tasks()
             ->select(['id', 'user_id', 'title', 'status', 'priority', 'category', 'due_date'])
             ->get();
@@ -252,10 +287,11 @@ class AiCopilotController extends Controller
         return response()->json([
             'success' => true,
             'provider' => 'Google Gemini',
-            'model' => config('services.gemini.model', 'gemini-2.5-flash'),
-            'status' => $hasKey ? 'connected' : 'ready_heuristic',
-            'context_window' => '1,048,576 tokens',
-            'backend' => 'Laravel 12.x (PHP '.PHP_VERSION.')',
+            'model' => config('services.gemini.model', 'gemini-3.8-flash'),
+            // A configured key is not proof of network connectivity or provider health.
+            'status' => $hasKey ? 'configured' : 'fallback_only',
+            'context_window' => config('services.gemini.context_window', '1,048,576 tokens'),
+            'backend' => 'Laravel '.app()->version().' (PHP '.PHP_VERSION.')',
             'database' => strtoupper(config('database.default')),
             'capabilities' => [
                 'full_stack_breakdown',

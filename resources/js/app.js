@@ -1,4 +1,4 @@
-import lottie from 'lottie-web';
+import lottie from 'lottie-web/build/player/lottie_light';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
@@ -1921,6 +1921,31 @@ document.addEventListener('click', () => {
 // 13. AI COPILOT INTERACTIVE CONTROLLER
 // ============================================================================
 
+async function getAiResponseError(response, fallback) {
+    if (response.status === 429) {
+        return currentLang === 'km'
+            ? 'អ្នកបានផ្ញើសំណើច្រើនពេក។ សូមរង់ចាំមួយភ្លែត រួចព្យាយាមម្ដងទៀត។'
+            : 'You have sent too many AI requests. Please wait a moment and try again.';
+    }
+
+    if (response.status === 401 || response.status === 419) {
+        return currentLang === 'km'
+            ? 'Session របស់អ្នកបានផុតកំណត់។ សូម refresh ទំព័រ ហើយព្យាយាមម្ដងទៀត។'
+            : 'Your session has expired. Refresh the page and try again.';
+    }
+
+    if (response.status === 422) {
+        try {
+            const data = await response.json();
+            return Object.values(data.errors || {})[0]?.[0] || fallback;
+        } catch (_error) {
+            return fallback;
+        }
+    }
+
+    return fallback;
+}
+
 // 13.1. 1-Click AI Breakdown directly on any task card
 document.addEventListener('click', async (e) => {
     const aiCardBtn = e.target.closest('[data-ai-card-breakdown]');
@@ -1954,20 +1979,26 @@ document.addEventListener('click', async (e) => {
             body: JSON.stringify({ lang: currentLang }),
         });
 
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success && Array.isArray(data.subtasks)) {
-                playTaskChime();
-                fireConfetti();
+        if (!res.ok) {
+            throw new Error(await getAiResponseError(
+                res,
+                currentLang === 'km' ? 'មិនអាចបង្កើត checklist បានទេ។' : 'Could not generate the checklist.',
+            ));
+        }
 
-                // Hide the trigger button
-                const slot = document.getElementById(`ai-breakdown-slot-${taskId}`);
-                if (slot) slot.classList.add('hidden');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.subtasks)) {
+            playTaskChime();
+            fireConfetti();
 
-                // Render or update subtasks list container
-                const container = document.getElementById(`card-subtasks-container-${taskId}`);
-                if (container) {
-                    container.innerHTML = `
+            // Hide the trigger button
+            const slot = document.getElementById(`ai-breakdown-slot-${taskId}`);
+            if (slot) slot.classList.add('hidden');
+
+            // Render or update subtasks list container
+            const container = document.getElementById(`card-subtasks-container-${taskId}`);
+            if (container) {
+                container.innerHTML = `
                         <div class="mt-3 rounded-xl border border-purple-200/80 bg-purple-50/40 p-2.5 dark:border-purple-900/50 dark:bg-purple-950/20">
                             <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-200">
                                 <span class="flex items-center gap-1.5">
@@ -1997,11 +2028,12 @@ document.addEventListener('click', async (e) => {
                             </div>
                         </div>
                     `;
-                }
             }
         }
-    } catch (_err) {
-        // silent fail
+    } catch (error) {
+        showToast('error', error?.message || (currentLang === 'km'
+            ? 'មិនអាចបង្កើត checklist បានទេ។'
+            : 'Could not generate the checklist.'));
     } finally {
         aiCardBtn.dataset.loading = 'false';
         aiCardBtn.innerHTML = originalHtml;
@@ -2086,7 +2118,10 @@ async function handleModalAiBreakdown(isEdit = false) {
         });
 
         if (!res.ok) {
-            throw new Error('Unable to generate an AI plan.');
+            throw new Error(await getAiResponseError(
+                res,
+                currentLang === 'km' ? 'មិនអាចបង្កើតផែនការ AI បានទេ។' : 'Unable to generate an AI plan.',
+            ));
         }
 
         const data = await res.json();
@@ -2124,10 +2159,10 @@ async function handleModalAiBreakdown(isEdit = false) {
         showToast('success', currentLang === 'km'
             ? `Nova បានបង្កើតផែនការ ${uniqueSubtasks.length} ជំហាន។`
             : `Nova created a ${uniqueSubtasks.length}-step plan.`);
-    } catch (_err) {
+    } catch (error) {
         showErrorAlert(
             currentLang === 'km' ? 'មិនអាចបង្កើតផែនការបានទេ' : 'Could not generate the plan',
-            currentLang === 'km' ? 'សូមព្យាយាមម្តងទៀតក្នុងពេលបន្តិច។' : 'Please check your connection and try again.',
+            error?.message || (currentLang === 'km' ? 'សូមព្យាយាមម្តងទៀតក្នុងពេលបន្តិច។' : 'Please check your connection and try again.'),
         );
     } finally {
         if (breakdownBtn) {
@@ -2185,24 +2220,31 @@ async function handleModalAiSuggest(isEdit = false) {
             }),
         });
 
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-                if (data.title && titleInput) titleInput.value = data.title;
-                if (data.description && descInput && (!descInput.value || descInput.value.length < 10)) {
-                    descInput.value = data.description;
-                }
-                if (catInput && data.suggested_category) {
-                    catInput.value = data.suggested_category;
-                }
-                if (prioInput && data.suggested_priority) {
-                    prioInput.value = data.suggested_priority;
-                }
-                playTaskChime();
-            }
+        if (!res.ok) {
+            throw new Error(await getAiResponseError(
+                res,
+                currentLang === 'km' ? 'មិនអាចកែលម្អកិច្ចការបានទេ។' : 'Could not improve this task.',
+            ));
         }
-    } catch (_err) {
-        // silent fail
+
+        const data = await res.json();
+        if (data.success) {
+            if (data.title && titleInput) titleInput.value = data.title;
+            if (data.description && descInput && (!descInput.value || descInput.value.length < 10)) {
+                descInput.value = data.description;
+            }
+            if (catInput && data.suggested_category) {
+                catInput.value = data.suggested_category;
+            }
+            if (prioInput && data.suggested_priority) {
+                prioInput.value = data.suggested_priority;
+            }
+            playTaskChime();
+        }
+    } catch (error) {
+        showToast('error', error?.message || (currentLang === 'km'
+            ? 'មិនអាចកែលម្អកិច្ចការបានទេ។'
+            : 'Could not improve this task.'));
     } finally {
         if (suggestBtn) {
             suggestBtn.disabled = false;
@@ -2931,6 +2973,9 @@ function renderChatMessage(msg, autoScroll = true) {
         // 1. Task Created Card
         if (msg.action_type === 'task_created' && msg.action_data) {
             const d = msg.action_data;
+            const autoSubtasks = Array.isArray(d.subtasks) ? d.subtasks.slice(0, 5) : [];
+            const remainingSubtasks = Math.max(0, (d.subtasks?.length || 0) - autoSubtasks.length);
+            const taskUrl = getAiTaskUrl(d);
             actionCardHtml = `
                 <div class="mt-2.5 w-full rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/50 p-3.5 text-slate-800 shadow-xs dark:border-emerald-900/60 dark:from-slate-850 dark:to-emerald-950/40 dark:text-slate-100">
                     <div class="flex items-center justify-between pb-2 border-b border-emerald-100 dark:border-emerald-900/50">
@@ -2947,9 +2992,30 @@ function renderChatMessage(msg, autoScroll = true) {
                         <span>📁 ${escapeHtml(d.category ?? 'Work')}</span>
                         ${d.due_date ? `<span>📅 ${escapeHtml(d.due_date)}</span>` : ''}
                     </div>
+                    ${autoSubtasks.length ? `
+                        <div class="mt-2.5 rounded-xl border border-emerald-100 bg-white/75 p-2.5 dark:border-emerald-900/50 dark:bg-slate-800/70">
+                            <div class="mb-2 flex items-center justify-between gap-2">
+                                <span class="text-[9.5px] font-extrabold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">✨ Magic Breakdown</span>
+                                <span class="text-[9px] font-bold text-slate-400">${d.subtasks.length} ${currentLang === 'km' ? 'ជំហាន' : 'steps'}</span>
+                            </div>
+                            <div class="space-y-1.5">
+                                ${autoSubtasks.map((subtask, index) => {
+                                    const minutes = Math.max(5, Math.min(240, Number.parseInt(subtask.estimated_minutes, 10) || 20));
+                                    return `
+                                        <div class="flex items-start gap-2 text-[10.5px] leading-4 text-slate-700 dark:text-slate-300">
+                                            <span class="font-extrabold text-emerald-600 dark:text-emerald-400">${index + 1}.</span>
+                                            <span class="min-w-0 flex-1">${escapeHtml(subtask.title || '')}</span>
+                                            <span class="shrink-0 text-[9px] font-semibold text-slate-400">${minutes}m</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                                ${remainingSubtasks > 0 ? `<p class="pl-4 text-[9.5px] font-semibold text-slate-400">+${remainingSubtasks} ${currentLang === 'km' ? 'ជំហានទៀត' : 'more steps'}</p>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
                     <div class="mt-2.5 pt-2 border-t border-emerald-100 dark:border-emerald-900/50 flex items-center justify-end">
-                        <a href="/tasks" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 transition hover:underline">
-                            View on Kanban Board →
+                        <a href="${escapeHtml(taskUrl)}" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 transition hover:underline">
+                            ${currentLang === 'km' ? 'បើកកិច្ចការ →' : 'Open task →'}
                         </a>
                     </div>
                 </div>
@@ -3157,42 +3223,43 @@ async function sendAiChatMessage(messageText) {
             }),
         });
 
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-                renderChatMessage({
-                    role: 'assistant',
-                    message: data.message,
-                    action_type: data.action_type,
-                    action_data: data.action_data,
-                    time: data.created_at || nowTime,
-                });
-
-                if (data.action_type === 'task_created') {
-                    showAiTaskCreatedAlert(data.action_data);
-                } else if (data.action_type === 'task_completed') {
-                    playTaskChime();
-                    fireConfetti();
-                    window.dispatchEvent(new CustomEvent('workmind:task-completed', { detail: data.action_data }));
-                }
-            } else {
-                renderChatMessage({
-                    role: 'assistant',
-                    message: 'Sorry, I could not complete your request. Please try again.',
-                    time: nowTime,
-                });
-            }
-        } else {
-            renderChatMessage({
-                role: 'assistant',
-                message: 'An error occurred while connecting to Nova. Please check your connection and try again.',
-                time: nowTime,
-            });
+        if (!res.ok) {
+            throw new Error(await getAiResponseError(
+                res,
+                currentLang === 'km'
+                    ? 'Nova មិនអាចបំពេញសំណើនេះបានទេ។ សូមព្យាយាមម្ដងទៀត។'
+                    : 'Nova could not complete this request. Please try again.',
+            ));
         }
-    } catch (_err) {
+
+        const data = await res.json();
+        if (!data.success) {
+            throw new Error(currentLang === 'km'
+                ? 'Nova មិនអាចបំពេញសំណើនេះបានទេ។ សូមព្យាយាមម្ដងទៀត។'
+                : 'Nova could not complete this request. Please try again.');
+        }
+
         renderChatMessage({
             role: 'assistant',
-            message: 'Network issue encountered. Please try again in a moment.',
+            message: data.message,
+            action_type: data.action_type,
+            action_data: data.action_data,
+            time: data.created_at || nowTime,
+        });
+
+        if (data.action_type === 'task_created') {
+            showAiTaskCreatedAlert(data.action_data);
+        } else if (data.action_type === 'task_completed') {
+            playTaskChime();
+            fireConfetti();
+            window.dispatchEvent(new CustomEvent('workmind:task-completed', { detail: data.action_data }));
+        }
+    } catch (error) {
+        renderChatMessage({
+            role: 'assistant',
+            message: error?.message || (currentLang === 'km'
+                ? 'មានបញ្ហាបណ្ដាញ។ សូមព្យាយាមម្ដងទៀតក្នុងពេលបន្តិច។'
+                : 'A network issue occurred. Please try again in a moment.'),
             time: nowTime,
         });
     } finally {

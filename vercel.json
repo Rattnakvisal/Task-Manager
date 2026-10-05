@@ -29,9 +29,9 @@
         }
     ],
     "env": {
-        "APP_KEY": "base64:j9iVYCs3sOXC5AOV536lkVyKDlDLN1WqnTkQBcZC5nA=",
         "APP_ENV": "production",
         "APP_DEBUG": "false",
+        "APP_TIMEZONE": "Asia/Phnom_Penh",
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
         "APP_PACKAGES_CACHE": "/tmp/packages.php",
@@ -46,12 +46,9 @@
         "DB_PORT": "5432",
         "DB_DATABASE": "task_manager",
         "DB_USERNAME": "postgres.pdtyrvnhxalbqagzjrhb",
-        "DB_PASSWORD": "Wq_76wZtR2aPRmq",
         "DB_SSLMODE": "require",
-        "DATABASE_URL": "postgresql://postgres.pdtyrvnhxalbqagzjrhb:Wq_76wZtR2aPRmq@aws-0-ap-southeast-2.pooler.supabase.com:5432/task_manager?sslmode=require",
         "SESSION_DRIVER": "cookie",
         "SESSION_SECURE_COOKIE": "true",
         "VERCEL_RUNTIME_MIGRATE": "false"
     }
 }
-

@@ -37,7 +37,8 @@ return [
 
     'gemini' => [
         'key' => env('GEMINI_API_KEY', env('GOOGLE_API_KEY')),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
+        'context_window' => env('GEMINI_CONTEXT_WINDOW', '1,048,576 tokens'),
     ],
 
     'supabase' => [

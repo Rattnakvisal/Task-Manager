@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\AiChatMessage;
 use App\Models\AiUserPreference;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Services\AiTaskCopilotService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 
@@ -177,6 +179,48 @@ test('ai breakdown can be applied directly to an existing task', function () {
         ->and($fresh->category)->toBe('Design');
 });
 
+test('applying the same ai breakdown twice does not duplicate checklist steps', function () {
+    $task = Task::create([
+        'user_id' => $this->user->id,
+        'title' => 'Build Laravel API authentication',
+        'priority' => 'medium',
+        'status' => 'pending',
+    ]);
+
+    $first = $this->postJson(route('tasks.ai.breakdown-existing', $task), [
+        'lang' => 'en',
+        'plan_type' => 'project',
+    ])->assertOk();
+    $firstCount = $first->json('subtasks_count');
+
+    $this->postJson(route('tasks.ai.breakdown-existing', $task), [
+        'lang' => 'en',
+        'plan_type' => 'project',
+    ])->assertOk()
+        ->assertJsonPath('added_subtasks_count', 0)
+        ->assertJsonPath('subtasks_count', $firstCount);
+
+    expect($task->fresh()->subtasks_count)->toBe($firstCount);
+});
+
+test('existing task breakdown and standup validate language and plan type', function () {
+    $task = Task::create([
+        'user_id' => $this->user->id,
+        'title' => 'Validate AI inputs',
+        'status' => 'pending',
+    ]);
+
+    $this->postJson(route('tasks.ai.breakdown-existing', $task), [
+        'lang' => 'fr',
+        'plan_type' => 'unsupported',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['lang', 'plan_type']);
+
+    $this->getJson(route('tasks.ai.standup-brief', ['lang' => 'fr']))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('lang');
+});
+
 test('user cannot apply ai breakdown to another users task', function () {
     $otherUser = User::factory()->create();
     $task = Task::create([
@@ -293,6 +337,8 @@ test('ai chat can create a task directly from conversation intent', function () 
     expect($data['action_type'])->toBe('task_created')
         ->and($data['action_data'])->not->toBeNull()
         ->and($data['action_data']['title'])->toContain('Build payment webhook listener')
+        ->and($data['action_data']['subtasks_count'])->toBeGreaterThanOrEqual(4)
+        ->and($data['action_data']['subtasks'])->toHaveCount($data['action_data']['subtasks_count'])
         ->and($data['action_data']['task_url'])->toStartWith('/tasks/')
         ->and($data['action_data']['source'])->toBe('nova');
 
@@ -301,6 +347,10 @@ test('ai chat can create a task directly from conversation intent', function () 
         'priority' => 'high',
         'category' => 'Dev',
     ]);
+
+    $createdTask = Task::where('user_id', $this->user->id)->latest('id')->firstOrFail();
+    expect($createdTask->subtasks)->toHaveCount($data['action_data']['subtasks_count'])
+        ->and($createdTask->subtasks[0])->toHaveKeys(['id', 'title', 'completed', 'estimated_minutes']);
 
     expect($this->user->notifications()->count())->toBe(1)
         ->and($this->user->notifications()->first()->data['event'])->toBe('ai_task_created')
@@ -401,6 +451,9 @@ test('ai it status endpoint returns Google Gemini specs and architecture telemet
             'database',
             'capabilities',
         ]);
+
+    expect($response->json('backend'))->toStartWith('Laravel '.app()->version())
+        ->and($response->json('status'))->toBe('fallback_only');
 });
 
 test('ai copilot handles IT engineering requests and DevOps tags', function () {
@@ -588,7 +641,7 @@ test('gemini api falls back to secondary model when primary model returns an err
         '*/models/gemini-nonexistent:generateContent' => Http::response([
             'error' => ['message' => 'models/gemini-nonexistent is not found'],
         ], 404),
-        '*/models/gemini-2.5-flash:generateContent' => Http::response([
+        '*/models/gemini-3.8-flash:generateContent' => Http::response([
             'candidates' => [[
                 'content' => ['parts' => [[
                     'text' => "Here is your plan:\n```json\n".json_encode([
@@ -618,7 +671,7 @@ test('gemini api falls back to secondary model when primary model returns an err
     $response->assertOk()
         ->assertJsonPath('success', true)
         ->assertJsonPath('source', 'gemini')
-        ->assertJsonPath('model', 'gemini-2.5-flash');
+        ->assertJsonPath('model', 'gemini-3.8-flash');
 
     expect($response->json('subtasks'))->toHaveCount(4)
         ->and($response->json('subtasks.0.title'))->toBe('Step 1 from fallback model');
@@ -656,24 +709,24 @@ test('standup brief accurately calculates completion rate and total count', func
 
 test('chat messages are automatically pruned when exceeding max history threshold', function () {
     for ($i = 1; $i <= 105; $i++) {
-        \App\Models\AiChatMessage::create([
+        AiChatMessage::create([
             'user_id' => $this->user->id,
             'role' => 'user',
             'message' => "Message number {$i}",
         ]);
     }
 
-    expect(\App\Models\AiChatMessage::where('user_id', $this->user->id)->count())->toBe(105);
+    expect(AiChatMessage::where('user_id', $this->user->id)->count())->toBe(105);
 
-    $service = app(\App\Services\AiTaskCopilotService::class);
+    $service = app(AiTaskCopilotService::class);
     $pruned = $service->pruneOldChatMessages($this->user, 100);
 
     expect($pruned)->toBe(5)
-        ->and(\App\Models\AiChatMessage::where('user_id', $this->user->id)->count())->toBe(100);
+        ->and(AiChatMessage::where('user_id', $this->user->id)->count())->toBe(100);
 });
 
 test('subtask breakdown generates unique IDs across multiple calls on the same task', function () {
-    $service = app(\App\Services\AiTaskCopilotService::class);
+    $service = app(AiTaskCopilotService::class);
 
     $result1 = $service->breakdown('Build mobile navigation menu');
     $result2 = $service->breakdown('Build mobile navigation menu');
@@ -723,6 +776,38 @@ test('chat can directly mark existing task as completed', function () {
     expect($task->fresh()->status)->toBe('completed');
 });
 
+test('chat refuses to complete an ambiguous task title', function () {
+    $first = Task::create([
+        'user_id' => $this->user->id,
+        'title' => 'Review quarterly report',
+        'status' => 'pending',
+    ]);
+    $second = Task::create([
+        'user_id' => $this->user->id,
+        'title' => 'Review quarterly budget',
+        'status' => 'pending',
+    ]);
+
+    $this->postJson(route('tasks.ai.chat'), [
+        'message' => 'complete task: quarterly',
+        'lang' => 'en',
+    ])->assertOk()
+        ->assertJsonPath('action_type', 'task_disambiguation')
+        ->assertJsonCount(2, 'action_data.candidates');
+
+    expect($first->fresh()->status)->toBe('pending')
+        ->and($second->fresh()->status)->toBe('pending');
+});
+
+test('nlp parser treats negative urgency as low priority', function (string $text) {
+    $this->postJson(route('tasks.ai.parse-nlp'), ['text' => $text])
+        ->assertOk()
+        ->assertJsonPath('parsed.priority', 'low');
+})->with([
+    'english' => 'Prepare meeting notes, not urgent',
+    'khmer' => 'រៀបចំកំណត់ត្រាប្រជុំ មិនបន្ទាន់',
+]);
+
 test('ai nlp parser accurately handles Khmer keywords for dates, priority, and categories', function () {
     $response = $this->postJson(route('tasks.ai.parse-nlp'), [
         'text' => 'កែកូដប្រព័ន្ធ login ថ្ងៃស្អែក បន្ទាន់',
@@ -740,8 +825,8 @@ test('ai nlp parser accurately handles Khmer keywords for dates, priority, and c
 test('gemini tool calling preserves tags and creates task successfully', function () {
     config()->set('services.gemini.key', 'fake-gemini-key');
 
-    \Illuminate\Support\Facades\Http::fake([
-        'https://generativelanguage.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([
+    Http::fake([
+        'https://generativelanguage.googleapis.com/*' => Http::response([
             'candidates' => [[
                 'content' => [
                     'parts' => [
@@ -755,6 +840,14 @@ test('gemini tool calling preserves tags and creates task successfully', functio
                                     'due_date' => now()->addDays(2)->toDateString(),
                                     'tags' => ['ui', 'analytics', 'dashboard'],
                                     'description' => 'Detailed Figma mockups and tokens.',
+                                    'plan_type' => 'project',
+                                    'subtasks' => [
+                                        ['title' => 'Define dashboard analytics requirements', 'estimated_minutes' => 20],
+                                        ['title' => 'Create the dashboard wireframe', 'estimated_minutes' => 30],
+                                        ['title' => 'Design analytics widget states', 'estimated_minutes' => 45],
+                                        ['title' => 'Review accessibility and handoff details', 'estimated_minutes' => 20],
+                                    ],
+                                    'summary' => 'Review each widget with engineering before handoff.',
                                 ],
                             ],
                         ],
@@ -777,5 +870,55 @@ test('gemini tool calling preserves tags and creates task successfully', functio
         ->and($task->title)->toBe('Design user dashboard analytics widgets')
         ->and($task->category)->toBe('Design')
         ->and($task->priority)->toBe('high')
-        ->and($task->tags)->toEqual(['ui', 'analytics', 'dashboard']);
+        ->and($task->tags)->toEqual(['ui', 'analytics', 'dashboard'])
+        ->and($task->subtasks)->toHaveCount(4)
+        ->and($task->subtasks[0]['title'])->toBe('Define dashboard analytics requirements');
+
+    Http::assertSentCount(1);
+});
+
+test('gemini tool arguments are normalized before task creation', function () {
+    config()->set('services.gemini.key', 'fake-gemini-key');
+
+    Http::fake([
+        'https://generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [[
+                'content' => [
+                    'parts' => [[
+                        'functionCall' => [
+                            'name' => 'create_task',
+                            'args' => [
+                                'title' => '<b>Ship secure release</b>',
+                                'category' => 'dev',
+                                'priority' => 'INVALID',
+                                'due_date' => '2026-99-99',
+                                'tags' => array_merge(['Release', 'release'], array_map(fn ($i) => "tag-{$i}", range(1, 15))),
+                                'description' => '<script>alert(1)</script>Prepare the release notes.',
+                            ],
+                        ],
+                    ]],
+                ],
+            ]],
+        ]),
+    ]);
+
+    $this->postJson(route('tasks.ai.chat'), [
+        'message' => 'Please save a release task for me',
+        'lang' => 'en',
+    ])->assertOk()
+        ->assertJsonPath('action_type', 'task_created')
+        ->assertJsonPath('meta.source', 'gemini');
+
+    $task = Task::where('user_id', $this->user->id)->latest('id')->firstOrFail();
+    expect($task->title)->toBe('Ship secure release')
+        ->and($task->category)->toBe('Dev')
+        ->and($task->priority)->toBe('medium')
+        ->and($task->due_date)->toBeNull()
+        ->and($task->tags)->toHaveCount(10)
+        ->and($task->tags)->toContain('Release')
+        ->and($task->tags)->not->toContain('release')
+        ->and($task->description)->not->toContain('<script>')
+        ->and($task->subtasks)->toHaveCount(4);
+
+    Http::assertSentCount(1);
 });

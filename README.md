@@ -13,6 +13,9 @@ A responsive task management application built with Laravel, Blade, Tailwind CSS
 - Search and filtering by status or priority
 - Due dates, end dates, and task statuses
 - Responsive interface
+- Nova AI chat with task creation, automatic Magic Breakdown checklists, safe completion, daily standups, and persisted history
+- AI task enhancement and idempotent checklist breakdowns in English or Khmer
+- Personalized AI assistance with a local heuristic fallback when Gemini is unavailable
 
 ## Task pages
 
@@ -86,11 +89,18 @@ npm run build
 
 SQLite is configured by default. Laravel creates `database/database.sqlite` during setup. To use MySQL or PostgreSQL, update the `DB_*` values in `.env`, create the database, and run `php artisan migrate`.
 
+## AI configuration
+
+Set `GEMINI_API_KEY` in `.env` to enable Gemini-backed answers. `GEMINI_MODEL` defaults to `gemini-3.8-flash`; without a key, Nova continues to support task commands and planning through its local heuristic fallback.
+
+The application timezone defaults to `Asia/Phnom_Penh` so phrases such as “today” and “tomorrow” resolve consistently. Override `APP_TIMEZONE` when deploying for another locale.
+
 ## Production checklist
 
 - Set `APP_ENV=production` and `APP_DEBUG=false`.
 - Set `APP_URL` to the public application URL.
 - Use a production database and secure credentials.
+- Configure `APP_KEY`, database credentials, and `GEMINI_API_KEY` in the hosting provider's encrypted environment-variable settings. Never commit them to `vercel.json` or another tracked file.
 - Run `php artisan migrate --force` and `npm run build`.
 - Point the web server document root to the `public` directory.
 - Never upload or share the local `.env` file.
