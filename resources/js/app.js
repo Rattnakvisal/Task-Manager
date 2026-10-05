@@ -879,6 +879,7 @@ function fireConfetti() {
 
     render();
 }
+const triggerConfetti = fireConfetti;
 
 
 // ============================================================================
@@ -2553,7 +2554,7 @@ function openAiChat(promptToRun = null) {
     }
 
     setTimeout(() => {
-        if (aiProfilePanel?.classList.contains('hidden')) {
+        if (window.innerWidth >= 640 && aiProfilePanel?.classList.contains('hidden')) {
             aiChatInput?.focus();
         }
         scrollChatToBottom();
@@ -3028,6 +3029,36 @@ function renderChatMessage(msg, autoScroll = true) {
             }
         }
 
+        // 5. Task Completed Card
+        if (msg.action_type === 'task_completed' && msg.action_data) {
+            const d = msg.action_data;
+            const isKm = (currentLang === 'km');
+            actionCardHtml = `
+                <div class="mt-2.5 w-full rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/60 p-3.5 text-slate-800 shadow-xs dark:border-emerald-900/60 dark:from-slate-850 dark:to-emerald-950/40 dark:text-slate-100">
+                    <div class="flex items-center justify-between pb-2 border-b border-emerald-100 dark:border-emerald-900/50">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                            <span>✅</span> ${isKm ? 'បានបញ្ចប់កិច្ចការជោគជ័យ' : 'Task Completed'}
+                        </span>
+                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 uppercase dark:bg-emerald-900 dark:text-emerald-200">
+                            ${isKm ? 'រួចរាល់' : 'Done'}
+                        </span>
+                    </div>
+                    <p class="mt-2 font-bold text-xs text-slate-900 dark:text-white line-through opacity-85">${escapeHtml(d.title)}</p>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-3 text-[10.5px] text-slate-500 dark:text-slate-400">
+                        <span>📁 ${escapeHtml(d.category ?? 'Task')}</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">${isKm ? 'ស្ថានភាព៖ បានបញ្ចប់' : 'Status: Completed'}</span>
+                    </div>
+                    ${d.task_url ? `
+                    <div class="mt-2.5 pt-2 border-t border-emerald-100 dark:border-emerald-900/50 flex items-center justify-end">
+                        <a href="${escapeHtml(d.task_url)}" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 transition hover:underline">
+                            ${isKm ? 'មើលព័ត៌មានលម្អិត →' : 'View Task Details →'}
+                        </a>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
         msgDiv.innerHTML = `
             <div class="flex items-start gap-2.5 max-w-[94%]">
                 <div class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl overflow-hidden bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 mt-0.5 shadow-2xs p-0.5 pointer-events-none" data-lottie="niu"></div>
@@ -3139,6 +3170,10 @@ async function sendAiChatMessage(messageText) {
 
                 if (data.action_type === 'task_created') {
                     showAiTaskCreatedAlert(data.action_data);
+                } else if (data.action_type === 'task_completed') {
+                    playTaskChime();
+                    fireConfetti();
+                    window.dispatchEvent(new CustomEvent('workmind:task-completed', { detail: data.action_data }));
                 }
             } else {
                 renderChatMessage({

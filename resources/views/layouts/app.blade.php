@@ -1531,7 +1531,7 @@
     ============================================================== --}}
 
     {{-- 1. Floating Launcher Button (FAB) --}}
-    <div id="ai-chatbot-launcher" class="fixed bottom-6 right-6 z-40">
+    <div id="ai-chatbot-launcher" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
         <button
             type="button"
             id="ai-chatbot-launcher-btn"
@@ -1553,7 +1553,7 @@
     {{-- 2. Clean & Minimalist Chatbot Drawer --}}
     <div
         id="ai-chatbot-drawer"
-        class="ai-chat-drawer fixed bottom-6 right-6 z-50 hidden flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5 sm:w-[420px] w-[calc(100vw-2rem)] h-[620px] max-h-[calc(100vh-3rem)] dark:border-slate-800 dark:bg-slate-900 dark:ring-white/10 dark:shadow-slate-950/70"
+        class="ai-chat-drawer fixed inset-x-2 bottom-2 sm:inset-x-auto sm:bottom-6 sm:right-6 z-50 hidden flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5 sm:w-[420px] w-auto h-[86dvh] sm:h-[620px] max-h-[calc(100dvh-1rem)] dark:border-slate-800 dark:bg-slate-900 dark:ring-white/10 dark:shadow-slate-950/70"
         role="dialog"
         aria-labelledby="ai-chat-title"
     >
@@ -1848,7 +1848,7 @@
                         id="ai-chat-input"
                         placeholder="Ask Nova about work, learning, life, or anything else..."
                         data-i18n-placeholder="ai_ask_placeholder"
-                        class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-3.5 pr-8 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-indigo-900/30"
+                        class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-3.5 pr-8 text-[16px] sm:text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-indigo-900/30"
                         autocomplete="off"
                     >
                     <span class="pointer-events-none absolute right-3 text-slate-400">

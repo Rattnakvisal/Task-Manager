@@ -34,18 +34,20 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::patch('/tasks/{task}/subtasks/{subtaskId}/toggle', [TaskController::class, 'toggleSubtask'])->name('tasks.toggle-subtask');
     Route::get('/tasks-export/{format}', [TaskController::class, 'export'])->name('tasks.export');
 
-    // AI Task Copilot Routes
-    Route::post('/tasks/ai/breakdown', [AiCopilotController::class, 'breakdown'])->name('tasks.ai.breakdown');
-    Route::post('/tasks/{task}/ai-breakdown', [AiCopilotController::class, 'breakdownExistingTask'])->name('tasks.ai.breakdown-existing');
-    Route::post('/tasks/ai/enhance', [AiCopilotController::class, 'enhance'])->name('tasks.ai.enhance');
-    Route::post('/tasks/ai/parse-nlp', [AiCopilotController::class, 'parseNlp'])->name('tasks.ai.parse-nlp');
-    Route::get('/tasks/ai/standup-brief', [AiCopilotController::class, 'standupBrief'])->name('tasks.ai.standup-brief');
-    Route::post('/tasks/ai/chat', [AiCopilotController::class, 'chat'])->name('tasks.ai.chat');
-    Route::get('/tasks/ai/chat/history', [AiCopilotController::class, 'chatHistory'])->name('tasks.ai.chat.history');
-    Route::post('/tasks/ai/chat/clear', [AiCopilotController::class, 'clearChat'])->name('tasks.ai.chat.clear');
-    Route::get('/tasks/ai/preferences', [AiCopilotController::class, 'preferences'])->name('tasks.ai.preferences');
-    Route::put('/tasks/ai/preferences', [AiCopilotController::class, 'updatePreferences'])->name('tasks.ai.preferences.update');
-    Route::get('/tasks/ai/status', [AiCopilotController::class, 'itStatus'])->name('tasks.ai.status');
+    // AI Task Copilot Routes (Rate limited for abuse and cost protection)
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::post('/tasks/ai/breakdown', [AiCopilotController::class, 'breakdown'])->name('tasks.ai.breakdown');
+        Route::post('/tasks/{task}/ai-breakdown', [AiCopilotController::class, 'breakdownExistingTask'])->name('tasks.ai.breakdown-existing');
+        Route::post('/tasks/ai/enhance', [AiCopilotController::class, 'enhance'])->name('tasks.ai.enhance');
+        Route::post('/tasks/ai/parse-nlp', [AiCopilotController::class, 'parseNlp'])->name('tasks.ai.parse-nlp');
+        Route::get('/tasks/ai/standup-brief', [AiCopilotController::class, 'standupBrief'])->name('tasks.ai.standup-brief');
+        Route::post('/tasks/ai/chat', [AiCopilotController::class, 'chat'])->name('tasks.ai.chat');
+        Route::get('/tasks/ai/chat/history', [AiCopilotController::class, 'chatHistory'])->name('tasks.ai.chat.history');
+        Route::post('/tasks/ai/chat/clear', [AiCopilotController::class, 'clearChat'])->name('tasks.ai.chat.clear');
+        Route::get('/tasks/ai/preferences', [AiCopilotController::class, 'preferences'])->name('tasks.ai.preferences');
+        Route::put('/tasks/ai/preferences', [AiCopilotController::class, 'updatePreferences'])->name('tasks.ai.preferences.update');
+        Route::get('/tasks/ai/status', [AiCopilotController::class, 'itStatus'])->name('tasks.ai.status');
+    });
 
     Route::resource('tasks', TaskController::class);
 });

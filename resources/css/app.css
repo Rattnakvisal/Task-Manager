@@ -733,9 +733,20 @@ html.dark .auth-mobile-switch strong { color: #60a5fa; }
 /* Kanban & Drag-and-Drop styles */
 .kanban-board {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
     gap: 1.25rem;
     align-items: start;
+}
+
+@media (max-width: 640px) {
+    .kanban-board {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .kanban-col {
+        min-height: auto;
+        padding: 0.875rem;
+    }
 }
 
 .kanban-col {

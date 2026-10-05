@@ -46,11 +46,13 @@ class AiCopilotController extends Controller
         abort_unless($task->user_id === $request->user()->id, 404);
 
         $lang = $request->input('lang', 'en');
+        $planType = $request->input('plan_type', 'auto');
         $result = $this->aiService->breakdown(
             $task->title,
             $task->description,
             $task->category,
-            $lang
+            $lang,
+            $planType
         );
 
         $existingSubtasks = $task->subtasks ?? [];
@@ -122,7 +124,9 @@ class AiCopilotController extends Controller
     public function standupBrief(Request $request): JsonResponse
     {
         $lang = $request->input('lang', 'en');
-        $tasks = $request->user()->tasks()->get();
+        $tasks = $request->user()->tasks()
+            ->select(['id', 'user_id', 'title', 'status', 'priority', 'category', 'due_date'])
+            ->get();
 
         $brief = $this->aiService->generateStandupBrief($tasks, $lang);
 
@@ -248,7 +252,7 @@ class AiCopilotController extends Controller
         return response()->json([
             'success' => true,
             'provider' => 'Google Gemini',
-            'model' => config('services.gemini.model', 'gemini-3.8-flash'),
+            'model' => config('services.gemini.model', 'gemini-2.5-flash'),
             'status' => $hasKey ? 'connected' : 'ready_heuristic',
             'context_window' => '1,048,576 tokens',
             'backend' => 'Laravel 12.x (PHP '.PHP_VERSION.')',
