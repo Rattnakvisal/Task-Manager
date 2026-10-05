@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Calendar & Schedule - Task Manager')
+@section('title', 'Calendar & Schedule - WorkMind')
 
 @section('content')
     @php

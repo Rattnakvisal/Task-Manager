@@ -4,10 +4,42 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $mode === 'register' ? 'Create account' : 'Sign in' }} · Task Manager</title>
+    <title>{{ $mode === 'register' ? 'Create account' : 'Sign in' }} · WorkMind</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/Logo/Glossy Blue Checklist App Icon.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="auth-page relative" data-auth-mode="{{ $mode }}">
+    <div id="page-loading-skeleton" class="page-loading-skeleton fixed inset-0 z-[100] flex items-center justify-center bg-[#f6f8fc] p-4 dark:bg-slate-950" role="status" aria-live="polite" aria-label="Loading authentication page">
+        <span class="sr-only">Loading authentication page...</span>
+        <div class="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 md:grid-cols-2">
+            <div class="space-y-5 p-8 sm:p-12">
+                <span class="skeleton-block block h-3 w-24 rounded-full"></span>
+                <span class="skeleton-block block h-8 w-44 rounded-lg"></span>
+                <span class="skeleton-block block h-3 w-72 max-w-full rounded-full"></span>
+                <div class="space-y-4 pt-4">
+                    @for ($i = 0; $i < 3; $i++)
+                        <div class="space-y-2">
+                            <span class="skeleton-block block h-2.5 w-20 rounded-full"></span>
+                            <span class="skeleton-block block h-11 w-full rounded-xl"></span>
+                        </div>
+                    @endfor
+                    <span class="skeleton-block block h-11 w-full rounded-xl"></span>
+                </div>
+            </div>
+            <div class="hidden bg-blue-950 p-12 md:flex md:flex-col md:justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="skeleton-block h-10 w-10 rounded-xl opacity-40"></span>
+                    <span class="skeleton-block h-3 w-28 rounded-full opacity-40"></span>
+                </div>
+                <div class="space-y-4">
+                    <span class="skeleton-block block h-8 w-48 rounded-lg opacity-40"></span>
+                    <span class="skeleton-block block h-3 w-full rounded-full opacity-40"></span>
+                    <span class="skeleton-block block h-3 w-4/5 rounded-full opacity-40"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="fixed top-5 right-5 z-50">
         <button type="button" data-theme-toggle
             class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700"
@@ -109,7 +141,7 @@
                     <button type="submit" class="auth-submit">Sign in</button>
                 </form>
 
-                <button type="button" class="auth-mobile-switch" data-show-register>New to Task Manager? <strong>Create account</strong></button>
+                <button type="button" class="auth-mobile-switch" data-show-register>New to WorkMind? <strong>Create account</strong></button>
             </div>
         </section>
 
@@ -117,8 +149,8 @@
             <div class="auth-overlay-decoration auth-orb-one"></div>
             <div class="auth-overlay-decoration auth-orb-two"></div>
             <a href="{{ route('login', [], false) }}" class="auth-brand">
-                <span><x-icon name="task-logo" class="h-5 w-5" /></span>
-                Task Manager
+                <span><img src="{{ asset('images/Logo/Glossy Blue Checklist App Icon.png') }}" alt="" class="h-full w-full object-contain"></span>
+                WorkMind
             </a>
 
             <div class="auth-overlay-message auth-message-login">

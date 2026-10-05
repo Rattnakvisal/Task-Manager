@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Task Manager')</title>
+    <title>@yield('title', 'WorkMind')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/Logo/Glossy Blue Checklist App Icon.png') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -20,6 +21,7 @@
                 'key' => 'dashboard',
                 'route' => 'dashboard',
                 'icon' => 'grid',
+                'group' => 'Workspace',
                 'active' => request()->routeIs('dashboard') || request()->routeIs('home'),
             ],
             [
@@ -27,6 +29,7 @@
                 'key' => 'my_tasks',
                 'route' => 'tasks.index',
                 'icon' => 'kanban',
+                'group' => 'Workspace',
                 'active' => request()->routeIs('tasks.index', 'tasks.create', 'tasks.show', 'tasks.edit', 'all-tasks'),
             ],
             [
@@ -34,6 +37,7 @@
                 'key' => 'projects',
                 'route' => 'projects',
                 'icon' => 'project',
+                'group' => 'Workspace',
                 'active' => request()->routeIs('projects'),
             ],
             [
@@ -41,6 +45,7 @@
                 'key' => 'calendar',
                 'route' => 'calendar',
                 'icon' => 'calendar',
+                'group' => 'Workspace',
                 'active' => request()->routeIs('calendar'),
             ],
             [
@@ -48,6 +53,7 @@
                 'key' => 'priority',
                 'route' => 'priority',
                 'icon' => 'flag',
+                'group' => 'Workspace',
                 'active' => request()->routeIs('priority'),
             ],
             [
@@ -55,9 +61,24 @@
                 'key' => 'analytics',
                 'route' => 'analytics',
                 'icon' => 'analytics',
+                'group' => 'Workspace',
                 'active' => request()->routeIs('analytics'),
             ],
+            [
+                'label' => 'My Profile',
+                'key' => 'my_profile',
+                'route' => 'profile.edit',
+                'icon' => 'user',
+                'group' => 'Account',
+                'active' => request()->routeIs('profile.*'),
+            ],
         ];
+
+        $headerInitials = collect(preg_split('/\s+/', trim(auth()->user()->name)))
+            ->filter()
+            ->take(2)
+            ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
+            ->implode('');
 
         $notificationTasks = auth()->user()->tasks()->whereNotNull('end_date')
             ->where('status', '!=', 'completed')
@@ -67,8 +88,99 @@
             })
             ->orderBy('end_date')
             ->orderByDesc('created_at')
+            ->get(['id', 'title', 'end_date']);
+        $aiTaskNotifications = auth()->user()->notifications()
+            ->where('type', \App\Notifications\AiTaskCreatedNotification::class)
+            ->select('notifications.*')
+            ->selectRaw('SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) OVER () AS unread_total')
+            ->latest()
+            ->limit(10)
             ->get();
+        $unreadAiTaskNotifications = (int) ($aiTaskNotifications->first()?->unread_total ?? 0);
+        $headerNotificationCount = $notificationTasks->count() + $unreadAiTaskNotifications;
     @endphp
+
+    {{-- Global application loading skeleton --}}
+    <div id="page-loading-skeleton" class="page-loading-skeleton fixed inset-0 z-[100] bg-[#f6f8fc] dark:bg-slate-950" role="status" aria-live="polite" aria-label="Loading workspace">
+        <span class="sr-only">Loading workspace...</span>
+        <div class="min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
+            <aside class="hidden border-r border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 lg:block">
+                <div class="flex items-center gap-3 border-b border-slate-100 pb-5 dark:border-slate-800">
+                    <span class="skeleton-block h-10 w-10 rounded-xl"></span>
+                    <div class="flex-1 space-y-2">
+                        <span class="skeleton-block block h-3.5 w-28 rounded-full"></span>
+                        <span class="skeleton-block block h-2.5 w-20 rounded-full"></span>
+                    </div>
+                </div>
+                <div class="mt-8 space-y-3">
+                    @for ($i = 0; $i < 6; $i++)
+                        <div class="flex items-center gap-3 rounded-xl px-2 py-2">
+                            <span class="skeleton-block h-8 w-8 rounded-lg"></span>
+                            <span class="skeleton-block h-3 flex-1 rounded-full"></span>
+                        </div>
+                    @endfor
+                </div>
+            </aside>
+
+            <section>
+                <div class="flex h-[72px] items-center justify-between border-b border-slate-200/80 bg-white px-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6 lg:px-8">
+                    <div class="space-y-2">
+                        <span class="skeleton-block block h-4 w-36 rounded-full"></span>
+                        <span class="skeleton-block block h-2.5 w-52 max-w-[50vw] rounded-full"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="skeleton-block hidden h-10 w-44 rounded-xl sm:block"></span>
+                        <span class="skeleton-block h-10 w-10 rounded-xl"></span>
+                        <span class="skeleton-block h-10 w-10 rounded-xl"></span>
+                    </div>
+                </div>
+
+                <div class="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                        @for ($i = 0; $i < 4; $i++)
+                            <div class="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                                <div class="flex items-center justify-between">
+                                    <span class="skeleton-block h-9 w-9 rounded-xl"></span>
+                                    <span class="skeleton-block h-2.5 w-12 rounded-full"></span>
+                                </div>
+                                <span class="skeleton-block mt-5 block h-6 w-16 rounded-lg"></span>
+                                <span class="skeleton-block mt-2 block h-2.5 w-24 rounded-full"></span>
+                            </div>
+                        @endfor
+                    </div>
+
+                    <div class="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+                        <div class="rounded-2xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                            <div class="flex items-center justify-between">
+                                <span class="skeleton-block h-4 w-36 rounded-full"></span>
+                                <span class="skeleton-block h-8 w-20 rounded-lg"></span>
+                            </div>
+                            <div class="mt-6 space-y-4">
+                                @for ($i = 0; $i < 5; $i++)
+                                    <div class="flex items-center gap-3">
+                                        <span class="skeleton-block h-9 w-9 rounded-xl"></span>
+                                        <div class="flex-1 space-y-2">
+                                            <span class="skeleton-block block h-3 w-3/4 rounded-full"></span>
+                                            <span class="skeleton-block block h-2.5 w-1/3 rounded-full"></span>
+                                        </div>
+                                    </div>
+                                @endfor
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                            <span class="skeleton-block block h-4 w-32 rounded-full"></span>
+                            <span class="skeleton-block mx-auto mt-8 block h-36 w-36 rounded-full"></span>
+                            <div class="mt-8 space-y-3">
+                                <span class="skeleton-block block h-3 w-full rounded-full"></span>
+                                <span class="skeleton-block block h-3 w-4/5 rounded-full"></span>
+                                <span class="skeleton-block block h-3 w-2/3 rounded-full"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
 
     <div class="app-shell min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]" data-app-shell>
@@ -85,22 +197,13 @@
 
                 <a href="{{ route('dashboard') }}" class="group flex items-center gap-3">
 
-                    <span
-                        class="relative flex h-10 w-10 items-center justify-center
-                           rounded-xl bg-gradient-to-br from-blue-950 to-blue-700
-                           text-white shadow-md shadow-blue-950/15">
-
-                        <x-icon name="task-logo" class="h-5 w-5" />
-
-                        <span
-                            class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5
-                               rounded-full border-2 border-white dark:border-slate-900 bg-blue-400">
-                        </span>
+                    <span class="workmind-logo-shell">
+                        <img src="{{ asset('images/Logo/Glossy Blue Checklist App Icon.png') }}" alt="" class="workmind-logo-image">
                     </span>
 
                     <div class="sidebar-label">
                         <p class="text-[15px] font-bold tracking-tight text-slate-950 dark:text-white">
-                            Task Manager
+                            WorkMind
                         </p>
 
                         <p class="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
@@ -122,7 +225,16 @@
 
                 <nav class="space-y-1.5">
 
+                    @php
+                        $lastNavGroup = null;
+                    @endphp
                     @foreach ($navItems as $item)
+                        @if ($lastNavGroup !== $item['group'])
+                            <p class="sidebar-section-title sidebar-label {{ $lastNavGroup ? 'mt-4' : '' }}" data-i18n="{{ strtolower($item['group']) }}">{{ $item['group'] }}</p>
+                            @php
+                                $lastNavGroup = $item['group'];
+                            @endphp
+                        @endif
                         <a href="{{ route($item['route']) }}" title="{{ $item['label'] }}"
                             class="
                             group relative flex h-11 items-center gap-3 rounded-xl px-3
@@ -233,26 +345,21 @@
             {{-- Sidebar Footer --}}
             <div class="border-t border-slate-100 dark:border-slate-800 px-4 py-4">
 
-                <div class="flex items-center gap-3 rounded-xl px-2 py-2">
+                <div class="flex items-center gap-2 rounded-xl px-2 py-2">
+                    <a href="{{ route('profile.edit') }}" class="group flex min-w-0 flex-1 items-center gap-3 rounded-lg" title="Open My Profile">
+                        <span class="sidebar-user-avatar">
+                            {{ $headerInitials ?: 'WM' }}
+                        </span>
 
-                    <span
-                        class="flex h-9 w-9 shrink-0 items-center justify-center
-                           rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                        TM
-                    </span>
-
-
-                    <div class="sidebar-label min-w-0 flex-1">
-
-                        <p class="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
-                            {{ auth()->user()->name }}
-                        </p>
-
-                        <p class="truncate text-[11px] text-slate-400 dark:text-slate-500">
-                            {{ auth()->user()->email }}
-                        </p>
-
-                    </div>
+                        <span class="sidebar-label min-w-0 flex-1">
+                            <span class="block truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 dark:text-slate-200 dark:group-hover:text-blue-400">
+                                {{ auth()->user()->name }}
+                            </span>
+                            <span class="block truncate text-[11px] text-slate-400 dark:text-slate-500">
+                                View and edit profile
+                            </span>
+                        </span>
+                    </a>
 
                     <form method="POST" action="{{ route('logout') }}" class="sidebar-extra" data-confirm-logout>
                         @csrf
@@ -289,16 +396,12 @@
                     {{-- Mobile Logo --}}
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 lg:hidden">
 
-                        <span
-                            class="flex h-9 w-9 items-center justify-center
-                               rounded-xl bg-blue-950 text-white shadow-sm">
-
-                            <x-icon name="task-logo" class="h-4.5 w-4.5" />
-
+                        <span class="workmind-logo-shell workmind-logo-shell-mobile">
+                            <img src="{{ asset('images/Logo/Glossy Blue Checklist App Icon.png') }}" alt="" class="workmind-logo-image">
                         </span>
 
                         <span class="text-sm font-bold text-slate-950 dark:text-white">
-                            Task Manager
+                            WorkMind
                         </span>
 
                     </a>
@@ -336,6 +439,12 @@
                                 Calendar
                             @elseif(request()->routeIs('priority'))
                                 Priority
+                            @elseif(request()->routeIs('projects'))
+                                Projects
+                            @elseif(request()->routeIs('analytics'))
+                                Analytics
+                            @elseif(request()->routeIs('profile.*'))
+                                My Profile
                             @elseif(request()->routeIs('all-tasks'))
                                 All Tasks
                             @else
@@ -413,7 +522,7 @@
                         </button>
 
                         {{-- Notifications --}}
-                        <div class="relative">
+                        <div class="relative" data-notifications-root>
                             <button type="button"
                                 data-toggle-notifications
                                 class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700/70 dark:hover:text-white"
@@ -421,21 +530,43 @@
 
                                 <x-icon name="bell" class="h-[18px] w-[18px]" />
 
-                                @if ($notificationTasks->isNotEmpty())
-                                    <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 bg-blue-600 px-1 text-[10px] font-bold text-white">
-                                        {{ $notificationTasks->count() }}
-                                    </span>
-                                @endif
+                                <span data-notification-count data-reminder-count="{{ $notificationTasks->count() }}" class="absolute -right-1 -top-1 {{ $headerNotificationCount === 0 ? 'hidden' : 'flex' }} h-5 min-w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 bg-blue-600 px-1 text-[10px] font-bold text-white">
+                                    {{ $headerNotificationCount > 99 ? '99+' : $headerNotificationCount }}
+                                </span>
 
                             </button>
 
                             <div data-notifications-panel class="absolute right-0 top-12 z-50 hidden w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                                 <div class="border-b border-slate-100 dark:border-slate-700 px-4 py-3">
-                                    <p class="text-sm font-bold text-slate-950 dark:text-white">Notifications</p>
-                                    <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-400">Tasks ending today or tomorrow.</p>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p class="text-sm font-bold text-slate-950 dark:text-white">Notifications</p>
+                                            <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-400">Nova activity and upcoming task reminders.</p>
+                                        </div>
+                                        @if ($unreadAiTaskNotifications > 0)
+                                            <button type="button" data-mark-all-task-alerts-read class="shrink-0 text-[10px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">Mark all read</button>
+                                        @endif
+                                    </div>
                                 </div>
 
-                                <div class="max-h-80 overflow-y-auto">
+                                <div class="max-h-80 overflow-y-auto" data-notification-list>
+                                    @foreach ($aiTaskNotifications as $alert)
+                                        @php
+                                            $alertData = $alert->data;
+                                        @endphp
+                                        <a href="{{ $alertData['task_url'] ?? route('tasks.index') }}" data-ai-task-alert-id="ai-task-{{ $alertData['task_id'] ?? $alert->id }}" data-notification-id="{{ $alert->id }}" class="flex gap-3 border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/50 last:border-b-0 {{ $alert->read_at ? 'opacity-65' : '' }}">
+                                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+                                                <x-icon name="check" class="h-4 w-4" />
+                                            </span>
+                                            <span class="min-w-0 flex-1">
+                                                <span class="block truncate text-sm font-bold text-slate-950 dark:text-white">{{ $alertData['title'] ?? 'New task' }}</span>
+                                                <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Created by Nova · {{ $alert->created_at->diffForHumans() }}</span>
+                                            </span>
+                                            @if (! $alert->read_at)
+                                                <span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Unread"></span>
+                                            @endif
+                                        </a>
+                                    @endforeach
                                     @forelse ($notificationTasks as $task)
                                         @php
                                             $endsToday = $task->end_date->isToday();
@@ -453,18 +584,20 @@
                                             </span>
                                         </a>
                                     @empty
-                                        <div class="px-4 py-8 text-center">
+                                        @if ($aiTaskNotifications->isEmpty())
+                                        <div class="px-4 py-8 text-center" data-notifications-empty>
                                             <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
                                                 <x-icon name="check-circle" class="h-5 w-5" />
                                             </span>
                                             <p class="mt-3 text-sm font-bold text-slate-900 dark:text-white">No alerts</p>
                                             <p class="mt-1 text-xs text-slate-400">No tasks end today or tomorrow.</p>
                                         </div>
+                                        @endif
                                     @endforelse
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="header-avatar" data-open-workspace-profile aria-label="Open your workspace profile">TM</button>
+                        <a href="{{ route('profile.edit') }}" class="header-avatar" aria-label="Open your WorkMind profile" title="My Profile">{{ $headerInitials ?: 'WM' }}</a>
                     </div>
 
                 </div>
@@ -1224,7 +1357,7 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
                             <x-icon name="sparkles" class="h-4 w-4" />
                         </span>
-                        <span data-i18n="ai_chatbot">AI Copilot Chatbot (ជជែកជាមួយ AI)</span>
+                        <span data-i18n="ai_chatbot">Nova AI Assistant</span>
                     </span>
                     <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:border-slate-700 dark:bg-slate-800">Shift + A</kbd>
                 </button>
@@ -1369,8 +1502,8 @@
             type="button"
             id="ai-chatbot-launcher-btn"
             class="gemini-fab-btn group relative flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-slate-900 text-slate-800 dark:text-white shadow-xl shadow-slate-900/10 border border-slate-200/90 dark:border-slate-800 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:border-indigo-400 dark:hover:border-indigo-500 focus:outline-none"
-            aria-label="Open Gemini AI"
-            title="Open Gemini AI (Shift + A)"
+            aria-label="Open Nova AI"
+            title="Open Nova AI (Shift + A)"
         >
             {{-- Online status dot --}}
             <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5 z-20">
@@ -1398,7 +1531,7 @@
                     <div class="h-8 w-8 flex items-center justify-center pointer-events-none" data-lottie="niu"></div>
                 </div>
                 <div>
-                    <h3 id="ai-chat-title" class="text-sm font-bold text-slate-900 dark:text-white leading-tight">Gemini</h3>
+                    <h3 id="ai-chat-title" class="text-sm font-bold text-slate-900 dark:text-white leading-tight">Nova</h3>
                     <div class="flex items-center gap-1.5 mt-0.5">
                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                         <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium" data-i18n="ai_chatbot_status">Online Assistant</span>
@@ -1408,6 +1541,21 @@
 
             {{-- Header Actions --}}
             <div class="flex items-center gap-1">
+                {{-- AI personalization profile button --}}
+                <button
+                    type="button"
+                    id="ai-profile-open-btn"
+                    class="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400 transition"
+                    title="Personalize Nova"
+                    aria-label="Personalize Nova"
+                >
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21a8 8 0 0 0-16 0"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                        <path d="M19 8v6M22 11h-6"></path>
+                    </svg>
+                </button>
+
                 {{-- Clear chat history button --}}
                 <button
                     type="button"
@@ -1435,8 +1583,154 @@
             </div>
         </div>
 
+        {{-- AI Personalization Form --}}
+        <div id="ai-profile-panel" class="hidden flex-1 overflow-y-auto bg-slate-50/70 p-4 dark:bg-slate-950/40">
+            <div class="mb-4">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-lg dark:bg-indigo-950/70">✨</div>
+                    <div>
+                        <h4 class="text-sm font-extrabold text-slate-900 dark:text-white" data-i18n="ai_profile_title">Personalize your AI</h4>
+                        <p class="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400" data-i18n="ai_profile_desc">Tell Nova what you learn, what you do, and what kind of help you need.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="ai-profile-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="block">
+                        <span class="mb-1.5 block text-[11px] font-bold text-slate-700 dark:text-slate-300" data-i18n="ai_profile_occupation">Your work / role</span>
+                        <select name="occupation" required class="h-10 w-full rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-indigo-900/30">
+                            <option value="">ជ្រើសរើស / Select</option>
+                            <option value="student">Student / សិស្ស-និស្សិត</option>
+                            <option value="software_it">Software & IT</option>
+                            <option value="education">Education / អប់រំ</option>
+                            <option value="business">Business / អាជីវកម្ម</option>
+                            <option value="design_creative">Design & Creative</option>
+                            <option value="marketing_sales">Marketing & Sales</option>
+                            <option value="finance">Finance / ហិរញ្ញវត្ថុ</option>
+                            <option value="healthcare">Healthcare / សុខាភិបាល</option>
+                            <option value="engineering">Engineering / វិស្វកម្ម</option>
+                            <option value="government_ngo">Government / NGO</option>
+                            <option value="freelancer">Freelancer</option>
+                            <option value="other">Other / ផ្សេងៗ</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="mb-1.5 block text-[11px] font-bold text-slate-700 dark:text-slate-300" data-i18n="ai_profile_level">Experience level</span>
+                        <select name="experience_level" required class="h-10 w-full rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-indigo-900/30">
+                            <option value="beginner">Beginner / ដំបូង</option>
+                            <option value="intermediate">Intermediate / មធ្យម</option>
+                            <option value="advanced">Advanced / ខ្ពស់</option>
+                        </select>
+                    </label>
+                </div>
+
+                <fieldset>
+                    <legend class="mb-2 text-[11px] font-bold text-slate-700 dark:text-slate-300" data-i18n="ai_profile_learning">What do you want to learn?</legend>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        @foreach ([
+                            'technology' => '💻 Technology & IT',
+                            'languages' => '🌐 Languages / ភាសា',
+                            'business' => '💼 Business',
+                            'design_creative' => '🎨 Design & Creative',
+                            'finance' => '💰 Finance',
+                            'marketing_sales' => '📣 Marketing & Sales',
+                            'leadership' => '🧭 Leadership',
+                            'health_wellness' => '🌿 Health & Wellness',
+                            'academic' => '📚 Academic / សិក្សា',
+                            'life_skills' => '🛠️ Life Skills',
+                            'other' => '✨ Other / ផ្សេងៗ',
+                        ] as $value => $label)
+                            <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[10.5px] font-medium text-slate-600 transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                <input type="checkbox" name="learning_interests[]" value="{{ $value }}" class="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <span>{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend class="mb-2 text-[11px] font-bold text-slate-700 dark:text-slate-300" data-i18n="ai_profile_work_skills">Skills used or needed at work</legend>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach ([
+                            'communication' => 'Communication',
+                            'management' => 'Management',
+                            'problem_solving' => 'Problem Solving',
+                            'writing' => 'Writing',
+                            'data_analysis' => 'Data Analysis',
+                            'digital_tools' => 'Digital Tools',
+                            'customer_service' => 'Customer Service',
+                            'project_management' => 'Project Management',
+                            'other' => 'Other',
+                        ] as $value => $label)
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="work_skills[]" value="{{ $value }}" class="peer sr-only">
+                                <span class="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-slate-600 transition peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:peer-checked:border-indigo-500 dark:peer-checked:bg-indigo-950/50 dark:peer-checked:text-indigo-300">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend class="mb-2 text-[11px] font-bold text-slate-700 dark:text-slate-300" data-i18n="ai_profile_help">What should Nova help you with?</legend>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        @foreach ([
+                            'learning' => '📖 Learning / រៀន',
+                            'work' => '💼 Work / ការងារ',
+                            'personal' => '🌱 Personal / ផ្ទាល់ខ្លួន',
+                            'career' => '🚀 Career',
+                            'technical' => '💻 Technical',
+                            'writing_translation' => '✍️ Writing & Translation',
+                            'planning' => '🗓️ Planning & Decisions',
+                            'creativity' => '💡 Creativity',
+                        ] as $value => $label)
+                            <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[10.5px] font-medium text-slate-600 transition hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                <input type="checkbox" name="assistance_areas[]" value="{{ $value }}" class="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <span>{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+
+                <label class="block">
+                    <span class="mb-1.5 block text-[11px] font-bold text-slate-700 dark:text-slate-300" data-i18n="ai_profile_other">Other goals or needs (optional)</span>
+                    <textarea name="other_needs" rows="3" maxlength="1000" data-i18n-placeholder="ai_profile_other_placeholder" placeholder="Example: Help me improve English for customer meetings..." class="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[11px] leading-relaxed text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-indigo-900/30"></textarea>
+                </label>
+
+                <p id="ai-profile-error" class="hidden rounded-xl bg-rose-50 px-3 py-2 text-[10.5px] font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"></p>
+
+                <div class="sticky bottom-0 flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50/95 pt-3 dark:border-slate-800 dark:bg-slate-950/95">
+                    <button type="button" id="ai-profile-cancel-btn" class="rounded-xl px-3 py-2 text-[11px] font-bold text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" data-i18n="cancel">Cancel</button>
+                    <button type="submit" id="ai-profile-save-btn" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60">
+                        <span>✨</span> <span data-i18n="ai_profile_save">Save personalization</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
         {{-- Messages Stream Container --}}
         <div id="ai-chat-messages" class="ai-chat-scrollbar flex-1 space-y-3.5 overflow-y-auto p-4 text-xs">
+            {{-- Chat history loading skeleton --}}
+            <div id="ai-chat-history-skeleton" class="hidden space-y-4" role="status" aria-label="Loading conversation">
+                <span class="sr-only">Loading conversation...</span>
+                <div class="flex justify-end">
+                    <div class="w-[68%] space-y-2 rounded-2xl rounded-tr-sm border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                        <span class="skeleton-block block h-2.5 w-full rounded-full"></span>
+                        <span class="skeleton-block ml-auto block h-2.5 w-3/5 rounded-full"></span>
+                    </div>
+                </div>
+                @for ($i = 0; $i < 3; $i++)
+                    <div class="flex items-start gap-2.5">
+                        <span class="skeleton-block h-8 w-8 shrink-0 rounded-2xl"></span>
+                        <div class="w-[78%] space-y-2 rounded-2xl rounded-tl-sm border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                            <span class="skeleton-block block h-2.5 w-1/3 rounded-full"></span>
+                            <span class="skeleton-block block h-2.5 w-full rounded-full"></span>
+                            <span class="skeleton-block block h-2.5 w-4/5 rounded-full"></span>
+                        </div>
+                    </div>
+                @endfor
+            </div>
+
             {{-- Welcome Card (Clean, Simple & Friendly) --}}
             <div id="ai-chat-welcome" class="flex flex-col items-center justify-center text-center py-6 px-3">
                 {{-- Centerpiece Animated niu.json Mascot --}}
@@ -1448,19 +1742,25 @@
                     How can I help you today?
                 </h4>
                 <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400 max-w-xs" data-i18n="ai_welcome_desc">
-                    Ask me anything about your tasks, or try one of the suggestions below.
+                    Ask me about IT, learning, work, personal planning, or your tasks.
                 </p>
 
                 {{-- Clean Suggestion Pills --}}
                 <div class="mt-5 flex flex-wrap justify-center gap-2 max-w-xs">
-                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="standup">
-                        <span>☀️</span> Daily Standup
+                    <button type="button" id="ai-profile-welcome-btn" class="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs transition hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300">
+                        <span>✨</span> <span data-i18n="ai_profile_button">Personalize Nova</span>
                     </button>
-                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="overdue">
-                        <span>⚠️</span> Check Overdue
+                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="Teach me an IT topic for a beginner: " data-prompt-km="បង្រៀនខ្ញុំអំពីប្រធានបទ IT សម្រាប់អ្នកចាប់ផ្តើម៖ ">
+                        <span>💻</span> <span data-i18n="ai_learn_it">Learn IT</span>
                     </button>
-                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="create task: ">
-                        <span>➕</span> Create Task
+                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="Help me plan this work goal: " data-prompt-km="ជួយខ្ញុំរៀបចំផែនការគោលដៅការងារនេះ៖ ">
+                        <span>💼</span> <span data-i18n="ai_work_help">Work Help</span>
+                    </button>
+                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="Help me organize this personal goal: " data-prompt-km="ជួយខ្ញុំរៀបចំគោលដៅផ្ទាល់ខ្លួននេះ៖ ">
+                        <span>🌱</span> <span data-i18n="ai_personal_plan">Personal Plan</span>
+                    </button>
+                    <button type="button" class="ai-suggestion-chip inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:border-indigo-400 hover:text-indigo-600 hover:scale-102 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400" data-prompt="create task: " data-prompt-km="បង្កើតកិច្ចការ៖ ">
+                        <span>➕</span> <span data-i18n="ai_new_task">New Task</span>
                     </button>
                 </div>
             </div>
@@ -1472,7 +1772,7 @@
             <div id="ai-chat-typing" class="hidden items-center gap-2.5 pt-1 text-slate-400">
                 <div class="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-xl overflow-hidden bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 p-0.5" data-lottie="niu"></div>
                 <div class="flex items-center gap-1.5 rounded-2xl rounded-tl-xs bg-slate-100 px-3.5 py-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
-                    <span class="text-[11px] font-semibold mr-1 text-indigo-600 dark:text-indigo-400" data-i18n="ai_thinking">Gemini is thinking</span>
+                    <span class="text-[11px] font-semibold mr-1 text-indigo-600 dark:text-indigo-400" data-i18n="ai_thinking">Nova is thinking</span>
                     <span class="typing-dot"></span>
                     <span class="typing-dot"></span>
                     <span class="typing-dot"></span>
@@ -1481,29 +1781,39 @@
         </div>
 
         {{-- Quick suggestion pills strip above input --}}
-        <div class="ai-prompts-bar no-scrollbar flex items-center gap-1.5 overflow-x-auto border-t border-slate-100 bg-slate-50/70 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/60">
+        <div id="ai-chat-tools" class="ai-prompts-bar no-scrollbar flex items-center gap-1.5 overflow-x-auto border-t border-slate-100 bg-slate-50/70 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/60">
             <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="standup">
-                <span>☀️</span> Standup
+                <span>☀️</span> <span data-i18n="ai_standup">Standup</span>
             </button>
             <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="overdue">
-                <span>⚠️</span> Overdue
+                <span>⚠️</span> <span data-i18n="ai_overdue">Overdue</span>
             </button>
-            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="create task: ">
-                <span>➕</span> New Task
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="Teach me an IT topic: " data-prompt-km="បង្រៀនខ្ញុំអំពីប្រធានបទ IT៖ ">
+                <span>💻</span> <span data-i18n="ai_learn_it">Learn IT</span>
             </button>
-            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="breakdown: ">
-                <span>📋</span> Breakdown
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="Help me with this work task: " data-prompt-km="ជួយខ្ញុំជាមួយការងារនេះ៖ ">
+                <span>💼</span> <span data-i18n="ai_work_help">Work Help</span>
+            </button>
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="Help me organize this personal goal: " data-prompt-km="ជួយខ្ញុំរៀបចំគោលដៅផ្ទាល់ខ្លួននេះ៖ ">
+                <span>🌱</span> <span data-i18n="ai_personal_plan">Personal Plan</span>
+            </button>
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="create task: " data-prompt-km="បង្កើតកិច្ចការ៖ ">
+                <span>➕</span> <span data-i18n="ai_new_task">New Task</span>
+            </button>
+            <button type="button" class="ai-quick-btn shrink-0 inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500" data-prompt="breakdown: " data-prompt-km="បំបែក៖ ">
+                <span>📋</span> <span data-i18n="ai_breakdown">Breakdown</span>
             </button>
         </div>
 
         {{-- Input Footer Form --}}
-        <div class="border-t border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+        <div id="ai-chat-composer" class="border-t border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
             <form id="ai-chat-form" class="flex items-center gap-2">
                 <div class="relative flex-1 flex items-center">
                     <input
                         type="text"
                         id="ai-chat-input"
-                        placeholder="Ask Gemini, or type 'create task: ...'"
+                        placeholder="Ask Nova about work, learning, life, or anything else..."
+                        data-i18n-placeholder="ai_ask_placeholder"
                         class="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-3.5 pr-8 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-indigo-900/30"
                         autocomplete="off"
                     >
@@ -1525,16 +1835,10 @@
             </form>
             <div class="mt-2 flex items-center justify-between px-1 text-[10px] text-slate-400">
                 <span>Shift+A to toggle</span>
-                <span class="font-medium text-slate-500 dark:text-slate-400">Powered by Gemini</span>
+                <span class="font-medium text-slate-500 dark:text-slate-400">Nova • Powered by Gemini</span>
             </div>
         </div>
     </div>
-
-    <dialog id="workspace-profile" class="workspace-profile-dialog">
-        <div class="panel-heading"><h2>Your Workspace</h2><button type="button" data-close-workspace-profile aria-label="Close workspace"><x-icon name="x" /></button></div>
-        <p class="workspace-profile-description">Your tasks belong to your private workspace.</p>
-        <div class="workspace-member"><span class="workspace-avatar">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr(auth()->user()->name, 0, 1)) }}</span><div><strong>{{ auth()->user()->name }}</strong><p>{{ auth()->user()->email }}</p></div><span class="count-badge">Owner</span></div>
-    </dialog>
 
     {{-- Confetti canvas for celebrations --}}
     <canvas id="confetti-canvas"></canvas>

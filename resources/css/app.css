@@ -213,6 +213,51 @@ html.dark input, html.dark select, html.dark textarea {
     background-color: #111827 !important;
     border-color: #334155 !important;
 }
+
+/* Consistent native select controls and opened option menus across every page. */
+select:not([multiple]) {
+    cursor: pointer;
+    color-scheme: light;
+    -webkit-appearance: none;
+    appearance: none;
+    padding-right: 2.25rem !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364758b' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .7rem center;
+    background-size: 14px 14px;
+}
+
+select option,
+select optgroup {
+    color: #0f172a;
+    background-color: #ffffff;
+}
+
+select option:checked {
+    color: #ffffff;
+    background-color: #2563eb;
+}
+
+html.dark select:not([multiple]) {
+    color-scheme: dark;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+html.dark select option,
+html.dark select optgroup {
+    color: #e2e8f0 !important;
+    background-color: #111827 !important;
+}
+
+html.dark select option:checked {
+    color: #ffffff !important;
+    background-color: #2563eb !important;
+}
+
+select:disabled {
+    cursor: not-allowed;
+    opacity: .6;
+}
 html.dark input::placeholder, html.dark textarea::placeholder { color: #64748b !important; }
 html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-2xl { --tw-shadow-color: rgb(0 0 0 / 30%); }
 html.dark [data-theme-sun] { display: none; }
@@ -610,8 +655,9 @@ html.dark .auth-mobile-switch strong { color: #60a5fa; }
     height: 36px;
     place-items: center;
     border-radius: 12px;
-    background: rgb(255 255 255 / 12%);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 15%);
+    background: transparent;
+    box-shadow: 0 7px 18px rgb(0 27 108 / 25%);
+    overflow: hidden;
 }
 
 .auth-overlay-message {
@@ -839,16 +885,32 @@ html.dark .auth-mobile-switch strong { color: #60a5fa; }
     box-shadow: 0 12px 35px -8px rgba(99, 102, 241, 0.18);
 }
 
+.skeleton-block,
 .ai-loading-skeleton {
+    position: relative;
+    overflow: hidden;
     background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
     background-size: 200% 100%;
-    animation: ai-shimmer 1.5s infinite;
+    animation: ai-shimmer 1.45s ease-in-out infinite;
 }
 
+.dark .skeleton-block,
 .dark .ai-loading-skeleton {
     background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
     background-size: 200% 100%;
-    animation: ai-shimmer 1.5s infinite;
+    animation: ai-shimmer 1.45s ease-in-out infinite;
+}
+
+.page-loading-skeleton {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.page-loading-skeleton.is-loaded {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .ai-pill-badge {
@@ -1128,13 +1190,17 @@ html.dark .auth-mobile-switch strong { color: #60a5fa; }
 .task-manager-ui { --dashboard-ink: #0c1328; --dashboard-muted: #7890b5; --dashboard-border: #e6ecf5; --dashboard-surface: #fff; --dashboard-blue: #1250ff; }
 .task-manager-ui #app-sidebar { width: 280px; border-color: var(--dashboard-border); }
 .sidebar-brand { height: 78px; }
-.sidebar-brand > a > span { width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(145deg, #07156d, #1250ff); }
+.sidebar-brand > a > span { width: 48px; height: 48px; border-radius: 14px; }
 .sidebar-brand > a > span > svg { width: 24px; height: 24px; }
+.workmind-logo-shell { width: 48px; height: 48px; display: grid; place-items: center; flex-shrink: 0; overflow: hidden; border-radius: 14px; background: transparent; filter: drop-shadow(0 6px 10px rgb(18 80 255 / 20%)); }
+.workmind-logo-image { width: 100%; height: 100%; display: block; object-fit: contain; }
+.workmind-logo-shell-mobile { width: 38px !important; height: 38px !important; border-radius: 11px !important; }
 .sidebar-brand .sidebar-label p:first-child { font-size: 17px; }
 .sidebar-brand .sidebar-label p:last-child { font-size: 11px; color: #8298ba; }
 .sidebar-navigation { padding: 18px 20px 6px; scrollbar-width: none; }
 .sidebar-navigation::-webkit-scrollbar { display: none; }
 .sidebar-navigation > nav { display: grid; gap: 5px; }
+.sidebar-section-title { padding: 0 11px 5px; color: #91a2bc; font-size: 10px; font-weight: 800; letter-spacing: .14em; line-height: 1; text-transform: uppercase; }
 .sidebar-navigation > nav > a { height: 47px; gap: 13px; font-size: 15px; color: #587197; padding-inline: 11px; margin-block: 0; }
 .sidebar-navigation > nav > a.bg-blue-50 { background: #eaf3ff; color: #0348ff; }
 .sidebar-navigation > nav > a > span.flex { width: 38px; height: 36px; }
@@ -1152,7 +1218,8 @@ html.dark .auth-mobile-switch strong { color: #60a5fa; }
 .sidebar-productivity .relative > span { margin-bottom: 7px; }
 .task-manager-ui #app-sidebar > div:last-child { padding: 12px 16px; }
 .task-manager-ui #app-sidebar > div:last-child > div { padding-block: 7px; }
-.task-manager-ui #app-sidebar > div:last-child > div > span { width: 44px; height: 44px; font-size: 13px; color: #1250ff; background: #e2edff; }
+.sidebar-user-avatar { width: 44px; height: 44px; display: grid; place-items: center; flex-shrink: 0; border-radius: 999px; color: #1250ff; background: #e2edff; font-size: 12px; font-weight: 800; }
+html.dark .sidebar-user-avatar { color: #93c5fd; background: #172554; }
 .task-manager-ui header > div { height: 66px; padding-inline: 40px 20px; max-width: none; }
 .task-manager-ui [data-global-search] { width: clamp(190px, 20vw, 350px); height: 43px; font-size: 13px; border-color: var(--dashboard-border); }
 .task-manager-ui [data-language-toggle], .task-manager-ui [data-theme-toggle], .task-manager-ui [data-toggle-notifications], .task-manager-ui header [data-open-command-palette] { height: 43px; border-color: var(--dashboard-border); border-radius: 14px; }
@@ -1839,7 +1906,8 @@ a[href*="#date-"]:hover {
 }
 
 [data-notifications-panel]:not(.hidden),
-[data-language-menu]:not(.hidden) {
+[data-language-menu]:not(.hidden),
+[data-dropdown-menu]:not(.hidden) {
     animation: menu-pop-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
     transform-origin: top right;
 }
@@ -1926,7 +1994,96 @@ a.dashboard-button:active,
     transform: scale(0.96) !important;
 }
 
-/* 14. Universal Reduced Motion Support */
+/* 14. Profile fields and section tabs */
+.profile-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.profile-label b {
+    color: #e11d48;
+}
+
+.profile-input {
+    width: 100%;
+    min-height: 2.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    background-color: #fff;
+    padding: 0.7rem 0.85rem;
+    color: #1e293b;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.profile-input:hover {
+    border-color: #cbd5e1;
+}
+
+.profile-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.profile-input:disabled {
+    cursor: not-allowed;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.profile-tab[aria-selected="true"] {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+.dark .profile-label {
+    color: #94a3b8;
+}
+
+.dark .profile-input {
+    border-color: #25324a;
+    background-color: #0f172a;
+    color: #e2e8f0;
+}
+
+.dark .profile-input:hover {
+    border-color: #334155;
+}
+
+.dark .profile-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+.dark .profile-input:disabled {
+    background-color: #111827;
+    color: #64748b;
+}
+
+.dark .profile-tab[aria-selected="true"] {
+    border-color: #60a5fa;
+    color: #60a5fa;
+}
+
+.profile-select {
+    background-repeat: no-repeat !important;
+    background-position: right 0.8rem center !important;
+    background-size: 14px 14px !important;
+}
+
+@media (max-width: 1279px) {
+    [data-profile-page] > div {
+        margin-top: -2.5rem;
+    }
+}
+
+/* 15. Universal Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
         animation-duration: 0.01ms !important;

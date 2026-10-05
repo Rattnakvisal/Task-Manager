@@ -42,7 +42,7 @@ class TaskController extends Controller
         $upcomingTasks = $tasks->filter(fn (Task $task) => $task->due_date && $task->due_date->gte(Carbon::today()) && $task->status !== 'completed')->take(3);
         $priorityTasks = $tasks->whereIn('priority', ['high', 'medium'])->where('status', '!=', 'completed')
             ->sortBy(fn (Task $task) => $task->priority === 'high' ? 0 : 1)->take(3);
-        $recentTasks = $request->user()->tasks()->latest('updated_at')->take(3)->get();
+        $recentTasks = $tasks->sortByDesc('updated_at')->take(3)->values();
         $calendarEvents = $tasks->whereNotNull('due_date')->groupBy(fn (Task $task) => $task->due_date->toDateString())
             ->map(fn ($items) => $items->pluck('priority')->unique()->values());
         $calendarMonth = Carbon::today()->startOfMonth();
@@ -110,10 +110,16 @@ class TaskController extends Controller
 
     public function priority(Request $request)
     {
+        $tasks = $request->user()->tasks()
+            ->orderByDesc('is_pinned')
+            ->orderBy('due_date')
+            ->orderByDesc('created_at')
+            ->get();
+
         $tasksByPriority = [
-            'high' => $request->user()->tasks()->where('priority', 'high')->orderByDesc('is_pinned')->orderBy('due_date')->orderByDesc('created_at')->get(),
-            'medium' => $request->user()->tasks()->where('priority', 'medium')->orderByDesc('is_pinned')->orderBy('due_date')->orderByDesc('created_at')->get(),
-            'low' => $request->user()->tasks()->where('priority', 'low')->orderByDesc('is_pinned')->orderBy('due_date')->orderByDesc('created_at')->get(),
+            'high' => $tasks->where('priority', 'high')->values(),
+            'medium' => $tasks->where('priority', 'medium')->values(),
+            'low' => $tasks->where('priority', 'low')->values(),
         ];
 
         return view('tasks.priority', compact('tasksByPriority'));
@@ -202,7 +208,7 @@ class TaskController extends Controller
         $categoryStats = [];
         foreach ($allCategories as $cat) {
             $catTasks = $tasks->where('category', $cat);
-            if ($catTasks->isEmpty() && !in_array($cat, ['Work', 'Personal', 'Dev', 'Design'])) {
+            if ($catTasks->isEmpty() && ! in_array($cat, ['Work', 'Personal', 'Dev', 'Design'])) {
                 continue;
             }
             $catTotal = $catTasks->count();
@@ -221,7 +227,7 @@ class TaskController extends Controller
 
         // On-time performance and productivity score
         $onTimeTasks = $tasks->where('status', 'completed')->filter(function ($t) {
-            return !$t->due_date || ($t->updated_at && $t->updated_at->lte($t->due_date->endOfDay()));
+            return ! $t->due_date || ($t->updated_at && $t->updated_at->lte($t->due_date->endOfDay()));
         })->count();
         $onTimeRate = $completed > 0 ? (int) round(($onTimeTasks / $completed) * 100) : 100;
         $productivityScore = $total > 0

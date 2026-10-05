@@ -1,4 +1,4 @@
-# Task Manager
+# WorkMind
 
 A responsive task management application built with Laravel, Blade, Tailwind CSS, and SQLite. Each user has a private workspace for creating, organizing, filtering, and completing tasks.
 

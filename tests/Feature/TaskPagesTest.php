@@ -117,6 +117,8 @@ test('the create task page saves a task and displays validation errors', functio
 test('dashboard navigation links to task pages and removes unrelated workspace menus', function () {
     $this->actingAs(User::factory()->create())->get(route('dashboard'))
         ->assertOk()
+        ->assertSee('WorkMind')
+        ->assertSee('Nova')
         ->assertSee(route('tasks.today'), false)
         ->assertSee(route('tasks.overdue'), false)
         ->assertSee(route('tasks.completed'), false)
@@ -125,6 +127,25 @@ test('dashboard navigation links to task pages and removes unrelated workspace m
         ->assertDontSee('<span>Team</span>', false)
         ->assertDontSee('<span>Analytics</span>', false)
         ->assertDontSee('<span>Settings</span>', false);
+});
+
+test('authenticated application renders page and chatbot loading skeletons', function () {
+    $this->actingAs(User::factory()->create())->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('id="page-loading-skeleton"', false)
+        ->assertSee('class="skeleton-block', false)
+        ->assertSee('id="ai-chat-history-skeleton"', false)
+        ->assertSee('Loading workspace...', false)
+        ->assertSee('Loading conversation...', false);
+});
+
+test('task page export dropdown is click accessible', function () {
+    $this->actingAs(User::factory()->create())->get(route('tasks.index'))
+        ->assertOk()
+        ->assertSee('data-dropdown-toggle', false)
+        ->assertSee('aria-haspopup="menu"', false)
+        ->assertSee('data-dropdown-menu', false)
+        ->assertSee('role="menuitem"', false);
 });
 
 test('projects and analytics pages render properly with user data', function () {
@@ -147,4 +168,3 @@ test('projects and analytics pages render properly with user data', function () 
         ->assertSee('Analytics & Productivity')
         ->assertSee('Productivity Score');
 });
-

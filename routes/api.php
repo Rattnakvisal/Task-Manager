@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\TaskApiController;
+use App\Http\Controllers\TaskAlertController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth', 'auth.session'])->group(function () {
@@ -11,6 +12,9 @@ Route::middleware(['web', 'auth', 'auth.session'])->group(function () {
     Route::get('/completed', [TaskApiController::class, 'completed']);
     Route::get('/search', [TaskApiController::class, 'search']);
     Route::get('/notifications', [TaskApiController::class, 'notifications']);
+    Route::get('/task-alerts', [TaskAlertController::class, 'index'])->name('api.task-alerts.index');
+    Route::patch('/task-alerts/read-all', [TaskAlertController::class, 'markAllRead'])->name('api.task-alerts.read-all');
+    Route::patch('/task-alerts/{notification}/read', [TaskAlertController::class, 'markRead'])->name('api.task-alerts.read');
 
     Route::apiResource('tasks', TaskApiController::class)->names([
         'index' => 'api.tasks.index',

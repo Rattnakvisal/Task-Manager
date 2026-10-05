@@ -93,17 +93,18 @@
                     </div>
 
                     {{-- Export Menu --}}
-                    <div class="relative group">
-                        <button type="button"
+                    <div class="relative" data-dropdown>
+                        <button type="button" data-dropdown-toggle aria-haspopup="menu" aria-expanded="false"
                             class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                             <x-icon name="download" class="h-4 w-4" />
                             <span data-i18n="export">Export</span>
+                            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 transition-transform" data-dropdown-chevron fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                         </button>
-                        <div class="absolute right-0 top-12 z-20 hidden w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl group-hover:block dark:border-slate-700 dark:bg-slate-800">
-                            <a href="{{ route('tasks.export', 'csv') }}" class="block rounded-lg px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                        <div class="absolute right-0 top-12 z-30 hidden w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-800" data-dropdown-menu role="menu">
+                            <a href="{{ route('tasks.export', 'csv') }}" role="menuitem" class="block rounded-lg px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
                                 📊 Export as CSV
                             </a>
-                            <a href="{{ route('tasks.export', 'json') }}" class="block rounded-lg px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                            <a href="{{ route('tasks.export', 'json') }}" role="menuitem" class="block rounded-lg px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
                                 📄 Export as JSON
                             </a>
                         </div>
@@ -191,7 +192,7 @@
             <div id="quick-add-nlp-preview" class="hidden mt-2.5 flex flex-wrap items-center gap-2 rounded-xl border border-purple-200/70 bg-purple-50/80 px-3 py-2 text-xs text-purple-900 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-200">
                 <span class="flex items-center gap-1 font-bold text-purple-700 dark:text-purple-300">
                     <x-icon name="sparkles" class="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                    <span data-i18n="ai_copilot_detected">AI Copilot detected:</span>
+                    <span data-i18n="ai_copilot_detected">Nova detected:</span>
                 </span>
                 <span id="nlp-chip-title" class="font-semibold text-slate-800 dark:text-slate-200"></span>
                 <span id="nlp-chip-date" class="hidden inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300"></span>

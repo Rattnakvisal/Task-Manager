@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Priority Matrix - Task Manager')
+@section('title', 'Priority Matrix - WorkMind')
 
 @section('content')
     @php

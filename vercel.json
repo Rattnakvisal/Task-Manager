@@ -1,5 +1,6 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
+    "regions": ["syd1"],
     "framework": null,
     "buildCommand": "npm run build",
     "outputDirectory": "public",
@@ -50,7 +51,7 @@
         "DATABASE_URL": "postgresql://postgres.pdtyrvnhxalbqagzjrhb:Wq_76wZtR2aPRmq@aws-0-ap-southeast-2.pooler.supabase.com:5432/task_manager?sslmode=require",
         "SESSION_DRIVER": "cookie",
         "SESSION_SECURE_COOKIE": "true",
-        "VERCEL_RUNTIME_MIGRATE": "true"
+        "VERCEL_RUNTIME_MIGRATE": "false"
     }
 }
 

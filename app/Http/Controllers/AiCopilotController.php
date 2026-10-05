@@ -58,7 +58,7 @@ class AiCopilotController extends Controller
         $merged = array_merge($existingSubtasks, $newSubtasks);
         $task->subtasks = $merged;
 
-        if (empty($task->category) && !empty($result['suggested_category'])) {
+        if (empty($task->category) && ! empty($result['suggested_category'])) {
             $task->category = $result['suggested_category'];
         }
 
@@ -180,25 +180,86 @@ class AiCopilotController extends Controller
     }
 
     /**
+     * Get the signed-in user's AI personalization profile.
+     */
+    public function preferences(Request $request): JsonResponse
+    {
+        $preferences = $request->user()->aiPreference()->first();
+
+        return response()->json([
+            'success' => true,
+            'configured' => $preferences !== null,
+            'preferences' => $preferences ? [
+                'occupation' => $preferences->occupation,
+                'experience_level' => $preferences->experience_level,
+                'learning_interests' => $preferences->learning_interests ?? [],
+                'work_skills' => $preferences->work_skills ?? [],
+                'assistance_areas' => $preferences->assistance_areas ?? [],
+                'other_needs' => $preferences->other_needs,
+            ] : null,
+        ]);
+    }
+
+    /**
+     * Create or update the user's AI personalization profile.
+     */
+    public function updatePreferences(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'occupation' => 'required|string|in:student,software_it,education,business,design_creative,marketing_sales,finance,healthcare,engineering,government_ngo,freelancer,other',
+            'experience_level' => 'required|string|in:beginner,intermediate,advanced',
+            'learning_interests' => 'required|array|min:1|max:11',
+            'learning_interests.*' => 'string|distinct|in:technology,languages,business,design_creative,finance,marketing_sales,leadership,health_wellness,academic,life_skills,other',
+            'work_skills' => 'nullable|array|max:9',
+            'work_skills.*' => 'string|distinct|in:communication,management,problem_solving,writing,data_analysis,digital_tools,customer_service,project_management,other',
+            'assistance_areas' => 'required|array|min:1|max:8',
+            'assistance_areas.*' => 'string|distinct|in:learning,work,personal,career,technical,writing_translation,planning,creativity',
+            'other_needs' => 'nullable|string|max:1000',
+        ]);
+
+        $preferences = $request->user()->aiPreference()->updateOrCreate(
+            ['user_id' => $request->user()->id],
+            $validated,
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'AI preferences saved successfully.',
+            'preferences' => [
+                'occupation' => $preferences->occupation,
+                'experience_level' => $preferences->experience_level,
+                'learning_interests' => $preferences->learning_interests ?? [],
+                'work_skills' => $preferences->work_skills ?? [],
+                'assistance_areas' => $preferences->assistance_areas ?? [],
+                'other_needs' => $preferences->other_needs,
+            ],
+        ]);
+    }
+
+    /**
      * Get AI status info
      */
     public function itStatus(Request $request): JsonResponse
     {
-        $hasKey = !empty(config('services.gemini.key'));
+        $hasKey = ! empty(config('services.gemini.key'));
 
         return response()->json([
             'success' => true,
             'provider' => 'Google Gemini',
-            'model' => config('services.gemini.model', 'gemini-2.5-flash'),
+            'model' => config('services.gemini.model', 'gemini-3.8-flash'),
             'status' => $hasKey ? 'connected' : 'ready_heuristic',
             'context_window' => '1,048,576 tokens',
-            'backend' => 'Laravel 12.x (PHP ' . PHP_VERSION . ')',
+            'backend' => 'Laravel 12.x (PHP '.PHP_VERSION.')',
             'database' => strtoupper(config('database.default')),
             'capabilities' => [
                 'full_stack_breakdown',
                 'bug_triage_rca',
                 'devops_docker_cicd',
                 'database_optimization',
+                'it_learning_and_tutoring',
+                'work_writing_and_planning',
+                'personal_productivity',
+                'general_question_answering',
                 'agile_standup_telemetry',
             ],
         ]);

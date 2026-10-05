@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard - Task Manager')
+@section('title', 'Dashboard - WorkMind')
 
 @section('content')
     @php

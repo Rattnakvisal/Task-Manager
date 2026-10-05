@@ -5,7 +5,7 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 window.Swal = Swal;
 
 /**
- * Task Manager - State-of-the-Art Interactive Application Script
+ * WorkMind - State-of-the-Art Interactive Application Script
  * Features:
  * - Full Bilingual Khmer & English i18n
  * - Kanban Drag-and-Drop with HTML5 Drag Events & Realtime Status Sync
@@ -24,6 +24,8 @@ window.Swal = Swal;
 const i18n = {
     km: {
         workspace: 'កន្លែងធ្វើការ',
+        account: 'គណនី',
+        my_profile: 'ប្រវត្តិរូបរបស់ខ្ញុំ',
         my_tasks: 'កិច្ចការរបស់ខ្ញុំ',
         my_tasks_sub: 'រៀបចំ តាមដាន និងគ្រប់គ្រងកិច្ចការងារយ៉ាងរលូនលើក្ដារ Kanban និងបញ្ជី។',
         dashboard: 'ផ្ទាំងគ្រប់គ្រង',
@@ -104,20 +106,45 @@ const i18n = {
         task_overview: 'ទិដ្ឋភាពទូទៅនៃកិច្ចការ',
         ai_magic_breakdown: '✨ AI Magic Breakdown (បំបែកកិច្ចការស្វ័យប្រវត្តិ)',
         ai_suggest: '✨ AI Suggest (វិភាគស្វ័យប្រវត្តិ)',
-        ai_copilot_detected: 'AI Copilot បានរកឃើញ៖',
+        ai_copilot_detected: 'Nova បានរកឃើញ៖',
         ai_briefing_title: 'AI Daily Standup Briefing (សេចក្តីសង្ខេប AI)',
         ai_refresh_brief: 'ធ្វើបច្ចុប្បន្នភាព AI',
         ai_generating: 'កំពុងវិភាគ...',
         ai_subtasks_ready: 'បានបង្កើតកិច្ចការរងជោគជ័យ!',
         please_enter_title: 'សូមបញ្ចូលចំណងជើងកិច្ចការជាមុនសិន!',
-        ai_chatbot: 'AI Copilot Chatbot',
+        ai_chatbot: 'ជំនួយការ Nova AI',
         open_ai_chat: 'ជជែកជាមួយ AI Chatbot',
         ai_chatbot_status: 'ជំនួយការ AI កំពុងដំណើរការ',
-        ai_assistant_sub: 'ជំនួយការកិច្ចការ & ផលិតភាពការងារ',
+        ai_assistant_sub: 'IT • ការងារ • ការសិក្សា • ជីវិតប្រចាំថ្ងៃ',
         ai_welcome_title: 'តើខ្ញុំអាចជួយអ្វីដល់អ្នកនៅថ្ងៃនេះ?',
-        ai_welcome_desc: 'ខ្ញុំអាចជួយអ្នកបង្កើតកិច្ចការថ្មី បំបែកជំហានការងារ ពិនិត្យកាលបរិច្ឆេទ និងរៀបចំសេចក្តីសង្ខេបប្រចាំថ្ងៃ។',
+        ai_welcome_desc: 'សួរខ្ញុំអំពី IT ការសិក្សា ការងារ ផែនការផ្ទាល់ខ្លួន ឬឱ្យខ្ញុំជួយរៀបចំកិច្ចការរបស់អ្នក។',
         ai_try_asking: 'សំណួររហ័សដែលអ្នកអាចសួរ៖',
-        ai_thinking: 'AI កំពុងគិត...',
+        ai_learn_it: 'រៀន IT',
+        ai_work_help: 'ជំនួយការងារ',
+        ai_personal_plan: 'ផែនការផ្ទាល់ខ្លួន',
+        ai_new_task: 'កិច្ចការថ្មី',
+        ai_standup: 'សង្ខេបថ្ងៃនេះ',
+        ai_overdue: 'ហួសកំណត់',
+        ai_breakdown: 'បំបែកជំហាន',
+        ai_ask_placeholder: 'សួរ Nova អំពីការងារ ការសិក្សា ជីវិត ឬអ្វីផ្សេងទៀត...',
+        ai_profile_title: 'កំណត់ Nova សម្រាប់អ្នក',
+        ai_profile_desc: 'ប្រាប់ Nova អំពីអ្វីដែលអ្នកចង់រៀន ការងាររបស់អ្នក និងជំនួយដែលអ្នកត្រូវការ។',
+        ai_profile_occupation: 'ការងារ / តួនាទីរបស់អ្នក',
+        ai_profile_level: 'កម្រិតបទពិសោធន៍',
+        ai_profile_learning: 'តើអ្នកចង់រៀនជំនាញអ្វី?',
+        ai_profile_work_skills: 'ជំនាញដែលប្រើ ឬត្រូវការសម្រាប់ការងារ',
+        ai_profile_help: 'តើអ្នកចង់ឱ្យ Nova ជួយអ្វីខ្លះ?',
+        ai_profile_other: 'គោលដៅ ឬតម្រូវការផ្សេងៗ (មិនបង្ខំ)',
+        ai_profile_other_placeholder: 'ឧទាហរណ៍៖ ជួយខ្ញុំអភិវឌ្ឍភាសាអង់គ្លេសសម្រាប់ប្រជុំជាមួយអតិថិជន...',
+        ai_profile_save: 'រក្សាទុកការកំណត់',
+        ai_profile_button: 'កំណត់ Nova សម្រាប់ខ្ញុំ',
+        ai_profile_saved: 'បានរក្សាទុកការកំណត់ AI ដោយជោគជ័យ!',
+        ai_profile_required: 'សូមជ្រើសរើសការងារ ជំនាញចង់រៀន និងប្រភេទជំនួយយ៉ាងហោចណាស់មួយ។',
+        ai_thinking: 'Nova កំពុងគិត...',
+        ai_task_created_alert_title: 'Nova បានបង្កើតកិច្ចការ!',
+        ai_task_created_alert_text: 'កិច្ចការថ្មីត្រូវបានបន្ថែមភ្លាមៗទៅ WorkMind។',
+        ai_task_created_view: 'មើលកិច្ចការ',
+        ai_task_created_now: 'ទើបតែបង្កើតដោយ Nova',
         ai_clear_confirm: 'តើអ្នកប្រាកដជាចង់លុបប្រវត្តិជជែកទាំងអស់មែនទេ?',
         swal_confirm_title: 'តើអ្នកប្រាកដទេ?',
         swal_delete_task_title: 'តើអ្នកប្រាកដជាចង់លុបកិច្ចការនេះទេ?',
@@ -132,7 +159,7 @@ const i18n = {
         swal_task_deleted: 'កិច្ចការត្រូវបានលុបដោយជោគជ័យ!',
         swal_enter_title: 'សូមបញ្ចូលចំណងជើងកិច្ចការជាមុនសិន!',
         swal_logout_title: 'តើអ្នកពិតជាចង់ចាកចេញមែនទេ?',
-        swal_logout_text: 'អ្នកនឹងត្រូវចូលគណនីម្តងទៀតដើម្បីប្រើប្រាស់ Task Manager។',
+        swal_logout_text: 'អ្នកនឹងត្រូវចូលគណនីម្តងទៀតដើម្បីប្រើប្រាស់ WorkMind។',
         swal_logout_btn: 'ចាកចេញ',
         swal_clear_chat_title: 'លុបប្រវត្តិជជែក',
         swal_clear_chat_text: 'តើអ្នកប្រាកដជាចង់លុបប្រវត្តិជជែកទាំងអស់ជាមួយ AI មែនទេ?',
@@ -144,6 +171,8 @@ const i18n = {
     },
     en: {
         workspace: 'Workspace',
+        account: 'Account',
+        my_profile: 'My Profile',
         my_tasks: 'My Tasks',
         my_tasks_sub: 'Plan, prioritize, and track work from one interactive Kanban and list board.',
         dashboard: 'Dashboard',
@@ -224,20 +253,45 @@ const i18n = {
         task_overview: 'Task Overview',
         ai_magic_breakdown: '✨ AI Magic Breakdown',
         ai_suggest: '✨ AI Suggest',
-        ai_copilot_detected: 'AI Copilot detected:',
+        ai_copilot_detected: 'Nova detected:',
         ai_briefing_title: 'AI Daily Standup Briefing',
         ai_refresh_brief: 'Refresh Brief',
         ai_generating: 'Generating...',
         ai_subtasks_ready: 'AI Subtasks generated!',
         please_enter_title: 'Please enter a task title first!',
-        ai_chatbot: 'AI Copilot Chatbot',
+        ai_chatbot: 'Nova AI Assistant',
         open_ai_chat: 'Open AI Chatbot',
         ai_chatbot_status: 'Online Assistant',
-        ai_assistant_sub: 'Task Assistant & Productivity Coach',
+        ai_assistant_sub: 'IT • Work • Learning • Personal',
         ai_welcome_title: 'How can I help you today?',
-        ai_welcome_desc: 'I can create tasks, break down complex goals into subtasks, review deadlines, and deliver your daily standup briefing.',
+        ai_welcome_desc: 'Ask me about IT, learning, work, personal planning, or let me organize your tasks and goals.',
         ai_try_asking: 'Quick suggestions:',
-        ai_thinking: 'AI is thinking...',
+        ai_learn_it: 'Learn IT',
+        ai_work_help: 'Work Help',
+        ai_personal_plan: 'Personal Plan',
+        ai_new_task: 'New Task',
+        ai_standup: 'Standup',
+        ai_overdue: 'Overdue',
+        ai_breakdown: 'Breakdown',
+        ai_ask_placeholder: 'Ask Nova about work, learning, life, or anything else...',
+        ai_profile_title: 'Personalize your AI',
+        ai_profile_desc: 'Tell Nova what you want to learn, what you do, and what kind of help you need.',
+        ai_profile_occupation: 'Your work / role',
+        ai_profile_level: 'Experience level',
+        ai_profile_learning: 'What do you want to learn?',
+        ai_profile_work_skills: 'Skills used or needed at work',
+        ai_profile_help: 'What should Nova help you with?',
+        ai_profile_other: 'Other goals or needs (optional)',
+        ai_profile_other_placeholder: 'Example: Help me improve English for customer meetings...',
+        ai_profile_save: 'Save personalization',
+        ai_profile_button: 'Personalize Nova',
+        ai_profile_saved: 'AI personalization saved!',
+        ai_profile_required: 'Choose your role, at least one learning interest, and at least one help area.',
+        ai_thinking: 'Nova is thinking...',
+        ai_task_created_alert_title: 'Nova created a task!',
+        ai_task_created_alert_text: 'The new task was added to WorkMind immediately.',
+        ai_task_created_view: 'View task',
+        ai_task_created_now: 'Created by Nova just now',
         ai_clear_confirm: 'Are you sure you want to clear your chat history?',
         swal_confirm_title: 'Are you sure?',
         swal_delete_task_title: 'Delete this task?',
@@ -287,6 +341,13 @@ function applyLanguage(lang) {
         const key = el.dataset.i18n;
         if (dict[key]) {
             el.textContent = dict[key];
+        }
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        const key = el.dataset.i18nPlaceholder;
+        if (dict[key]) {
+            el.setAttribute('placeholder', dict[key]);
         }
     });
 }
@@ -394,6 +455,17 @@ window.showErrorAlert = showErrorAlert;
 // Initialize language and SweetAlert alerts on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     applyLanguage(currentLang);
+
+    const pageSkeleton = document.getElementById('page-loading-skeleton');
+    if (pageSkeleton) {
+        window.requestAnimationFrame(() => {
+            window.setTimeout(() => {
+                pageSkeleton.classList.add('is-loaded');
+                pageSkeleton.setAttribute('aria-hidden', 'true');
+                window.setTimeout(() => pageSkeleton.remove(), 250);
+            }, 100);
+        });
+    }
 
     const dict = i18n[currentLang] || i18n.en;
 
@@ -1666,15 +1738,75 @@ if (miniCalendar) {
     });
 }
 
-const workspaceProfile = document.querySelector('#workspace-profile');
-document.querySelectorAll('[data-open-workspace-profile]').forEach(button => button.addEventListener('click', () => workspaceProfile?.showModal()));
-document.querySelector('[data-close-workspace-profile]')?.addEventListener('click', () => workspaceProfile?.close());
-workspaceProfile?.addEventListener('click', (event) => {
-    if (event.target === workspaceProfile) {
-        const bounds = workspaceProfile.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) workspaceProfile.close();
-    }
+const profileTabButtons = document.querySelectorAll('[data-profile-tab]');
+const profileTabPanels = document.querySelectorAll('[data-profile-panel]');
+const profileForm = document.querySelector('[data-profile-form]');
+const profileSectionInput = profileForm?.querySelector('[data-profile-section]');
+const profileSaveText = profileForm?.querySelector('[data-profile-save-text]');
+const profileSectionChoices = profileForm?.querySelectorAll('[data-profile-section-choice]') ?? [];
+
+function syncProfileSectionTabs() {
+    const selectedSections = new Set(
+        [...profileSectionChoices]
+            .filter((choice) => choice.checked)
+            .map((choice) => choice.value),
+    );
+
+    profileTabButtons.forEach((button) => {
+        if (!button.hasAttribute('data-profile-optional-tab')) return;
+
+        const isVisible = selectedSections.has(button.dataset.profileTab);
+        button.classList.toggle('hidden', !isVisible);
+        button.classList.toggle('inline-flex', isVisible);
+    });
+
+    const activeTab = [...profileTabButtons].find((button) => button.getAttribute('aria-selected') === 'true');
+    if (activeTab?.classList.contains('hidden')) activateProfileTab('personal');
+}
+
+function activateProfileTab(tabName) {
+    profileTabButtons.forEach((button) => {
+        const isActive = button.dataset.profileTab === tabName;
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        button.classList.toggle('border-blue-600', isActive);
+        button.classList.toggle('text-blue-600', isActive);
+        button.classList.toggle('dark:text-blue-400', isActive);
+        button.classList.toggle('border-transparent', !isActive);
+        button.classList.toggle('text-slate-400', !isActive);
+    });
+
+    profileTabPanels.forEach((panel) => {
+        const isActive = panel.dataset.profilePanel === tabName;
+        panel.classList.toggle('hidden', !isActive);
+        panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+
+        panel.querySelectorAll('input, select, textarea').forEach((control) => {
+            if (!Object.hasOwn(control.dataset, 'profileOriginallyDisabled')) {
+                control.dataset.profileOriginallyDisabled = control.disabled ? 'true' : 'false';
+            }
+
+            control.disabled = !isActive || control.dataset.profileOriginallyDisabled === 'true';
+        });
+    });
+
+    if (profileSectionInput) profileSectionInput.value = tabName;
+    if (profileSaveText) profileSaveText.textContent = `Save ${tabName} information`;
+
+    window.history.replaceState(null, '', tabName === 'personal' ? window.location.pathname : `#${tabName}`);
+}
+
+profileTabButtons.forEach((button) => {
+    button.addEventListener('click', () => activateProfileTab(button.dataset.profileTab));
 });
+
+if (profileTabButtons.length) {
+    syncProfileSectionTabs();
+    const requestedTab = window.location.hash.replace('#', '');
+    const validTab = [...profileTabButtons].some((button) => (
+        button.dataset.profileTab === requestedTab && !button.classList.contains('hidden')
+    ));
+    activateProfileTab(validTab ? requestedTab : 'personal');
+}
 
 if (dashboard && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     dashboard.querySelectorAll('[data-dashboard-count]').forEach((counter) => {
@@ -1703,11 +1835,60 @@ if (dashboard && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 // ============================================================================
 // 12. NOTIFICATIONS & UTILITIES
 // ============================================================================
+function closeClickDropdowns(except = null) {
+    document.querySelectorAll('[data-dropdown]').forEach((dropdown) => {
+        if (dropdown === except) return;
+
+        dropdown.querySelector('[data-dropdown-menu]')?.classList.add('hidden');
+        const toggle = dropdown.querySelector('[data-dropdown-toggle]');
+        toggle?.setAttribute('aria-expanded', 'false');
+        dropdown.querySelector('[data-dropdown-chevron]')?.classList.remove('rotate-180');
+    });
+}
+
+document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-dropdown-toggle]');
+    if (toggle) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const dropdown = toggle.closest('[data-dropdown]');
+        const menu = dropdown?.querySelector('[data-dropdown-menu]');
+        const shouldOpen = menu?.classList.contains('hidden');
+
+        closeClickDropdowns(dropdown);
+        notificationPanel?.classList.add('hidden');
+        menu?.classList.toggle('hidden', !shouldOpen);
+        toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        dropdown?.querySelector('[data-dropdown-chevron]')?.classList.toggle('rotate-180', Boolean(shouldOpen));
+
+        if (shouldOpen) {
+            menu?.querySelector('[role="menuitem"]')?.focus({ preventScroll: true });
+        }
+        return;
+    }
+
+    if (!event.target.closest('[data-dropdown]')) {
+        closeClickDropdowns();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    const openToggle = document.querySelector('[data-dropdown-toggle][aria-expanded="true"]');
+    if (openToggle) {
+        closeClickDropdowns();
+        openToggle.focus();
+    }
+});
+
 const notificationBtn = document.querySelector('[data-toggle-notifications]');
 const notificationPanel = document.querySelector('[data-notifications-panel]');
 
 notificationBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
+    closeClickDropdowns();
     notificationPanel?.classList.toggle('hidden');
 });
 
@@ -2056,12 +2237,224 @@ const aiChatMessagesCont = document.getElementById('ai-chat-messages');
 const aiChatThread = document.getElementById('ai-chat-thread');
 const aiChatWelcome = document.getElementById('ai-chat-welcome');
 const aiChatTyping = document.getElementById('ai-chat-typing');
+const aiChatHistorySkeleton = document.getElementById('ai-chat-history-skeleton');
 const aiChatForm = document.getElementById('ai-chat-form');
 const aiChatInput = document.getElementById('ai-chat-input');
 const aiChatSendBtn = document.getElementById('ai-chat-send-btn');
+const aiChatTools = document.getElementById('ai-chat-tools');
+const aiChatComposer = document.getElementById('ai-chat-composer');
+const aiProfilePanel = document.getElementById('ai-profile-panel');
+const aiProfileForm = document.getElementById('ai-profile-form');
+const aiProfileOpenBtn = document.getElementById('ai-profile-open-btn');
+const aiProfileWelcomeBtn = document.getElementById('ai-profile-welcome-btn');
+const aiProfileCancelBtn = document.getElementById('ai-profile-cancel-btn');
+const aiProfileSaveBtn = document.getElementById('ai-profile-save-btn');
+const aiProfileError = document.getElementById('ai-profile-error');
 
 let aiChatHistoryLoaded = false;
 let isAiResponding = false;
+let aiPreferencesLoaded = false;
+let aiPreferencesConfigured = false;
+const deliveredAiTaskAlerts = new Set();
+let aiTaskAlertChannel = null;
+
+try {
+    if ('BroadcastChannel' in window) {
+        aiTaskAlertChannel = new BroadcastChannel('workmind-task-alerts');
+    }
+} catch (_error) {
+    aiTaskAlertChannel = null;
+}
+
+function getAiTaskUrl(task) {
+    const fallback = task?.task_id ? `/tasks/${encodeURIComponent(task.task_id)}` : '/tasks';
+    try {
+        const url = new URL(task?.task_url || fallback, window.location.origin);
+        return url.origin === window.location.origin ? `${url.pathname}${url.search}${url.hash}` : fallback;
+    } catch (_error) {
+        return fallback;
+    }
+}
+
+function addAiTaskToNotificationPanel(task) {
+    const notificationList = document.querySelector('[data-notification-list]');
+    const notificationCount = document.querySelector('[data-notification-count]');
+    if (!notificationList || !notificationCount) return;
+
+    notificationList.querySelector('[data-notifications-empty]')?.remove();
+
+    const alertId = `ai-task-${task.task_id ?? Date.now()}`;
+    if (notificationList.querySelector(`[data-ai-task-alert-id="${alertId}"]`)) return;
+
+    const dict = i18n[currentLang] || i18n.en;
+    const item = document.createElement('a');
+    item.href = getAiTaskUrl(task);
+    item.dataset.aiTaskAlertId = alertId;
+    if (task.notification_id) item.dataset.notificationId = task.notification_id;
+    item.className = `flex gap-3 border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/50 last:border-b-0 ${task.read ? 'opacity-65' : ''}`;
+    item.innerHTML = `
+        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-bold text-slate-950 dark:text-white">${escapeHtml(task.title || 'New task')}</span>
+            <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">${escapeHtml(task.time_ago ? `Created by Nova · ${task.time_ago}` : dict.ai_task_created_now)}</span>
+        </span>
+        ${task.read
+            ? '<span class="mt-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold uppercase text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200">AI</span>'
+            : '<span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Unread"></span>'}
+    `;
+    notificationList.prepend(item);
+
+    const currentCount = Number.parseInt(notificationCount.textContent, 10) || 0;
+    const nextCount = currentCount + 1;
+    notificationCount.textContent = nextCount > 99 ? '99+' : String(nextCount);
+    notificationCount.classList.remove('hidden');
+    notificationCount.classList.add('flex');
+}
+
+function setPersistentTaskAlertCount(unreadAiCount) {
+    const notificationCount = document.querySelector('[data-notification-count]');
+    if (!notificationCount) return;
+
+    const reminderCount = Number.parseInt(notificationCount.dataset.reminderCount, 10) || 0;
+    const total = reminderCount + (Number.parseInt(unreadAiCount, 10) || 0);
+    notificationCount.textContent = total > 99 ? '99+' : String(total);
+    notificationCount.classList.toggle('hidden', total === 0);
+    notificationCount.classList.toggle('flex', total > 0);
+}
+
+let taskAlertSyncInFlight = false;
+
+async function syncPersistentAiTaskAlerts() {
+    if (!document.querySelector('[data-notifications-root]') || document.hidden || taskAlertSyncInFlight) return;
+
+    taskAlertSyncInFlight = true;
+
+    try {
+        const response = await fetch('/api/task-alerts', {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (!data.success) return;
+
+        setPersistentTaskAlertCount(data.unread_count);
+        (data.notifications || []).slice().reverse().forEach((task) => {
+            const taskKey = String(task.task_id ?? '');
+            const createdAt = task.created_at ? Date.parse(task.created_at) : 0;
+            const isRecentUnread = !task.read && createdAt > 0 && (Date.now() - createdAt) < 30000;
+
+            if (isRecentUnread && taskKey && !deliveredAiTaskAlerts.has(taskKey)) {
+                showAiTaskCreatedAlert(task, { broadcast: false, celebrate: false });
+            } else {
+                addAiTaskToNotificationPanel(task);
+                if (taskKey) deliveredAiTaskAlerts.add(taskKey);
+            }
+        });
+    } catch (_error) {
+        // Keep the rest of the application usable while temporarily offline.
+    } finally {
+        taskAlertSyncInFlight = false;
+    }
+}
+
+function showAiTaskCreatedAlert(task, { broadcast = true, celebrate = true } = {}) {
+    if (!task?.task_id || deliveredAiTaskAlerts.has(String(task.task_id))) return;
+    deliveredAiTaskAlerts.add(String(task.task_id));
+
+    const dict = i18n[currentLang] || i18n.en;
+    const taskUrl = getAiTaskUrl(task);
+    addAiTaskToNotificationPanel(task);
+    window.dispatchEvent(new CustomEvent('workmind:task-created', { detail: task }));
+
+    if (celebrate) {
+        playTaskChime();
+        triggerConfetti();
+    }
+
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: dict.ai_task_created_alert_title,
+        html: `<strong>${escapeHtml(task.title || 'New task')}</strong><br><span style="font-size:11px;opacity:.72">${escapeHtml(dict.ai_task_created_alert_text)}</span>`,
+        showConfirmButton: true,
+        confirmButtonText: dict.ai_task_created_view,
+        confirmButtonColor: '#2563eb',
+        showCloseButton: true,
+        timer: 7000,
+        timerProgressBar: true,
+        background: isDarkMode() ? '#0f172a' : '#ffffff',
+        color: isDarkMode() ? '#f8fafc' : '#0f172a',
+    }).then((result) => {
+        if (result.isConfirmed) window.location.assign(taskUrl);
+    });
+
+    if (broadcast && aiTaskAlertChannel) {
+        aiTaskAlertChannel.postMessage({ type: 'task_created', task });
+    }
+}
+
+if (aiTaskAlertChannel) {
+    aiTaskAlertChannel.addEventListener('message', (event) => {
+        if (event.data?.type === 'task_created') {
+            showAiTaskCreatedAlert(event.data.task, { broadcast: false, celebrate: false });
+        }
+    });
+}
+
+document.addEventListener('click', async (event) => {
+    const notificationLink = event.target.closest('[data-notification-id]');
+    if (notificationLink) {
+        event.preventDefault();
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        try {
+            await fetch(`/api/task-alerts/${encodeURIComponent(notificationLink.dataset.notificationId)}/read`, {
+                method: 'PATCH',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                },
+                credentials: 'same-origin',
+            });
+        } finally {
+            window.location.assign(notificationLink.href);
+        }
+        return;
+    }
+
+    const markAllButton = event.target.closest('[data-mark-all-task-alerts-read]');
+    if (markAllButton) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const response = await fetch('/api/task-alerts/read-all', {
+            method: 'PATCH',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+            },
+            credentials: 'same-origin',
+        });
+        if (response.ok) {
+            document.querySelectorAll('[data-notification-id]').forEach((item) => {
+                item.classList.add('opacity-65');
+                item.querySelector('[aria-label="Unread"]')?.remove();
+            });
+            markAllButton.remove();
+            setPersistentTaskAlertCount(0);
+        }
+    }
+});
+
+if (document.querySelector('[data-notifications-root]')) {
+    window.setTimeout(syncPersistentAiTaskAlerts, 1200);
+    window.setInterval(syncPersistentAiTaskAlerts, 30000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncPersistentAiTaskAlerts();
+    });
+}
 
 function openAiChat(promptToRun = null) {
     if (!aiChatDrawer) return;
@@ -2069,6 +2462,18 @@ function openAiChat(promptToRun = null) {
     aiChatDrawer.classList.remove('hidden');
     aiChatDrawer.classList.add('flex');
     initAllNiuLotties(aiChatDrawer);
+
+    if (promptToRun) {
+        hideAiProfile();
+    }
+
+    if (!aiPreferencesLoaded) {
+        loadAiPreferences().then(() => {
+            if (!aiPreferencesConfigured && !promptToRun) {
+                showAiProfile();
+            }
+        });
+    }
 
     if (!aiChatHistoryLoaded) {
         loadAiChatHistory().then(() => {
@@ -2083,7 +2488,9 @@ function openAiChat(promptToRun = null) {
     }
 
     setTimeout(() => {
-        aiChatInput?.focus();
+        if (aiProfilePanel?.classList.contains('hidden')) {
+            aiChatInput?.focus();
+        }
         scrollChatToBottom();
     }, 100);
 }
@@ -2113,12 +2520,134 @@ function scrollChatToBottom(smooth = true) {
 function executeOrFillPrompt(promptText) {
     if (!aiChatInput) return;
     const clean = promptText.trim();
-    if (clean.endsWith(':') || clean.endsWith(': ')) {
+    if (clean.endsWith(':') || clean.endsWith('៖')) {
         aiChatInput.value = clean + ' ';
         aiChatInput.focus();
     } else {
         aiChatInput.value = '';
         sendAiChatMessage(clean);
+    }
+}
+
+function showAiProfile() {
+    if (!aiProfilePanel) return;
+
+    aiProfilePanel.classList.remove('hidden');
+    aiChatMessagesCont?.classList.add('hidden');
+    aiChatTools?.classList.add('hidden');
+    aiChatComposer?.classList.add('hidden');
+    aiProfileError?.classList.add('hidden');
+}
+
+function hideAiProfile() {
+    if (!aiProfilePanel) return;
+
+    aiProfilePanel.classList.add('hidden');
+    aiChatMessagesCont?.classList.remove('hidden');
+    aiChatTools?.classList.remove('hidden');
+    aiChatComposer?.classList.remove('hidden');
+    aiChatInput?.focus();
+    scrollChatToBottom(false);
+}
+
+function fillAiPreferencesForm(preferences) {
+    if (!aiProfileForm || !preferences) return;
+
+    aiProfileForm.reset();
+    aiProfileForm.elements.occupation.value = preferences.occupation || '';
+    aiProfileForm.elements.experience_level.value = preferences.experience_level || 'beginner';
+
+    ['learning_interests', 'work_skills', 'assistance_areas'].forEach((field) => {
+        const selected = new Set(preferences[field] || []);
+        aiProfileForm.querySelectorAll(`[name="${field}[]"]`).forEach((input) => {
+            input.checked = selected.has(input.value);
+        });
+    });
+
+    aiProfileForm.elements.other_needs.value = preferences.other_needs || '';
+}
+
+async function loadAiPreferences() {
+    try {
+        const response = await fetch('/tasks/ai/preferences', {
+            headers: { Accept: 'application/json' },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        aiPreferencesLoaded = true;
+        aiPreferencesConfigured = Boolean(data.configured);
+        if (data.preferences) {
+            fillAiPreferencesForm(data.preferences);
+        }
+    } catch (_error) {
+        // The chatbot remains usable when preferences cannot be loaded.
+    }
+}
+
+async function saveAiPreferences() {
+    if (!aiProfileForm || !aiProfileSaveBtn) return;
+
+    const learningInterests = [...aiProfileForm.querySelectorAll('[name="learning_interests[]"]:checked')].map((input) => input.value);
+    const workSkills = [...aiProfileForm.querySelectorAll('[name="work_skills[]"]:checked')].map((input) => input.value);
+    const assistanceAreas = [...aiProfileForm.querySelectorAll('[name="assistance_areas[]"]:checked')].map((input) => input.value);
+    const dict = i18n[currentLang] || i18n.en;
+
+    if (!aiProfileForm.elements.occupation.value || learningInterests.length === 0 || assistanceAreas.length === 0) {
+        if (aiProfileError) {
+            aiProfileError.textContent = dict.ai_profile_required;
+            aiProfileError.classList.remove('hidden');
+        }
+        return;
+    }
+
+    aiProfileSaveBtn.disabled = true;
+    aiProfileError?.classList.add('hidden');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    try {
+        const response = await fetch('/tasks/ai/preferences', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+            },
+            body: JSON.stringify({
+                occupation: aiProfileForm.elements.occupation.value,
+                experience_level: aiProfileForm.elements.experience_level.value,
+                learning_interests: learningInterests,
+                work_skills: workSkills,
+                assistance_areas: assistanceAreas,
+                other_needs: aiProfileForm.elements.other_needs.value.trim() || null,
+            }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            const firstError = Object.values(data.errors || {})[0]?.[0] || data.message || 'Unable to save your preferences.';
+            if (aiProfileError) {
+                aiProfileError.textContent = firstError;
+                aiProfileError.classList.remove('hidden');
+            }
+            return;
+        }
+
+        aiPreferencesLoaded = true;
+        aiPreferencesConfigured = true;
+        fillAiPreferencesForm(data.preferences);
+        hideAiProfile();
+        showToast('success', dict.ai_profile_saved);
+    } catch (_error) {
+        if (aiProfileError) {
+            aiProfileError.textContent = currentLang === 'km'
+                ? 'មិនអាចរក្សាទុកបានទេ។ សូមព្យាយាមម្តងទៀត។'
+                : 'Unable to save your preferences. Please try again.';
+            aiProfileError.classList.remove('hidden');
+        }
+    } finally {
+        aiProfileSaveBtn.disabled = false;
     }
 }
 
@@ -2439,7 +2968,7 @@ function renderChatMessage(msg, autoScroll = true) {
                 <div class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl overflow-hidden bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 mt-0.5 shadow-2xs p-0.5 pointer-events-none" data-lottie="niu"></div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1.5 mb-1 px-0.5">
-                        <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">Gemini</span>
+                        <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">Nova</span>
                         ${time ? `<span class="text-[9.5px] text-slate-400 font-mono ml-auto">${escapeHtml(time)}</span>` : ''}
                     </div>
                     <div class="ai-chat-bubble-bot rounded-2xl rounded-tl-xs p-3.5 text-xs text-slate-800 dark:text-slate-200 leading-relaxed shadow-xs">
@@ -2462,6 +2991,10 @@ function renderChatMessage(msg, autoScroll = true) {
 }
 
 async function loadAiChatHistory() {
+    let hasHistory = false;
+    aiChatHistorySkeleton?.classList.remove('hidden');
+    aiChatWelcome?.classList.add('hidden');
+
     try {
         const res = await fetch('/tasks/ai/chat/history', {
             headers: { Accept: 'application/json' },
@@ -2471,16 +3004,19 @@ async function loadAiChatHistory() {
             const data = await res.json();
             aiChatHistoryLoaded = true;
             if (data.success && data.history?.length) {
-                if (aiChatWelcome) aiChatWelcome.classList.add('hidden');
+                hasHistory = true;
                 if (aiChatThread) aiChatThread.innerHTML = '';
                 data.history.forEach((m) => renderChatMessage(m, false));
                 scrollChatToBottom(false);
-            } else {
-                if (aiChatWelcome) aiChatWelcome.classList.remove('hidden');
             }
         }
     } catch (_err) {
         // silent fail
+    } finally {
+        aiChatHistorySkeleton?.classList.add('hidden');
+        if (!hasHistory) {
+            aiChatWelcome?.classList.remove('hidden');
+        }
     }
 }
 
@@ -2537,8 +3073,7 @@ async function sendAiChatMessage(messageText) {
                 });
 
                 if (data.action_type === 'task_created') {
-                    playTaskChime();
-                    triggerConfetti();
+                    showAiTaskCreatedAlert(data.action_data);
                 }
             } else {
                 renderChatMessage({
@@ -2550,7 +3085,7 @@ async function sendAiChatMessage(messageText) {
         } else {
             renderChatMessage({
                 role: 'assistant',
-                message: 'An error occurred while connecting to AI Copilot. Please check your connection and try again.',
+                message: 'An error occurred while connecting to Nova. Please check your connection and try again.',
                 time: nowTime,
             });
         }
@@ -2612,6 +3147,14 @@ async function clearAiChatHistory() {
 aiChatLauncherBtn?.addEventListener('click', () => toggleAiChat());
 aiChatCloseBtn?.addEventListener('click', () => closeAiChat());
 aiChatClearBtn?.addEventListener('click', () => clearAiChatHistory());
+aiProfileOpenBtn?.addEventListener('click', () => showAiProfile());
+aiProfileWelcomeBtn?.addEventListener('click', () => showAiProfile());
+aiProfileCancelBtn?.addEventListener('click', () => hideAiProfile());
+
+aiProfileForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    saveAiPreferences();
+});
 
 aiChatForm?.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -2633,7 +3176,9 @@ document.addEventListener('click', (e) => {
     const promptBtn = e.target.closest('.ai-suggestion-chip, .ai-quick-btn, .dashboard-ai-chip, [data-chat-prompt]');
     if (promptBtn) {
         e.preventDefault();
-        const prompt = promptBtn.dataset.prompt || promptBtn.dataset.chatPrompt;
+        const prompt = currentLang === 'km' && promptBtn.dataset.promptKm
+            ? promptBtn.dataset.promptKm
+            : (promptBtn.dataset.prompt || promptBtn.dataset.chatPrompt);
         if (prompt) {
             openAiChat(prompt);
         }

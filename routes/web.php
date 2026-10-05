@@ -3,6 +3,7 @@
 use App\Http\Controllers\AiCopilotController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,8 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::get('/tasks/overdue', [TaskController::class, 'overdue'])->name('tasks.overdue');
     Route::get('/tasks/completed', [TaskController::class, 'completed'])->name('tasks.completed');
     Route::post('/sign-out', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/tasks/quick', [TaskController::class, 'quickStore'])->name('tasks.quick-store');
     Route::patch('/tasks/{task}/toggle-status', [TaskController::class, 'toggleStatus'])->name('tasks.toggle-status');
     Route::patch('/tasks/{task}/toggle-pin', [TaskController::class, 'togglePin'])->name('tasks.toggle-pin');
@@ -40,6 +43,8 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::post('/tasks/ai/chat', [AiCopilotController::class, 'chat'])->name('tasks.ai.chat');
     Route::get('/tasks/ai/chat/history', [AiCopilotController::class, 'chatHistory'])->name('tasks.ai.chat.history');
     Route::post('/tasks/ai/chat/clear', [AiCopilotController::class, 'clearChat'])->name('tasks.ai.chat.clear');
+    Route::get('/tasks/ai/preferences', [AiCopilotController::class, 'preferences'])->name('tasks.ai.preferences');
+    Route::put('/tasks/ai/preferences', [AiCopilotController::class, 'updatePreferences'])->name('tasks.ai.preferences.update');
     Route::get('/tasks/ai/status', [AiCopilotController::class, 'itStatus'])->name('tasks.ai.status');
 
     Route::resource('tasks', TaskController::class);

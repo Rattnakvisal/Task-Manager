@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Projects & Categories - Task Manager')
+@section('title', 'Projects & Categories - WorkMind')
 
 @section('content')
     <div class="mx-auto max-w-[1500px] space-y-6">
