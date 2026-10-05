@@ -69,15 +69,20 @@ if ($requestPath !== '' && $requestPath !== '/' && $requestPath !== '/index.php'
 try {
     require __DIR__.'/../public/index.php';
 } catch (Throwable $exception) {
-    error_log(sprintf(
-        '[vercel-bootstrap] %s: %s in %s:%d%s%s',
-        $exception::class,
-        $exception->getMessage(),
-        $exception->getFile(),
-        $exception->getLine(),
-        PHP_EOL,
-        $exception->getTraceAsString(),
-    ));
+    $errorChain = [];
+    $current = $exception;
+
+    do {
+        $errorChain[] = sprintf(
+            '%s: %s in %s:%d',
+            $current::class,
+            $current->getMessage(),
+            $current->getFile(),
+            $current->getLine(),
+        );
+    } while (($current = $current->getPrevious()) && count($errorChain) < 4);
+
+    error_log('[vercel-bootstrap] '.implode(' <- ', $errorChain));
 
     http_response_code(500);
     header('Content-Type: text/plain; charset=UTF-8');
