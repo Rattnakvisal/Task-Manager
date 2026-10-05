@@ -105,13 +105,16 @@ const i18n = {
         total_tasks: 'កិច្ចការសរុប',
         task_overview: 'ទិដ្ឋភាពទូទៅនៃកិច្ចការ',
         ai_magic_breakdown: '✨ AI Magic Breakdown (បំបែកកិច្ចការស្វ័យប្រវត្តិ)',
+        task_title_or_topic: 'ចំណងជើងកិច្ចការ ឬប្រធានបទ',
+        task_topic_hint: 'ឧទាហរណ៍៖ រៀន Laravel, រៀបចំបទបង្ហាញ ឬបង្កើត Portfolio',
+        ai_plan_type: 'ប្រភេទផែនការ',
         ai_suggest: '✨ AI Suggest (វិភាគស្វ័យប្រវត្តិ)',
         ai_copilot_detected: 'Nova បានរកឃើញ៖',
         ai_briefing_title: 'AI Daily Standup Briefing (សេចក្តីសង្ខេប AI)',
         ai_refresh_brief: 'ធ្វើបច្ចុប្បន្នភាព AI',
         ai_generating: 'កំពុងវិភាគ...',
         ai_subtasks_ready: 'បានបង្កើតកិច្ចការរងជោគជ័យ!',
-        please_enter_title: 'សូមបញ្ចូលចំណងជើងកិច្ចការជាមុនសិន!',
+        please_enter_title: 'សូមបញ្ចូលចំណងជើងកិច្ចការ ឬប្រធានបទជាមុនសិន!',
         ai_chatbot: 'ជំនួយការ Nova AI',
         open_ai_chat: 'ជជែកជាមួយ AI Chatbot',
         ai_chatbot_status: 'ជំនួយការ AI កំពុងដំណើរការ',
@@ -252,13 +255,16 @@ const i18n = {
         total_tasks: 'Tasks',
         task_overview: 'Task Overview',
         ai_magic_breakdown: '✨ AI Magic Breakdown',
+        task_title_or_topic: 'Task title or topic',
+        task_topic_hint: 'Examples: Learn Laravel, prepare a presentation, or build a portfolio',
+        ai_plan_type: 'Plan type',
         ai_suggest: '✨ AI Suggest',
         ai_copilot_detected: 'Nova detected:',
         ai_briefing_title: 'AI Daily Standup Briefing',
         ai_refresh_brief: 'Refresh Brief',
         ai_generating: 'Generating...',
         ai_subtasks_ready: 'AI Subtasks generated!',
-        please_enter_title: 'Please enter a task title first!',
+        please_enter_title: 'Please enter a task title or topic first!',
         ai_chatbot: 'Nova AI Assistant',
         open_ai_chat: 'Open AI Chatbot',
         ai_chatbot_status: 'Online Assistant',
@@ -1468,6 +1474,11 @@ const editForm = document.querySelector('[data-edit-task-form]');
 function openTaskModal(prefilledCategory = null) {
     createSubtasks = [];
     renderCreateSubtasks();
+    const breakdownInsight = document.getElementById('create-ai-breakdown-insight');
+    breakdownInsight?.classList.add('hidden');
+    if (breakdownInsight) breakdownInsight.innerHTML = '';
+    const breakdownType = document.getElementById('create_breakdown_type');
+    if (breakdownType) breakdownType.value = 'auto';
     if (prefilledCategory) {
         const catSelect = modal?.querySelector('select[name="category"]');
         if (catSelect) catSelect.value = prefilledCategory;
@@ -1483,6 +1494,11 @@ function closeTaskModal() {
 }
 
 function openEditModal() {
+    const breakdownInsight = document.getElementById('edit-ai-breakdown-insight');
+    breakdownInsight?.classList.add('hidden');
+    if (breakdownInsight) breakdownInsight.innerHTML = '';
+    const breakdownType = document.getElementById('edit_breakdown_type');
+    if (breakdownType) breakdownType.value = 'auto';
     editModal?.classList.remove('hidden');
     editModal?.classList.add('flex');
     editModal?.querySelector('[name="title"]')?.focus();
@@ -1992,11 +2008,40 @@ document.addEventListener('click', async (e) => {
 });
 
 // 13.2. Modal AI Magic Breakdown Buttons
+function renderAiBreakdownInsight(isEdit, data) {
+    const insight = document.getElementById(isEdit ? 'edit-ai-breakdown-insight' : 'create-ai-breakdown-insight');
+    if (!insight) return;
+
+    const planLabels = {
+        task: currentLang === 'km' ? 'កិច្ចការអនុវត្ត' : 'Action task',
+        learning: currentLang === 'km' ? 'ផែនការសិក្សា' : 'Learning roadmap',
+        project: currentLang === 'km' ? 'ផែនការគម្រោង' : 'Project plan',
+        personal: currentLang === 'km' ? 'គោលដៅផ្ទាល់ខ្លួន' : 'Personal goal',
+    };
+    const totalMinutes = Number.parseInt(data.estimated_minutes, 10) || 0;
+    const duration = totalMinutes >= 60
+        ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60 ? `${totalMinutes % 60}m` : ''}`.trim()
+        : `${totalMinutes}m`;
+    const tags = Array.isArray(data.suggested_tags) ? data.suggested_tags.slice(0, 4) : [];
+
+    insight.innerHTML = `
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded-full bg-purple-600 px-2.5 py-1 text-[10px] font-bold text-white">${escapeHtml(planLabels[data.plan_type] || 'AI plan')}</span>
+            <span class="text-[11px] font-semibold text-purple-700 dark:text-purple-300">${data.subtasks?.length || 0} ${currentLang === 'km' ? 'ជំហាន' : 'steps'} · ${escapeHtml(duration)}</span>
+            ${tags.map((tag) => `<span class="rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">#${escapeHtml(tag)}</span>`).join('')}
+        </div>
+        ${data.outcome ? `<p class="mt-2 text-xs font-bold leading-5 text-slate-800 dark:text-slate-100">${escapeHtml(data.outcome)}</p>` : ''}
+        ${data.summary ? `<p class="mt-1 text-[11px] leading-5 text-slate-600 dark:text-slate-400">${escapeHtml(data.summary)}</p>` : ''}
+    `;
+    insight.classList.remove('hidden');
+}
+
 async function handleModalAiBreakdown(isEdit = false) {
     const titleInput = isEdit ? document.getElementById('edit_title') : document.getElementById('create_title');
     const descInput = isEdit ? document.getElementById('edit_description') : document.getElementById('create_description');
     const catInput = isEdit ? document.getElementById('edit_category') : document.getElementById('create_category');
     const prioInput = isEdit ? document.getElementById('edit_priority') : document.getElementById('create_priority');
+    const planTypeInput = isEdit ? document.getElementById('edit_breakdown_type') : document.getElementById('create_breakdown_type');
     const breakdownBtn = isEdit ? document.getElementById('edit-ai-breakdown-btn') : document.getElementById('create-ai-breakdown-btn');
 
     const title = titleInput?.value.trim();
@@ -2004,6 +2049,7 @@ async function handleModalAiBreakdown(isEdit = false) {
         titleInput?.focus();
         titleInput?.classList.add('border-rose-400', 'ring-2', 'ring-rose-200');
         setTimeout(() => titleInput?.classList.remove('border-rose-400', 'ring-2', 'ring-rose-200'), 1500);
+        showToast('warning', (i18n[currentLang] || i18n.en).please_enter_title);
         return;
     }
 
@@ -2033,36 +2079,55 @@ async function handleModalAiBreakdown(isEdit = false) {
                 title,
                 description: descInput?.value || null,
                 category: catInput?.value || null,
+                plan_type: planTypeInput?.value || 'auto',
                 lang: currentLang,
             }),
         });
 
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success && Array.isArray(data.subtasks)) {
-                if (isEdit) {
-                    editSubtasks = [...editSubtasks, ...data.subtasks];
-                    renderEditSubtasks();
-                } else {
-                    createSubtasks = [...createSubtasks, ...data.subtasks];
-                    renderCreateSubtasks();
-                }
-
-                // If category was not selected, auto-select suggested category
-                if (catInput && !catInput.value && data.suggested_category) {
-                    catInput.value = data.suggested_category;
-                }
-
-                // If priority is default medium, suggest higher priority if urgent
-                if (prioInput && data.suggested_priority) {
-                    prioInput.value = data.suggested_priority;
-                }
-
-                playTaskChime();
-            }
+        if (!res.ok) {
+            throw new Error('Unable to generate an AI plan.');
         }
+
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.subtasks)) {
+            throw new Error('The AI plan response was incomplete.');
+        }
+
+        const currentSubtasks = isEdit ? editSubtasks : createSubtasks;
+        const existingTitles = new Set(currentSubtasks.map((item) => String(item.title || '').trim().toLocaleLowerCase()));
+        const uniqueSubtasks = data.subtasks.filter((item) => {
+            const normalizedTitle = String(item.title || '').trim().toLocaleLowerCase();
+            if (!normalizedTitle || existingTitles.has(normalizedTitle)) return false;
+            existingTitles.add(normalizedTitle);
+            return true;
+        });
+
+        if (isEdit) {
+            editSubtasks = [...editSubtasks, ...uniqueSubtasks];
+            renderEditSubtasks();
+        } else {
+            createSubtasks = [...createSubtasks, ...uniqueSubtasks];
+            renderCreateSubtasks();
+        }
+
+        if (catInput && !catInput.value && data.suggested_category) {
+            catInput.value = data.suggested_category;
+        }
+
+        if (prioInput && data.suggested_priority) {
+            prioInput.value = data.suggested_priority;
+        }
+
+        renderAiBreakdownInsight(isEdit, data);
+        playTaskChime();
+        showToast('success', currentLang === 'km'
+            ? `Nova បានបង្កើតផែនការ ${uniqueSubtasks.length} ជំហាន។`
+            : `Nova created a ${uniqueSubtasks.length}-step plan.`);
     } catch (_err) {
-        // silent fail
+        showErrorAlert(
+            currentLang === 'km' ? 'មិនអាចបង្កើតផែនការបានទេ' : 'Could not generate the plan',
+            currentLang === 'km' ? 'សូមព្យាយាមម្តងទៀតក្នុងពេលបន្តិច។' : 'Please check your connection and try again.',
+        );
     } finally {
         if (breakdownBtn) {
             breakdownBtn.disabled = false;

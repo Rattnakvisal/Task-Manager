@@ -48,6 +48,8 @@ test('ai breakdown endpoint generates subtasks for a given task title', function
     $response->assertOk()
         ->assertJsonStructure([
             'success',
+            'plan_type',
+            'outcome',
             'subtasks',
             'suggested_priority',
             'suggested_category',
@@ -59,6 +61,81 @@ test('ai breakdown endpoint generates subtasks for a given task title', function
     expect($data['success'])->toBeTrue()
         ->and($data['subtasks'])->not->toBeEmpty()
         ->and($data['subtasks'][0])->toHaveKeys(['id', 'title', 'completed']);
+});
+
+test('ai breakdown creates a learning roadmap when a user chooses a topic', function () {
+    $response = $this->postJson(route('tasks.ai.breakdown'), [
+        'title' => 'Laravel queues',
+        'plan_type' => 'learning',
+        'lang' => 'en',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('plan_type', 'learning')
+        ->assertJsonPath('suggested_category', 'Study')
+        ->assertJsonStructure([
+            'outcome',
+            'estimated_minutes',
+            'suggested_tags',
+            'subtasks' => [['id', 'title', 'completed', 'estimated_minutes']],
+        ]);
+
+    expect($response->json('subtasks'))->toHaveCount(5)
+        ->and($response->json('outcome'))->toContain('Laravel queues')
+        ->and($response->json('subtasks.0.title'))->toContain('Laravel queues');
+});
+
+test('ai breakdown rejects an unsupported plan type', function () {
+    $this->postJson(route('tasks.ai.breakdown'), [
+        'title' => 'Prepare launch',
+        'plan_type' => 'unknown',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('plan_type');
+});
+
+test('gemini breakdown honors the plan type selected by the user', function () {
+    config([
+        'services.gemini.key' => 'test-key',
+        'services.gemini.model' => 'gemini-3.8-flash',
+    ]);
+
+    Http::fake([
+        '*' => Http::response([
+            'candidates' => [[
+                'content' => ['parts' => [[
+                    'text' => json_encode([
+                        'plan_type' => 'task',
+                        'outcome' => 'Build practical confidence with Docker.',
+                        'subtasks' => [
+                            ['title' => 'Define the core Docker concepts', 'estimated_minutes' => 15],
+                            ['title' => 'Run a guided container example', 'estimated_minutes' => 25],
+                            ['title' => 'Build a small Dockerized application', 'estimated_minutes' => 40],
+                            ['title' => 'Review and explain the result', 'estimated_minutes' => 20],
+                        ],
+                        'suggested_priority' => 'medium',
+                        'suggested_category' => 'Dev',
+                        'suggested_tags' => ['docker', 'containers'],
+                        'summary' => 'Practice every concept immediately.',
+                    ]),
+                ]]],
+            ]],
+        ]),
+    ]);
+
+    $response = $this->postJson(route('tasks.ai.breakdown'), [
+        'title' => 'Docker fundamentals',
+        'plan_type' => 'learning',
+        'lang' => 'en',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('source', 'gemini')
+        ->assertJsonPath('plan_type', 'learning')
+        ->assertJsonPath('suggested_category', 'Study')
+        ->assertJsonPath('estimated_minutes', 100);
+
+    Http::assertSent(fn ($request) => str_contains(data_get($request->data(), 'contents.0.parts.0.text'), 'Task title or topic: "Docker fundamentals"')
+        && str_contains(data_get($request->data(), 'contents.0.parts.0.text'), 'Requested plan type: "learning"'));
 });
 
 test('ai breakdown endpoint works in Khmer language', function () {

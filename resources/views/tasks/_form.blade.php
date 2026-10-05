@@ -13,7 +13,7 @@
             <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
                 <x-icon name="clipboard" class="h-3.5 w-3.5" />
             </span>
-            <span data-i18n="task_title">Task Title</span>
+            <span data-i18n="task_title_or_topic">Task title or topic</span>
             <span class="text-rose-500">*</span>
         </label>
 
@@ -22,7 +22,8 @@
             type="text"
             name="title"
             value="{{ old('title', $task->title ?? '') }}"
-            placeholder="What needs to be done?"
+            placeholder="e.g. Learn Laravel, prepare a presentation, build a portfolio"
+            data-i18n-placeholder="task_topic_hint"
             autocomplete="off"
             required
             class="

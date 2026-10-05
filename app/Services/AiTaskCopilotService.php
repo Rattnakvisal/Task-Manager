@@ -16,18 +16,26 @@ class AiTaskCopilotService
     /**
      * Break down a task into actionable, sequential subtasks with priority and category recommendations.
      */
-    public function breakdown(string $title, ?string $description = null, ?string $category = null, string $lang = 'en'): array
-    {
+    public function breakdown(
+        string $title,
+        ?string $description = null,
+        ?string $category = null,
+        string $lang = 'en',
+        string $planType = 'auto'
+    ): array {
         $apiKey = config('services.gemini.key');
+        $planType = in_array($planType, ['auto', 'task', 'learning', 'project', 'personal'], true)
+            ? $planType
+            : 'auto';
 
         if (! empty($apiKey)) {
-            $geminiResult = $this->callGeminiForBreakdown($apiKey, $title, $description, $category, $lang);
+            $geminiResult = $this->callGeminiForBreakdown($apiKey, $title, $description, $category, $lang, $planType);
             if ($geminiResult !== null) {
                 return $geminiResult;
             }
         }
 
-        return $this->smartHeuristicBreakdown($title, $description, $category, $lang);
+        return $this->smartHeuristicBreakdown($title, $description, $category, $lang, $planType);
     }
 
     /**
@@ -234,24 +242,41 @@ class AiTaskCopilotService
     /**
      * Gemini API integration for generating subtasks
      */
-    protected function callGeminiForBreakdown(string $apiKey, string $title, ?string $description, ?string $category, string $lang): ?array
-    {
+    protected function callGeminiForBreakdown(
+        string $apiKey,
+        string $title,
+        ?string $description,
+        ?string $category,
+        string $lang,
+        string $planType
+    ): ?array {
         $primaryModel = config('services.gemini.model', 'gemini-3.8-flash');
         $models = array_unique([$primaryModel, 'gemini-3.8-flash', 'gemini-3.5-flash']);
 
         $langName = ($lang === 'km') ? 'Khmer' : 'English';
 
         $prompt = <<<PROMPT
-You are an expert AI task management assistant and productivity copilot.
-Break down the following task into 3 to 5 clear, sequential, and highly actionable subtasks/checklist items.
+You are Nova, an expert planning assistant for work, study, projects, and personal goals.
+Turn the user's task title or topic into 4 to 7 ordered, specific, and immediately actionable steps.
 Respond in {$langName} language.
 
-Task Title: "{$title}"
-Task Description: "{$description}"
+Task title or topic: "{$title}"
+User context or desired result: "{$description}"
 Category: "{$category}"
+Requested plan type: "{$planType}" (auto means infer the best type)
+
+Quality requirements:
+- First identify whether this is an action task, learning roadmap, project plan, or personal goal.
+- For a learning topic, progress from foundations to hands-on practice and a knowledge check.
+- For a project, progress from scope to execution, verification, and delivery.
+- Every step must start with a clear action verb and produce a concrete result or checkpoint.
+- Use the user's specific subject in the steps; avoid generic phrases such as "do the task".
+- Give realistic time estimates and keep the full plan practical for one user.
 
 You MUST respond strictly with a valid JSON object in this exact schema:
 {
+  "plan_type": "task" | "learning" | "project" | "personal",
+  "outcome": "One clear sentence describing what the user will have achieved",
   "subtasks": [
     {"id": "ai_1", "title": "First actionable step", "completed": false, "estimated_minutes": 25},
     {"id": "ai_2", "title": "Second actionable step", "completed": false, "estimated_minutes": 30}
@@ -260,7 +285,7 @@ You MUST respond strictly with a valid JSON object in this exact schema:
   "suggested_category": "Work" | "Personal" | "Urgent" | "Design" | "Dev" | "Study" | "Finance",
   "estimated_minutes": 90,
   "suggested_tags": ["tag1", "tag2"],
-  "summary": "Short motivating tip on executing this task effectively in {$langName}."
+  "summary": "A concise, practical recommendation for completing this plan in {$langName}."
 }
 Do not include markdown code block backticks (like ```json), just raw JSON.
 PROMPT;
@@ -288,16 +313,19 @@ PROMPT;
                     if ($content) {
                         $decoded = json_decode(trim($content), true);
                         if (is_array($decoded) && ! empty($decoded['subtasks'])) {
-                            // Ensure IDs and format
-                            foreach ($decoded['subtasks'] as $i => &$st) {
-                                $st['id'] = $st['id'] ?? ('ai_'.($i + 1).'_'.time());
-                                $st['completed'] = false;
-                            }
-                            $decoded['success'] = true;
-                            $decoded['source'] = 'gemini';
-                            $decoded['model'] = $model;
+                            $normalized = $this->normalizeBreakdownResult(
+                                $decoded,
+                                $title,
+                                $category,
+                                $lang,
+                                $planType,
+                                'gemini',
+                                $model,
+                            );
 
-                            return $decoded;
+                            if ($normalized !== null) {
+                                return $normalized;
+                            }
                         }
                     }
                 }
@@ -377,17 +405,23 @@ PROMPT;
     /**
      * Highly intelligent domain-aware rule engine for instant subtask generation without API keys
      */
-    protected function smartHeuristicBreakdown(string $title, ?string $description, ?string $category, string $lang): array
-    {
+    protected function smartHeuristicBreakdown(
+        string $title,
+        ?string $description,
+        ?string $category,
+        string $lang,
+        string $planType = 'auto'
+    ): array {
         $t = mb_strtolower($title);
         $d = mb_strtolower($description ?? '');
         $combined = $t.' '.$d;
 
         $isKhmer = ($lang === 'km');
+        $resolvedPlanType = $this->resolvePlanType($title, $description, $planType);
 
         $subtasks = [];
         $priority = 'medium';
-        $detectedCategory = $category ?: $this->detectCategory($title);
+        $detectedCategory = $category ?: ($resolvedPlanType === 'learning' ? 'Study' : $this->detectCategory($title));
         $tags = [];
         $summary = '';
 
@@ -399,7 +433,26 @@ PROMPT;
         }
 
         // Domain matching
-        if (preg_match('/(bug|fix|error|crash|issue|patch|hotfix|404|500|exception|fail|បញ្ហា|កែកំហុស)/u', $combined)) {
+        if ($resolvedPlanType === 'learning') {
+            $detectedCategory = $category ?: 'Study';
+            $tags = ['learning', 'practice'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់គោលដៅសិក្សា និងគោលគំនិតស្នូលសម្រាប់ {$title}", 'estimated_minutes' => 15],
+                ['title' => "សិក្សាមូលដ្ឋានគ្រឹះនៃ {$title} និងកត់ត្រាពាក្យសំខាន់ៗ", 'estimated_minutes' => 30],
+                ['title' => "អនុវត្ត {$title} តាមឧទាហរណ៍ណែនាំមួយជំហានម្តងៗ", 'estimated_minutes' => 40],
+                ['title' => "បង្កើតលំហាត់ ឬគម្រោងតូចមួយដោយប្រើ {$title}", 'estimated_minutes' => 45],
+                ['title' => 'ធ្វើស្វ័យតេស្ត ពិនិត្យចំណុចខ្វះខាត និងកំណត់ជំហានបន្ទាប់', 'estimated_minutes' => 20],
+            ] : [
+                ['title' => "Define a clear learning goal and core concepts for {$title}", 'estimated_minutes' => 15],
+                ['title' => "Study the foundations of {$title} and capture concise notes", 'estimated_minutes' => 30],
+                ['title' => "Follow one guided {$title} example step by step", 'estimated_minutes' => 40],
+                ['title' => "Build a small independent exercise or project using {$title}", 'estimated_minutes' => 45],
+                ['title' => 'Self-test the key concepts, review gaps, and choose the next milestone', 'estimated_minutes' => 20],
+            ];
+            $summary = $isKhmer
+                ? 'រៀនជាវគ្គខ្លីៗ ហើយអនុវត្តភ្លាមៗ ដើម្បីបង្កើនការចងចាំ។'
+                : 'Use short study sessions and apply each concept immediately for stronger retention.';
+        } elseif (preg_match('/(bug|fix|error|crash|issue|patch|hotfix|404|500|exception|fail|បញ្ហា|កែកំហុស)/u', $combined)) {
             $detectedCategory = $detectedCategory ?: 'Dev';
             $tags = ['bugfix', 'quality'];
             $subtasks = $isKhmer ? [
@@ -522,6 +575,8 @@ PROMPT;
         return [
             'success' => true,
             'source' => 'smart_heuristic',
+            'plan_type' => $resolvedPlanType,
+            'outcome' => $this->breakdownOutcome($title, $resolvedPlanType, $isKhmer),
             'subtasks' => $formattedSubtasks,
             'suggested_priority' => $priority,
             'suggested_category' => $detectedCategory,
@@ -529,6 +584,121 @@ PROMPT;
             'suggested_tags' => $tags,
             'summary' => $summary,
         ];
+    }
+
+    /**
+     * Normalize model output so every plan has safe, consistent, useful fields.
+     */
+    protected function normalizeBreakdownResult(
+        array $result,
+        string $title,
+        ?string $category,
+        string $lang,
+        string $requestedPlanType,
+        string $source,
+        ?string $model = null,
+    ): ?array {
+        $subtasks = [];
+
+        foreach (array_slice($result['subtasks'] ?? [], 0, 7) as $index => $subtask) {
+            $stepTitle = trim(strip_tags((string) ($subtask['title'] ?? '')));
+            if ($stepTitle === '') {
+                continue;
+            }
+
+            $subtasks[] = [
+                'id' => 'ai_'.($index + 1).'_'.substr(md5($title.$stepTitle), 0, 8),
+                'title' => mb_substr($stepTitle, 0, 255),
+                'completed' => false,
+                'estimated_minutes' => max(5, min(240, (int) ($subtask['estimated_minutes'] ?? 20))),
+            ];
+        }
+
+        if (count($subtasks) < 3) {
+            return null;
+        }
+
+        $allowedTypes = ['task', 'learning', 'project', 'personal'];
+        $planType = in_array($requestedPlanType, $allowedTypes, true)
+            ? $requestedPlanType
+            : (in_array($result['plan_type'] ?? null, $allowedTypes, true)
+                ? $result['plan_type']
+                : $this->resolvePlanType($title, null, $requestedPlanType));
+        $allowedCategories = ['Work', 'Personal', 'Urgent', 'Design', 'Dev', 'Study', 'Finance'];
+        $suggestedCategory = $category ?: ($planType === 'learning'
+            ? 'Study'
+            : (in_array($result['suggested_category'] ?? null, $allowedCategories, true)
+                ? $result['suggested_category']
+                : $this->detectCategory($title)));
+        $suggestedPriority = in_array($result['suggested_priority'] ?? null, ['low', 'medium', 'high'], true)
+            ? $result['suggested_priority']
+            : 'medium';
+        $isKhmer = $lang === 'km';
+        $tags = collect($result['suggested_tags'] ?? [])
+            ->filter(fn ($tag) => is_string($tag) && trim($tag) !== '')
+            ->map(fn ($tag) => mb_substr(trim($tag), 0, 30))
+            ->unique()
+            ->take(5)
+            ->values()
+            ->all();
+
+        return [
+            'success' => true,
+            'source' => $source,
+            'model' => $model,
+            'plan_type' => $planType,
+            'outcome' => trim((string) ($result['outcome'] ?? '')) ?: $this->breakdownOutcome($title, $planType, $isKhmer),
+            'subtasks' => $subtasks,
+            'suggested_priority' => $suggestedPriority,
+            'suggested_category' => $suggestedCategory,
+            'estimated_minutes' => array_sum(array_column($subtasks, 'estimated_minutes')),
+            'suggested_tags' => $tags,
+            'summary' => trim((string) ($result['summary'] ?? '')) ?: ($isKhmer
+                ? 'អនុវត្តមួយជំហានម្តងៗ ហើយពិនិត្យលទ្ធផលមុនបន្តទៅជំហានបន្ទាប់។'
+                : 'Complete one step at a time and verify its result before moving forward.'),
+        ];
+    }
+
+    protected function resolvePlanType(string $title, ?string $description, string $requestedPlanType): string
+    {
+        if (in_array($requestedPlanType, ['task', 'learning', 'project', 'personal'], true)) {
+            return $requestedPlanType;
+        }
+
+        $text = mb_strtolower($title.' '.($description ?? ''));
+
+        if (preg_match('/(learn|study|course|lesson|exam|practice|tutorial|understand|រៀន|សិក្សា|ប្រឡង)/u', $text)) {
+            return 'learning';
+        }
+
+        if (preg_match('/(project|build|launch|develop|design|website|application|គម្រោង|បង្កើត|រចនា)/u', $text)) {
+            return 'project';
+        }
+
+        if (preg_match('/(personal|habit|health|fitness|home|family|goal|ផ្ទាល់ខ្លួន|សុខភាព|គោលដៅ)/u', $text)) {
+            return 'personal';
+        }
+
+        return 'task';
+    }
+
+    protected function breakdownOutcome(string $title, string $planType, bool $isKhmer): string
+    {
+        if ($isKhmer) {
+            return match ($planType) {
+                'learning' => "យល់ដឹង និងអាចអនុវត្ត {$title} តាមរយៈការសិក្សា និងការអនុវត្តជាក់ស្តែង។",
+                'project' => "បង្កើត និងប្រគល់លទ្ធផលដែលអាចប្រើបានសម្រាប់ {$title}។",
+                'personal' => "សម្រេចបានវឌ្ឍនភាពដែលអាចវាស់វែងបានលើ {$title}។",
+                default => "បញ្ចប់ {$title} ជាមួយលទ្ធផលដែលបានត្រួតពិនិត្យច្បាស់លាស់។",
+            };
+        }
+
+        return match ($planType) {
+            'learning' => "Understand and apply {$title} through focused study and hands-on practice.",
+            'project' => "Build and deliver a reviewed, usable result for {$title}.",
+            'personal' => "Make measurable, sustainable progress on {$title}.",
+            default => "Complete {$title} with a clear, verified result.",
+        };
     }
 
     /**

@@ -22,6 +22,7 @@ class AiCopilotController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
             'category' => 'nullable|string|max:50',
+            'plan_type' => 'nullable|string|in:auto,task,learning,project,personal',
             'lang' => 'nullable|string|in:en,km',
         ]);
 
@@ -30,7 +31,8 @@ class AiCopilotController extends Controller
             $validated['title'],
             $validated['description'] ?? null,
             $validated['category'] ?? null,
-            $lang
+            $lang,
+            $validated['plan_type'] ?? 'auto',
         );
 
         return response()->json($result);

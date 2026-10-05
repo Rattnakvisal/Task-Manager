@@ -831,7 +831,7 @@
                                 <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
                                     <x-icon name="clipboard" class="h-3.5 w-3.5" />
                                 </span>
-                                <span data-i18n="task_title">Task Title</span>
+                                <span data-i18n="task_title_or_topic">Task title or topic</span>
                                 <span class="text-rose-500">*</span>
                             </label>
                             <button
@@ -848,7 +848,8 @@
                             id="create_title"
                             type="text"
                             name="title"
-                            placeholder="What needs to be done?"
+                            placeholder="e.g. Learn Laravel, prepare a presentation, build a portfolio"
+                            data-i18n-placeholder="task_topic_hint"
                             autocomplete="off"
                             required
                             class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
@@ -994,6 +995,22 @@
                             </button>
                         </div>
 
+                        <div class="mb-3 grid gap-2 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-end">
+                            <div>
+                                <label for="create_breakdown_type" class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400" data-i18n="ai_plan_type">Plan type</label>
+                                <select id="create_breakdown_type" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-purple-900/40">
+                                    <option value="auto">✨ Auto choose</option>
+                                    <option value="task">✅ Action task</option>
+                                    <option value="learning">📚 Learning roadmap</option>
+                                    <option value="project">🚀 Project plan</option>
+                                    <option value="personal">🌱 Personal goal</option>
+                                </select>
+                            </div>
+                            <p class="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Nova adapts the steps to the title or topic you entered above.</p>
+                        </div>
+
+                        <div id="create-ai-breakdown-insight" class="mb-3 hidden rounded-xl border border-purple-200/80 bg-purple-50/70 p-3 dark:border-purple-900/60 dark:bg-purple-950/25" aria-live="polite"></div>
+
                         <div id="create-subtask-list" class="space-y-2 mb-3">
                             {{-- Dynamically inserted items --}}
                         </div>
@@ -1096,7 +1113,7 @@
                                 <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
                                     <x-icon name="clipboard" class="h-3.5 w-3.5" />
                                 </span>
-                                <span data-i18n="task_title">Task Title</span>
+                                <span data-i18n="task_title_or_topic">Task title or topic</span>
                                 <span class="text-rose-500">*</span>
                             </label>
                             <button
@@ -1113,7 +1130,8 @@
                             id="edit_title"
                             type="text"
                             name="title"
-                            placeholder="What needs to be done?"
+                            placeholder="e.g. Learn Laravel, prepare a presentation, build a portfolio"
+                            data-i18n-placeholder="task_topic_hint"
                             autocomplete="off"
                             required
                             class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:ring-blue-900/40"
@@ -1258,6 +1276,22 @@
                                 <span data-i18n="ai_magic_breakdown">✨ AI Magic Breakdown</span>
                             </button>
                         </div>
+
+                        <div class="mb-3 grid gap-2 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-end">
+                            <div>
+                                <label for="edit_breakdown_type" class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400" data-i18n="ai_plan_type">Plan type</label>
+                                <select id="edit_breakdown_type" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-purple-900/40">
+                                    <option value="auto">✨ Auto choose</option>
+                                    <option value="task">✅ Action task</option>
+                                    <option value="learning">📚 Learning roadmap</option>
+                                    <option value="project">🚀 Project plan</option>
+                                    <option value="personal">🌱 Personal goal</option>
+                                </select>
+                            </div>
+                            <p class="text-[11px] leading-5 text-slate-500 dark:text-slate-400">Nova adapts the steps to the title or topic you entered above.</p>
+                        </div>
+
+                        <div id="edit-ai-breakdown-insight" class="mb-3 hidden rounded-xl border border-purple-200/80 bg-purple-50/70 p-3 dark:border-purple-900/60 dark:bg-purple-950/25" aria-live="polite"></div>
 
                         <div id="edit-subtask-list" class="space-y-2 mb-3">
                             {{-- Dynamically populated --}}
