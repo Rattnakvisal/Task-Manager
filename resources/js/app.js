@@ -1909,10 +1909,10 @@ notificationBtn?.addEventListener('click', (e) => {
     notificationPanel?.classList.toggle('hidden');
 });
 
-notificationPanel?.addEventListener('click', (e) => e.stopPropagation());
-
-document.addEventListener('click', () => {
-    notificationPanel?.classList.add('hidden');
+document.addEventListener('click', (e) => {
+    if (!notificationBtn?.contains(e.target) && !notificationPanel?.contains(e.target)) {
+        notificationPanel?.classList.add('hidden');
+    }
 });
 
 
@@ -2419,6 +2419,14 @@ function addAiTaskToNotificationPanel(task) {
     notificationCount.textContent = nextCount > 99 ? '99+' : String(nextCount);
     notificationCount.classList.remove('hidden');
     notificationCount.classList.add('flex');
+
+    if (!task.read) {
+        const markAllBtn = document.querySelector('[data-mark-all-task-alerts-read]');
+        if (markAllBtn) {
+            markAllBtn.classList.remove('hidden');
+            markAllBtn.classList.add('inline-flex');
+        }
+    }
 }
 
 function setPersistentTaskAlertCount(unreadAiCount) {
@@ -2515,44 +2523,67 @@ if (aiTaskAlertChannel) {
 }
 
 document.addEventListener('click', async (event) => {
-    const notificationLink = event.target.closest('[data-notification-id]');
-    if (notificationLink) {
+    const markAllButton = event.target.closest('[data-mark-all-task-alerts-read]');
+    if (markAllButton) {
         event.preventDefault();
+        event.stopPropagation();
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        markAllButton.disabled = true;
+        markAllButton.style.opacity = '0.5';
+
         try {
-            await fetch(`/api/task-alerts/${encodeURIComponent(notificationLink.dataset.notificationId)}/read`, {
+            const response = await fetch('/api/task-alerts/read-all', {
                 method: 'PATCH',
                 headers: {
                     Accept: 'application/json',
+                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken || '',
                 },
                 credentials: 'same-origin',
             });
+            if (response.ok) {
+                document.querySelectorAll('[data-notification-id]').forEach((item) => {
+                    item.classList.add('opacity-60');
+                    item.querySelector('[aria-label="Unread"]')?.remove();
+                });
+                markAllButton.classList.add('hidden');
+                markAllButton.classList.remove('inline-flex');
+                setPersistentTaskAlertCount(0);
+                showToast('success', currentLang === 'km' ? 'បានសម្គាល់ការជូនដំណឹងទាំងអស់ថាបានអាន' : 'All notifications marked as read');
+            }
+        } catch (_err) {
+            // fail-safe
         } finally {
-            window.location.assign(notificationLink.href);
+            markAllButton.disabled = false;
+            markAllButton.style.opacity = '';
         }
         return;
     }
 
-    const markAllButton = event.target.closest('[data-mark-all-task-alerts-read]');
-    if (markAllButton) {
+    const notificationLink = event.target.closest('[data-notification-id]');
+    if (notificationLink && !event.target.closest('button')) {
+        event.preventDefault();
+        const notifId = notificationLink.dataset.notificationId;
+        const targetHref = notificationLink.href;
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        const response = await fetch('/api/task-alerts/read-all', {
-            method: 'PATCH',
-            headers: {
-                Accept: 'application/json',
-                'X-CSRF-TOKEN': csrfToken || '',
-            },
-            credentials: 'same-origin',
-        });
-        if (response.ok) {
-            document.querySelectorAll('[data-notification-id]').forEach((item) => {
-                item.classList.add('opacity-65');
-                item.querySelector('[aria-label="Unread"]')?.remove();
-            });
-            markAllButton.remove();
-            setPersistentTaskAlertCount(0);
+
+        notificationLink.classList.add('opacity-60');
+        notificationLink.querySelector('[aria-label="Unread"]')?.remove();
+
+        if (notifId) {
+            try {
+                await fetch(`/api/task-alerts/${encodeURIComponent(notifId)}/read`, {
+                    method: 'PATCH',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': csrfToken || '',
+                    },
+                    credentials: 'same-origin',
+                });
+            } catch (_e) {}
         }
+        window.location.assign(targetHref);
+        return;
     }
 });
 

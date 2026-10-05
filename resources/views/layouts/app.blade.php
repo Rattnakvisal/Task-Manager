@@ -90,13 +90,10 @@
             ->orderByDesc('created_at')
             ->get(['id', 'title', 'end_date']);
         $aiTaskNotifications = auth()->user()->notifications()
-            ->where('type', \App\Notifications\AiTaskCreatedNotification::class)
-            ->select('notifications.*')
-            ->selectRaw('SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) OVER () AS unread_total')
             ->latest()
             ->limit(10)
             ->get();
-        $unreadAiTaskNotifications = (int) ($aiTaskNotifications->first()?->unread_total ?? 0);
+        $unreadAiTaskNotifications = (int) auth()->user()->unreadNotifications()->count();
         $headerNotificationCount = $notificationTasks->count() + $unreadAiTaskNotifications;
     @endphp
 
@@ -543,9 +540,10 @@
                                             <p class="text-sm font-bold text-slate-950 dark:text-white">Notifications</p>
                                             <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-400">Nova activity and upcoming task reminders.</p>
                                         </div>
-                                        @if ($unreadAiTaskNotifications > 0)
-                                            <button type="button" data-mark-all-task-alerts-read class="shrink-0 text-[10px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">Mark all read</button>
-                                        @endif
+                                        <button type="button" data-mark-all-task-alerts-read class="{{ $unreadAiTaskNotifications > 0 ? 'inline-flex' : 'hidden' }} shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/50 transition">
+                                            <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                            <span>Mark all read</span>
+                                        </button>
                                     </div>
                                 </div>
 

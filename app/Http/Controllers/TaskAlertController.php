@@ -11,17 +11,15 @@ class TaskAlertController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $unreadCount = $request->user()->unreadNotifications()->count();
         $notifications = $request->user()->notifications()
-            ->where('type', AiTaskCreatedNotification::class)
-            ->select('notifications.*')
-            ->selectRaw('SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) OVER () AS unread_total')
             ->latest()
             ->limit(20)
             ->get();
 
         return response()->json([
             'success' => true,
-            'unread_count' => (int) ($notifications->first()?->unread_total ?? 0),
+            'unread_count' => $unreadCount,
             'notifications' => $notifications->map(fn (DatabaseNotification $notification) => [
                 'notification_id' => $notification->id,
                 ...$notification->data,
@@ -37,15 +35,19 @@ class TaskAlertController extends Controller
         $alert = $request->user()->notifications()->whereKey($notification)->firstOrFail();
         $alert->markAsRead();
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'unread_count' => $request->user()->unreadNotifications()->count(),
+        ]);
     }
 
     public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications()
-            ->where('type', AiTaskCreatedNotification::class)
-            ->update(['read_at' => now()]);
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'unread_count' => 0,
+        ]);
     }
 }

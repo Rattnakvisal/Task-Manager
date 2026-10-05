@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class TaskController extends Controller
 {
@@ -589,6 +590,65 @@ class TaskController extends Controller
             'completed_count' => $task->completed_subtasks_count,
             'total_count' => $task->subtasks_count,
         ]);
+    }
+
+    /**
+     * Add a new subtask checklist item
+     */
+    public function storeSubtask(Request $request, Task $task)
+    {
+        $this->ensureTaskOwner($request, $task);
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+
+        $subtasks = is_array($task->subtasks) ? $task->subtasks : [];
+        $newSubtask = [
+            'id' => (string) Str::uuid(),
+            'title' => trim($validated['title']),
+            'completed' => false,
+        ];
+        $subtasks[] = $newSubtask;
+        $task->subtasks = $subtasks;
+        $task->save();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'subtask' => $newSubtask,
+                'subtasks' => $task->subtasks,
+                'progress' => $task->subtasks_progress,
+                'completed_count' => $task->completed_subtasks_count,
+                'total_count' => $task->subtasks_count,
+            ]);
+        }
+
+        return back()->with('success', 'Checklist item added.');
+    }
+
+    /**
+     * Remove a subtask checklist item
+     */
+    public function destroySubtask(Request $request, Task $task, string $subtaskId)
+    {
+        $this->ensureTaskOwner($request, $task);
+        $subtasks = is_array($task->subtasks) ? $task->subtasks : [];
+        $filtered = array_values(array_filter($subtasks, fn ($st) => (string) ($st['id'] ?? '') !== $subtaskId));
+
+        $task->subtasks = $filtered;
+        $task->save();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'subtasks' => $task->subtasks,
+                'progress' => $task->subtasks_progress,
+                'completed_count' => $task->completed_subtasks_count,
+                'total_count' => $task->subtasks_count,
+            ]);
+        }
+
+        return back()->with('success', 'Checklist item removed.');
     }
 
     /**

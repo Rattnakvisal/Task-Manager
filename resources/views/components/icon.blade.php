@@ -198,5 +198,26 @@
             <path d="m18 11 1.5 1.5-2.5 2.5-1.5-1.5 2.5-2.5Z" />
             <path d="m19 2 2 2-14 14-2-2L19 2Z" />
             @break
+
+        @case('arrow-left')
+            <path d="m12 19-7-7 7-7" />
+            <path d="M19 12H5" />
+            @break
+
+        @case('copy')
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+            @break
+
+        @case('share')
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+            @break
+
+        @case('tag')
+            <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+            <path d="M7 7h.01" />
+            @break
     @endswitch
 </svg>
