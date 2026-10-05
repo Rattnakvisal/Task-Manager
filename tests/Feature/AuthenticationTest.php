@@ -19,8 +19,8 @@ test('guests can view authentication forms', function () {
         ->assertSee('data-register-url="/sign-up"', false)
         ->assertSee('action="/sign-up"', false)
         ->assertSee('action="/sign-in"', false)
-        ->assertSee('minlength="12"', false)
-        ->assertSee('pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}"', false)
+        ->assertSee('minlength="8"', false)
+        ->assertSee('pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}"', false)
         ->assertDontSee('<script>', false)
         ->assertHeader('X-Frame-Options', 'DENY')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
@@ -80,13 +80,13 @@ test('a user can register with a strong password', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Alex Morgan',
         'email' => 'alex@example.com',
-        'password' => 'VerySecure!123',
-        'password_confirmation' => 'VerySecure!123',
+        'password' => 'Abcd123!',
+        'password_confirmation' => 'Abcd123!',
     ]);
 
     $response->assertRedirect(route('dashboard'));
     $this->assertAuthenticated();
-    expect(Hash::check('VerySecure!123', User::first()->password))->toBeTrue();
+    expect(Hash::check('Abcd123!', User::first()->password))->toBeTrue();
 });
 
 test('weak passwords are rejected', function () {
@@ -95,6 +95,17 @@ test('weak passwords are rejected', function () {
         'email' => 'alex@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+    ])->assertSessionHasErrors('password');
+
+    $this->assertGuest();
+});
+
+test('strong passwords shorter than eight characters are rejected', function () {
+    $this->post(route('register.store'), [
+        'name' => 'Alex Morgan',
+        'email' => 'alex@example.com',
+        'password' => 'Ab12!cd',
+        'password_confirmation' => 'Ab12!cd',
     ])->assertSessionHasErrors('password');
 
     $this->assertGuest();
