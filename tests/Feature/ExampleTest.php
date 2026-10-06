@@ -5,5 +5,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('the application returns a successful response', function () {
-    $this->get('/')->assertRedirect(route('login'));
+    $this->get('/')->assertRedirect(route('dashboard'));
+    $this->get(route('dashboard'))->assertOk();
 });

@@ -11,6 +11,9 @@
         @case('more-vertical')
             <circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" />
             @break
+        @case('more-horizontal')
+            <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
+            @break
         @case('project')
             <path d="m12 3 8 4v10l-8 4-8-4V7Z" /><path d="m4 7 8 4 8-4M12 11v10M8 5l8 4" />
             @break
@@ -218,6 +221,26 @@
         @case('tag')
             <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
             <path d="M7 7h.01" />
+            @break
+
+        @case('book')
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+            <path d="M6 6h10" />
+            <path d="M6 10h10" />
+            @break
+
+        @case('folder')
+            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+            @break
+
+        @case('flask')
+            <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+            <path d="M8.5 2h7" />
+            <path d="M7 16h10" />
+            @break
+
+        @case('chevron-down')
+            <path d="m6 9 6 6 6-6" />
             @break
     @endswitch
 </svg>

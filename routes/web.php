@@ -14,9 +14,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/sign-up', [RegisteredUserController::class, 'store'])->name('register.store');
 });
 
+Route::redirect('/', '/dashboard')->name('home');
+Route::get('/dashboard', [TaskController::class, 'dashboard'])->name('dashboard');
+
 Route::middleware(['auth', 'auth.session'])->group(function () {
-    Route::redirect('/', '/dashboard')->name('home');
-    Route::get('/dashboard', [TaskController::class, 'dashboard'])->name('dashboard');
     Route::get('/projects', [TaskController::class, 'projects'])->name('projects');
     Route::get('/calendar', [TaskController::class, 'calendar'])->name('calendar');
     Route::get('/priority', [TaskController::class, 'priority'])->name('priority');
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::patch('/tasks/{task}/subtasks/{subtaskId}/toggle', [TaskController::class, 'toggleSubtask'])->name('tasks.toggle-subtask');
     Route::post('/tasks/{task}/subtasks', [TaskController::class, 'storeSubtask'])->name('tasks.subtasks.store');
     Route::delete('/tasks/{task}/subtasks/{subtaskId}', [TaskController::class, 'destroySubtask'])->name('tasks.subtasks.destroy');
+    Route::patch('/tasks/{task}/quick-update', [TaskController::class, 'quickUpdate'])->name('tasks.quick-update');
     Route::get('/tasks-export/{format}', [TaskController::class, 'export'])->name('tasks.export');
 
     // Cost-bearing AI generations use a tighter budget than lightweight history/status reads.

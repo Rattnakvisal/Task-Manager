@@ -94,7 +94,7 @@ test('task details support checklist progress and completion without javascript'
     $this->from(route('tasks.show', $task))->patch(route('tasks.toggle-status', $task))
         ->assertRedirect(route('tasks.show', $task));
     $this->get(route('tasks.completed'))->assertSee('Ship release');
-    $this->get(route('tasks.show', $task))->assertSee('Reopen Task');
+    $this->get(route('tasks.show', $task))->assertSee('data-task-status="completed"', false);
 
     $this->actingAs(User::factory()->create())->get(route('tasks.show', $task))->assertNotFound();
 });

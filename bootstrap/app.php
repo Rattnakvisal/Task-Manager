@@ -24,3 +24,17 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
+
+// Safeguard: If external tools (e.g. Vercel CLI) create a minimal .env.local without APP_KEY,
+// ensure base variables from .env are safely loaded for local development.
+$app->afterLoadingEnvironment(function ($app): void {
+    if (empty(env('APP_KEY')) && file_exists($app->environmentPath().'/.env')) {
+        \Dotenv\Dotenv::create(
+            \Illuminate\Support\Env::getRepository(),
+            $app->environmentPath(),
+            '.env'
+        )->safeLoad();
+    }
+});
+
+return $app;

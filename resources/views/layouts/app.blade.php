@@ -12,7 +12,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="task-manager-ui min-h-screen bg-[#f6f8fc] text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 {{ request()->routeIs('dashboard', 'home') ? 'dashboard-page' : '' }}">
+<body class="task-manager-ui min-h-screen bg-[#f6f8fc] text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 {{ request()->routeIs('dashboard', 'home') ? 'dashboard-page' : '' }} {{ request()->routeIs('tasks.show') ? 'task-details-page' : '' }}">
 
     @php
         $navItems = [
@@ -74,26 +74,36 @@
             ],
         ];
 
-        $headerInitials = collect(preg_split('/\s+/', trim(auth()->user()->name)))
-            ->filter()
-            ->take(2)
-            ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
-            ->implode('');
+        $currentUser = auth()->user();
+        $headerInitials = $currentUser
+            ? collect(preg_split('/\s+/', trim($currentUser->name)))
+                ->filter()
+                ->take(2)
+                ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
+                ->implode('')
+            : 'WM';
 
-        $notificationTasks = auth()->user()->tasks()->whereNotNull('end_date')
-            ->where('status', '!=', 'completed')
-            ->where(function ($query) {
-                $query->whereDate('end_date', now()->toDateString())
-                    ->orWhereDate('end_date', now()->addDay()->toDateString());
-            })
-            ->orderBy('end_date')
-            ->orderByDesc('created_at')
-            ->get(['id', 'title', 'end_date']);
-        $aiTaskNotifications = auth()->user()->notifications()
-            ->latest()
-            ->limit(10)
-            ->get();
-        $unreadAiTaskNotifications = (int) auth()->user()->unreadNotifications()->count();
+        $notificationTasks = collect();
+        $aiTaskNotifications = collect();
+        $unreadAiTaskNotifications = 0;
+
+        if ($currentUser) {
+            $notificationTasks = $currentUser->tasks()->whereNotNull('end_date')
+                ->where('status', '!=', 'completed')
+                ->where(function ($query) {
+                    $query->whereDate('end_date', now()->toDateString())
+                        ->orWhereDate('end_date', now()->addDay()->toDateString());
+                })
+                ->orderBy('end_date')
+                ->orderByDesc('created_at')
+                ->get(['id', 'title', 'end_date']);
+            $aiTaskNotifications = $currentUser->notifications()
+                ->latest()
+                ->limit(10)
+                ->get();
+            $unreadAiTaskNotifications = (int) $currentUser->unreadNotifications()->count();
+        }
+
         $headerNotificationCount = $notificationTasks->count() + $unreadAiTaskNotifications;
     @endphp
 
@@ -320,8 +330,8 @@
                         </p>
 
 
-                        <button type="button"
-                            data-open-task-modal
+                        @auth
+                        <button type="button" data-open-task-modal
                             class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white transition hover:underline">
 
                             <span data-i18n="create_task">Create task</span>
@@ -331,6 +341,13 @@
                             </span>
 
                         </button>
+                        @else
+                        <a href="{{ route('register') }}"
+                            class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white transition hover:underline">
+                            <span>Create an account</span>
+                            <span aria-hidden="true">→</span>
+                        </a>
+                        @endauth
 
                     </div>
 
@@ -342,6 +359,7 @@
             {{-- Sidebar Footer --}}
             <div class="border-t border-slate-100 dark:border-slate-800 px-4 py-4">
 
+                @auth
                 <div class="flex items-center gap-2 rounded-xl px-2 py-2">
                     <a href="{{ route('profile.edit') }}" class="group flex min-w-0 flex-1 items-center gap-3 rounded-lg" title="Open My Profile">
                         <span class="sidebar-user-avatar">
@@ -350,7 +368,7 @@
 
                         <span class="sidebar-label min-w-0 flex-1">
                             <span class="block truncate text-xs font-bold text-slate-800 group-hover:text-blue-600 dark:text-slate-200 dark:group-hover:text-blue-400">
-                                {{ auth()->user()->name }}
+                                {{ $currentUser->name }}
                             </span>
                             <span class="block truncate text-[11px] text-slate-400 dark:text-slate-500">
                                 View and edit profile
@@ -366,6 +384,16 @@
                     </form>
 
                 </div>
+                @else
+                <div class="grid gap-2 px-1 py-1 sidebar-extra">
+                    <a href="{{ route('login') }}" class="flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        Sign in
+                    </a>
+                    <a href="{{ route('register') }}" class="flex h-9 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white transition hover:bg-blue-700">
+                        Create account
+                    </a>
+                </div>
+                @endauth
 
             </div>
 
@@ -455,6 +483,7 @@
                     {{-- Actions --}}
                     <div class="flex items-center gap-2 sm:gap-3">
 
+                        @auth
                         {{-- Search --}}
                         <form method="GET" action="{{ route('all-tasks') }}" class="relative hidden md:block" data-global-search-form>
                             <label class="relative block">
@@ -501,6 +530,7 @@
                             <span class="hidden md:inline" data-i18n="commands">Commands</span>
                             <kbd class="rounded border border-slate-200 bg-slate-100 px-1 py-0.5 text-[10px] text-slate-500 font-mono dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">⌘K</kbd>
                         </button>
+                        @endauth
 
                         {{-- Language Switcher --}}
                         <button type="button" data-language-toggle
@@ -518,6 +548,7 @@
                             <svg data-theme-moon viewBox="0 0 24 24" class="hidden h-4.5 w-4.5 text-blue-400 transition" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
                         </button>
 
+                        @auth
                         {{-- Notifications --}}
                         <div class="relative" data-notifications-root>
                             <button type="button"
@@ -596,6 +627,14 @@
                             </div>
                         </div>
                         <a href="{{ route('profile.edit') }}" class="header-avatar" aria-label="Open your WorkMind profile" title="My Profile">{{ $headerInitials ?: 'WM' }}</a>
+                        @else
+                        <a href="{{ route('login') }}" class="hidden h-10 items-center justify-center rounded-xl px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-100 hover:text-blue-600 sm:inline-flex dark:text-slate-300 dark:hover:bg-slate-800">
+                            Sign in
+                        </a>
+                        <a href="{{ route('register') }}" class="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-3.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700">
+                            Get started
+                        </a>
+                        @endauth
                     </div>
 
                 </div>
@@ -783,6 +822,7 @@
     </div>
 
 
+    @auth
     {{-- =============================================================
         CREATE TASK MODAL (AVAILABLE GLOBALLY ON ALL PAGES)
     ============================================================== --}}
@@ -1874,6 +1914,7 @@
 
     {{-- Confetti canvas for celebrations --}}
     <canvas id="confetti-canvas"></canvas>
+    @endauth
 
 </body>
 

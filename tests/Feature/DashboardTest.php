@@ -6,6 +6,18 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+test('guests can preview the dashboard but protected features still require an account', function () {
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Welcome to WorkMind')
+        ->assertSee('Create account')
+        ->assertDontSee('data-open-task-modal', false);
+
+    foreach (['tasks.index', 'projects', 'calendar', 'priority', 'analytics', 'profile.edit'] as $route) {
+        $this->get(route($route))->assertRedirect(route('login'));
+    }
+});
+
 test('dashboard shows only the signed in users tasks and accurate daily panels', function () {
     $this->travelTo(now()->setDate(2026, 10, 4)->startOfDay());
     $user = User::factory()->create();

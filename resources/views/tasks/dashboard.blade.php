@@ -20,13 +20,23 @@
             <section class="welcome-banner" aria-labelledby="welcome-heading">
                 <img class="welcome-art" src="{{ asset('images/Task.png') }}" alt="Blue task clipboard with a small calendar and green plant" fetchpriority="high">
                 <div class="welcome-copy">
-                    <p class="welcome-greeting">Good morning,</p>
-                    <h1 id="welcome-heading">{{ auth()->user()->name }} <span class="welcome-wave">👋</span></h1>
-                    <p class="welcome-description">Stay focused on what matters most. Track deadlines, priority tasks,<br class="wide-break"> and make progress every day.</p>
-                    <div class="welcome-actions">
-                        <a href="{{ route('tasks.create') }}" data-open-task-modal class="dashboard-button primary"><x-icon name="plus" /> <span data-i18n="new_task">New Task</span></a>
-                        <a class="dashboard-button secondary" href="{{ route('calendar') }}"><x-icon name="calendar" /> Open Calendar</a>
-                    </div>
+                    @auth
+                        <p class="welcome-greeting">Good morning,</p>
+                        <h1 id="welcome-heading">{{ auth()->user()->name }} <span class="welcome-wave">👋</span></h1>
+                        <p class="welcome-description">Stay focused on what matters most. Track deadlines, priority tasks,<br class="wide-break"> and make progress every day.</p>
+                        <div class="welcome-actions">
+                            <a href="{{ route('tasks.create') }}" data-open-task-modal class="dashboard-button primary"><x-icon name="plus" /> <span data-i18n="new_task">New Task</span></a>
+                            <a class="dashboard-button secondary" href="{{ route('calendar') }}"><x-icon name="calendar" /> Open Calendar</a>
+                        </div>
+                    @else
+                        <p class="welcome-greeting">Welcome to WorkMind</p>
+                        <h1 id="welcome-heading">Plan smarter. Finish more. <span class="welcome-wave">👋</span></h1>
+                        <p class="welcome-description">Explore the dashboard preview, then create a free account<br class="wide-break"> to manage tasks, projects, deadlines, and progress.</p>
+                        <div class="welcome-actions">
+                            <a href="{{ route('register') }}" class="dashboard-button primary"><x-icon name="plus" /> Create account</a>
+                            <a class="dashboard-button secondary" href="{{ route('login') }}">Sign in</a>
+                        </div>
+                    @endauth
                 </div>
             </section>
 
@@ -101,7 +111,7 @@
                             <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="task-more" aria-label="Edit {{ $task->title }}"><x-icon name="more-vertical" /></a>
                         </div>
                     @empty
-                        <div class="dashboard-empty"><span class="empty-icon"><x-icon name="check-circle" /></span><h3>A little room to focus</h3><p>You have no tasks scheduled for today.</p><a href="{{ route('tasks.create') }}" data-open-task-modal class="panel-link">Create a task <span>→</span></a></div>
+                        <div class="dashboard-empty"><span class="empty-icon"><x-icon name="check-circle" /></span><h3>A little room to focus</h3><p>You have no tasks scheduled for today.</p><a href="{{ auth()->check() ? route('tasks.create') : route('login') }}" @auth data-open-task-modal @endauth class="panel-link">{{ auth()->check() ? 'Create a task' : 'Sign in to create tasks' }} <span>→</span></a></div>
                     @endforelse
                 </div>
                 @if($todayTasks->count() > 5)<a class="today-overflow panel-link" href="{{ route('tasks.today') }}">View {{ $todayTasks->count() - 5 }} more tasks →</a>@endif

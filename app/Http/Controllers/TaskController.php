@@ -24,7 +24,9 @@ class TaskController extends Controller
 
     public function dashboard(Request $request)
     {
-        $tasks = $request->user()->tasks()->orderBy('due_date')->orderByDesc('created_at')->get();
+        $tasks = $request->user()
+            ? $request->user()->tasks()->orderBy('due_date')->orderByDesc('created_at')->get()
+            : collect();
         $total = $tasks->count();
         $completed = $tasks->where('status', 'completed')->count();
         $pending = $tasks->where('status', 'pending')->count();
@@ -552,6 +554,50 @@ class TaskController extends Controller
         }
 
         return back()->with('success', $task->is_pinned ? 'Task pinned.' : 'Task unpinned.');
+    }
+
+    /**
+     * Quick partial update for inline editing on task detail page
+     */
+    public function quickUpdate(Request $request, Task $task)
+    {
+        $this->ensureTaskOwner($request, $task);
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'nullable|in:low,medium,high',
+            'status' => 'nullable|in:pending,in_progress,completed',
+            'category' => 'nullable|string|max:50',
+            'tags' => 'nullable',
+            'due_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
+        if (array_key_exists('tags', $validated)) {
+            if (is_string($validated['tags'])) {
+                $decoded = json_decode($validated['tags'], true);
+                if (is_array($decoded)) {
+                    $validated['tags'] = $decoded;
+                } else {
+                    $validated['tags'] = array_values(array_filter(array_map('trim', explode(',', $validated['tags']))));
+                }
+            } elseif (! is_array($validated['tags'])) {
+                $validated['tags'] = [];
+            }
+        }
+
+        $task->fill(array_filter($validated, fn ($val, $key) => $val !== null || in_array($key, ['description', 'category', 'due_date', 'end_date']), ARRAY_FILTER_USE_BOTH));
+        $task->save();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'task' => $task->fresh(),
+                'message' => 'Task updated.',
+            ]);
+        }
+
+        return back()->with('success', 'Task updated.');
     }
 
     /**
