@@ -12,6 +12,7 @@ class Task extends Model
 
     protected $fillable = [
         'user_id',
+        'ai_request_id',
         'title',
         'description',
         'priority',
@@ -51,11 +52,11 @@ class Task extends Model
 
     public function getCompletedSubtasksCountAttribute(): int
     {
-        if (!is_array($this->subtasks)) {
+        if (! is_array($this->subtasks)) {
             return 0;
         }
 
-        return count(array_filter($this->subtasks, fn ($st) => !empty($st['completed'])));
+        return count(array_filter($this->subtasks, fn ($st) => ! empty($st['completed'])));
     }
 
     public function getSubtasksProgressAttribute(): int
@@ -70,6 +71,6 @@ class Task extends Model
 
     public function getIsOverdueAttribute(): bool
     {
-        return $this->status !== 'completed' && $this->due_date && $this->due_date->isPast() && !$this->due_date->isToday();
+        return $this->status !== 'completed' && $this->due_date && $this->due_date->isPast() && ! $this->due_date->isToday();
     }
 }

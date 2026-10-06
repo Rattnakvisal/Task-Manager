@@ -43,6 +43,7 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
         Route::post('/tasks/ai/breakdown', [AiCopilotController::class, 'breakdown'])->name('tasks.ai.breakdown');
         Route::post('/tasks/{task}/ai-breakdown', [AiCopilotController::class, 'breakdownExistingTask'])->name('tasks.ai.breakdown-existing');
         Route::post('/tasks/ai/enhance', [AiCopilotController::class, 'enhance'])->name('tasks.ai.enhance');
+        Route::post('/tasks/ai/analyze', [AiCopilotController::class, 'analyze'])->name('tasks.ai.analyze');
         Route::post('/tasks/ai/chat', [AiCopilotController::class, 'chat'])->name('tasks.ai.chat');
     });
 
@@ -56,6 +57,8 @@ Route::middleware(['auth', 'auth.session'])->group(function () {
 
     Route::middleware('throttle:30,1')->group(function () {
         Route::post('/tasks/ai/chat/clear', [AiCopilotController::class, 'clearChat'])->name('tasks.ai.chat.clear');
+        Route::post('/tasks/ai/drafts/{draftId}/confirm', [AiCopilotController::class, 'confirmDraft'])->name('tasks.ai.drafts.confirm');
+        Route::delete('/tasks/{task}/ai-undo', [AiCopilotController::class, 'undoCreatedTask'])->name('tasks.ai.undo');
         Route::put('/tasks/ai/preferences', [AiCopilotController::class, 'updatePreferences'])->name('tasks.ai.preferences.update');
     });
 

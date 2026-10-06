@@ -65,6 +65,71 @@ test('ai breakdown endpoint generates subtasks for a given task title', function
         ->and($data['subtasks'][0])->toHaveKeys(['id', 'title', 'completed']);
 });
 
+test('fallback creates a specific Laravel Supabase PostgreSQL setup plan', function () {
+    $response = $this->postJson(route('tasks.ai.breakdown'), [
+        'title' => 'Superbase PostgreSQL',
+        'lang' => 'en',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('source', 'smart_heuristic')
+        ->assertJsonPath('suggested_category', 'Dev')
+        ->assertJsonPath('subtasks.0.title', 'Create the Supabase project and store the database password securely');
+
+    expect($response->json('subtasks'))->toHaveCount(5)
+        ->and($response->json('subtasks.1.title'))->toContain('Session pooler')
+        ->and($response->json('subtasks.1.title'))->toContain('5432')
+        ->and($response->json('subtasks.2.title'))->toContain('DB_CONNECTION=pgsql')
+        ->and($response->json('summary'))->toContain('6543');
+});
+
+test('NLP parser corrects common Supabase and PostgreSQL product-name typos', function () {
+    $response = $this->postJson(route('tasks.ai.parse-nlp'), [
+        'text' => 'setup Superbase postgresql',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('parsed.title', 'setup Supabase PostgreSQL')
+        ->assertJsonPath('parsed.category', 'Dev');
+});
+
+test('fallback creates domain-specific plans across different skills', function (string $title, string $category, string $expectedStepText) {
+    $response = $this->postJson(route('tasks.ai.breakdown'), [
+        'title' => $title,
+        'lang' => 'en',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('source', 'smart_heuristic')
+        ->assertJsonPath('suggested_category', $category);
+
+    expect($response->json('subtasks'))->toHaveCount(5)
+        ->and(collect($response->json('subtasks'))->pluck('title')->implode(' '))->toContain($expectedStepText);
+})->with([
+    'cybersecurity' => ['Perform an OWASP security review', 'Dev', 'threat model'],
+    'devops' => ['Deploy Docker services to production', 'Dev', 'rollback'],
+    'networking' => ['Diagnose DNS network latency', 'Dev', 'network path'],
+    'data analytics' => ['Analyze customer dataset and build a dashboard', 'Design', 'business question'],
+    'writing' => ['Write a customer onboarding proposal', 'Work', 'audience'],
+    'marketing' => ['Launch a social media marketing campaign', 'Work', 'measurable objective'],
+    'career' => ['Prepare for a software engineering job interview', 'Personal', 'target role'],
+    'wellness' => ['Create a sustainable fitness habit', 'Personal', 'baseline'],
+    'business operations' => ['Improve the customer support workflow', 'Work', 'business outcome'],
+    'event planning' => ['Plan a family wedding event', 'Personal', 'budget'],
+]);
+
+test('fallback keeps a simple one-action task concise', function () {
+    $response = $this->postJson(route('tasks.ai.breakdown'), [
+        'title' => 'Call the landlord',
+        'lang' => 'en',
+    ]);
+
+    $response->assertOk();
+
+    expect($response->json('subtasks'))->toHaveCount(3)
+        ->and($response->json('summary'))->toContain('without unnecessary filler');
+});
+
 test('ai breakdown creates a learning roadmap when a user chooses a topic', function () {
     $response = $this->postJson(route('tasks.ai.breakdown'), [
         'title' => 'Laravel queues',
@@ -325,7 +390,7 @@ test('ai chat endpoint handles user messages, stores history, and replies', func
     ]);
 });
 
-test('ai chat can create a task directly from conversation intent', function () {
+test('ai chat previews a task draft before an idempotent confirmation', function () {
     $response = $this->postJson(route('tasks.ai.chat'), [
         'message' => 'create task: Build payment webhook listener #Dev !high by tomorrow',
         'lang' => 'en',
@@ -334,13 +399,29 @@ test('ai chat can create a task directly from conversation intent', function () 
     $response->assertOk();
     $data = $response->json();
 
-    expect($data['action_type'])->toBe('task_created')
+    expect($data['action_type'])->toBe('task_draft')
         ->and($data['action_data'])->not->toBeNull()
         ->and($data['action_data']['title'])->toContain('Build payment webhook listener')
         ->and($data['action_data']['subtasks_count'])->toBeGreaterThanOrEqual(4)
         ->and($data['action_data']['subtasks'])->toHaveCount($data['action_data']['subtasks_count'])
-        ->and($data['action_data']['task_url'])->toStartWith('/tasks/')
+        ->and($data['action_data']['draft_id'])->not->toBeEmpty()
         ->and($data['action_data']['source'])->toBe('nova');
+
+    $this->assertDatabaseMissing('tasks', [
+        'user_id' => $this->user->id,
+        'priority' => 'high',
+        'category' => 'Dev',
+    ]);
+
+    $confirm = $this->postJson(route('tasks.ai.drafts.confirm', $data['action_data']['draft_id']));
+    $confirm->assertOk()
+        ->assertJsonPath('action_type', 'task_created')
+        ->assertJsonPath('action_data.title', $data['action_data']['title']);
+
+    // A retry returns the same task rather than creating a duplicate.
+    $retry = $this->postJson(route('tasks.ai.drafts.confirm', $data['action_data']['draft_id']));
+    $retry->assertOk()
+        ->assertJsonPath('action_data.task_id', $confirm->json('action_data.task_id'));
 
     $this->assertDatabaseHas('tasks', [
         'user_id' => $this->user->id,
@@ -355,6 +436,65 @@ test('ai chat can create a task directly from conversation intent', function () 
     expect($this->user->notifications()->count())->toBe(1)
         ->and($this->user->notifications()->first()->data['event'])->toBe('ai_task_created')
         ->and($this->user->notifications()->first()->data['title'])->toContain('Build payment webhook listener');
+
+    expect(Task::where('user_id', $this->user->id)->count())->toBe(1);
+});
+
+test('a recent AI-created task can be undone by its owner', function () {
+    $draft = $this->postJson(route('tasks.ai.chat'), [
+        'message' => 'create task: Review onboarding checklist #Work',
+        'lang' => 'en',
+    ])->assertOk();
+
+    $confirmed = $this->postJson(route('tasks.ai.drafts.confirm', $draft->json('action_data.draft_id')))
+        ->assertOk();
+
+    $taskId = $confirmed->json('action_data.task_id');
+    $this->deleteJson($confirmed->json('action_data.undo_url'))
+        ->assertOk()
+        ->assertJsonPath('success', true);
+
+    $this->assertDatabaseMissing('tasks', ['id' => $taskId]);
+    expect($this->user->notifications()->count())->toBe(0);
+});
+
+test('an expired AI draft cannot create a task', function () {
+    $draft = $this->postJson(route('tasks.ai.chat'), [
+        'message' => 'create task: Prepare expired draft test',
+        'lang' => 'en',
+    ])->assertOk();
+
+    $this->travel(16)->minutes();
+
+    $this->postJson(route('tasks.ai.drafts.confirm', $draft->json('action_data.draft_id')))
+        ->assertGone()
+        ->assertJsonPath('success', false);
+
+    $this->assertDatabaseMissing('tasks', ['title' => 'Prepare expired draft test']);
+});
+
+test('AI analyze returns a reviewable form draft without creating a task', function () {
+    $response = $this->postJson(route('tasks.ai.analyze'), [
+        'title' => 'Learn queue workers',
+        'description' => 'Understand retries and failed jobs.',
+        'category' => 'Study',
+        'plan_type' => 'learning',
+        'lang' => 'en',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('success', true)
+        ->assertJsonStructure([
+            'title',
+            'description',
+            'subtasks',
+            'suggested_category',
+            'suggested_priority',
+            'source',
+        ]);
+
+    expect($response->json('subtasks'))->not->toBeEmpty();
+    $this->assertDatabaseEmpty('tasks');
 });
 
 test('ai chat history can be fetched and cleared', function () {
@@ -580,8 +720,13 @@ test('gemini can create a task from natural conversation using function calling'
     ]);
 
     $response->assertOk()
-        ->assertJsonPath('action_type', 'task_created')
+        ->assertJsonPath('action_type', 'task_draft')
         ->assertJsonPath('action_data.title', 'Study Laravel queues');
+
+    $this->assertDatabaseMissing('tasks', ['title' => 'Study Laravel queues']);
+    $this->postJson(route('tasks.ai.drafts.confirm', $response->json('action_data.draft_id')))
+        ->assertOk()
+        ->assertJsonPath('action_type', 'task_created');
 
     $this->assertDatabaseHas('tasks', [
         'user_id' => $this->user->id,
@@ -751,7 +896,10 @@ test('chat direct task creation truncates overly long titles without database er
     ]);
 
     $response->assertOk()
-        ->assertJsonPath('action_type', 'task_created');
+        ->assertJsonPath('action_type', 'task_draft');
+
+    $this->postJson(route('tasks.ai.drafts.confirm', $response->json('action_data.draft_id')))
+        ->assertOk();
 
     $createdTask = Task::where('user_id', $this->user->id)->latest('id')->first();
     expect($createdTask)->not->toBeNull()
@@ -863,7 +1011,10 @@ test('gemini tool calling preserves tags and creates task successfully', functio
     ]);
 
     $response->assertOk()
-        ->assertJsonPath('action_type', 'task_created');
+        ->assertJsonPath('action_type', 'task_draft');
+
+    $this->postJson(route('tasks.ai.drafts.confirm', $response->json('action_data.draft_id')))
+        ->assertOk();
 
     $task = Task::where('user_id', $this->user->id)->latest('id')->first();
     expect($task)->not->toBeNull()
@@ -902,12 +1053,15 @@ test('gemini tool arguments are normalized before task creation', function () {
         ]),
     ]);
 
-    $this->postJson(route('tasks.ai.chat'), [
+    $response = $this->postJson(route('tasks.ai.chat'), [
         'message' => 'Please save a release task for me',
         'lang' => 'en',
     ])->assertOk()
-        ->assertJsonPath('action_type', 'task_created')
+        ->assertJsonPath('action_type', 'task_draft')
         ->assertJsonPath('meta.source', 'gemini');
+
+    $this->postJson(route('tasks.ai.drafts.confirm', $response->json('action_data.draft_id')))
+        ->assertOk();
 
     $task = Task::where('user_id', $this->user->id)->latest('id')->firstOrFail();
     expect($task->title)->toBe('Ship secure release')
@@ -918,7 +1072,7 @@ test('gemini tool arguments are normalized before task creation', function () {
         ->and($task->tags)->toContain('Release')
         ->and($task->tags)->not->toContain('release')
         ->and($task->description)->not->toContain('<script>')
-        ->and($task->subtasks)->toHaveCount(4);
+        ->and($task->subtasks)->toHaveCount(5);
 
     Http::assertSentCount(1);
 });

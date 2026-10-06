@@ -439,6 +439,8 @@ class TaskController extends Controller
             'priority' => 'nullable|in:low,medium,high',
             'due_date' => 'nullable|date',
             'category' => 'nullable|string|max:50',
+            'tags' => 'nullable|array|max:10',
+            'tags.*' => 'string|max:30|distinct',
         ]);
 
         $task = Task::create([
@@ -449,7 +451,7 @@ class TaskController extends Controller
             'due_date' => $validated['due_date'] ?? null,
             'category' => $validated['category'] ?? null,
             'subtasks' => [],
-            'tags' => [],
+            'tags' => $validated['tags'] ?? [],
         ]);
 
         if ($request->wantsJson()) {

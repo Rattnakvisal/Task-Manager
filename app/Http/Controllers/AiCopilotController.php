@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiChatMessage;
 use App\Models\Task;
 use App\Services\AiTaskCopilotService;
 use Illuminate\Http\JsonResponse;
@@ -34,6 +35,7 @@ class AiCopilotController extends Controller
             $validated['category'] ?? null,
             $lang,
             $validated['plan_type'] ?? 'auto',
+            $request->user(),
         );
 
         return response()->json($result);
@@ -58,7 +60,8 @@ class AiCopilotController extends Controller
             $task->description,
             $task->category,
             $lang,
-            $planType
+            $planType,
+            $request->user(),
         );
 
         $existingSubtasks = is_array($task->subtasks) ? $task->subtasks : [];
@@ -134,6 +137,46 @@ class AiCopilotController extends Controller
     }
 
     /**
+     * Analyze a form once and return a complete, reviewable suggestion.
+     */
+    public function analyze(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'category' => 'nullable|string|max:50',
+            'plan_type' => 'nullable|string|in:auto,task,learning,project,personal',
+            'lang' => 'nullable|string|in:en,km',
+        ]);
+
+        $lang = $validated['lang'] ?? 'en';
+        $enhanced = $this->aiService->enhance(
+            $validated['title'],
+            $validated['description'] ?? null,
+            $lang,
+        );
+        $breakdown = $this->aiService->breakdown(
+            $enhanced['title'] ?? $validated['title'],
+            $enhanced['description'] ?? ($validated['description'] ?? null),
+            $validated['category'] ?? ($enhanced['suggested_category'] ?? null),
+            $lang,
+            $validated['plan_type'] ?? 'auto',
+            $request->user(),
+        );
+
+        return response()->json(array_merge($breakdown, [
+            'success' => true,
+            'title' => $enhanced['title'] ?? $validated['title'],
+            'description' => $enhanced['description'] ?? ($validated['description'] ?? ''),
+            'suggested_category' => $breakdown['suggested_category'] ?? ($enhanced['suggested_category'] ?? null),
+            'suggested_priority' => $breakdown['suggested_priority'] ?? ($enhanced['suggested_priority'] ?? null),
+            'source' => ($breakdown['source'] ?? null) === 'gemini' || ($enhanced['source'] ?? null) === 'gemini'
+                ? 'gemini'
+                : 'smart_heuristic',
+        ]));
+    }
+
+    /**
      * Parse natural language task input (e.g. "Review audit report Friday 3pm #Finance")
      */
     public function parseNlp(Request $request): JsonResponse
@@ -184,7 +227,99 @@ class AiCopilotController extends Controller
         $lang = $validated['lang'] ?? 'en';
         $result = $this->aiService->chat($request->user(), $validated['message'], $lang);
 
+        if (($result['action_type'] ?? null) === 'task_draft' && is_array($result['action_data'] ?? null)) {
+            $draftId = (string) Str::uuid();
+            $expiresAt = now()->addMinutes(15);
+            $drafts = collect($request->session()->get('ai_task_drafts', []))
+                ->filter(fn ($draft) => is_array($draft) && ($draft['expires_at'] ?? 0) > now()->timestamp)
+                ->take(-9)
+                ->all();
+
+            $result['action_data']['draft_id'] = $draftId;
+            $result['action_data']['expires_at'] = $expiresAt->toIso8601String();
+            $drafts[$draftId] = [
+                'payload' => $result['action_data'],
+                'message_id' => $result['message_id'] ?? null,
+                'expires_at' => $expiresAt->timestamp,
+            ];
+            $request->session()->put('ai_task_drafts', $drafts);
+
+            if (! empty($result['message_id'])) {
+                AiChatMessage::where('id', $result['message_id'])
+                    ->where('user_id', $request->user()->id)
+                    ->update(['action_data' => $result['action_data']]);
+            }
+        }
+
         return response()->json($result);
+    }
+
+    /**
+     * Confirm a previously generated draft. The session payload is authoritative;
+     * no task fields are accepted from the browser.
+     */
+    public function confirmDraft(Request $request, string $draftId): JsonResponse
+    {
+        abort_unless(Str::isUuid($draftId), 404);
+
+        $drafts = $request->session()->get('ai_task_drafts', []);
+        $stored = $drafts[$draftId] ?? null;
+        if (! is_array($stored) || ! is_array($stored['payload'] ?? null)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This AI draft is no longer available. Please generate it again.',
+            ], 410);
+        }
+
+        if (($stored['expires_at'] ?? 0) < now()->timestamp) {
+            unset($drafts[$draftId]);
+            $request->session()->put('ai_task_drafts', $drafts);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'This AI draft expired. Please generate a fresh draft.',
+            ], 410);
+        }
+
+        $task = $this->aiService->confirmTaskDraft($request->user(), $draftId, $stored['payload']);
+        $actionData = $this->aiService->confirmedTaskActionData($task, $stored['payload']);
+
+        if (! empty($stored['message_id'])) {
+            AiChatMessage::where('id', $stored['message_id'])
+                ->where('user_id', $request->user()->id)
+                ->update([
+                    'action_type' => 'task_created',
+                    'action_data' => $actionData,
+                ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Task created successfully.',
+            'action_type' => 'task_created',
+            'action_data' => $actionData,
+        ]);
+    }
+
+    /**
+     * Undo a recent Nova-created task without exposing general delete behavior.
+     */
+    public function undoCreatedTask(Request $request, Task $task): JsonResponse
+    {
+        abort_unless($task->user_id === $request->user()->id, 404);
+        abort_unless($task->ai_request_id && $task->created_at?->greaterThanOrEqualTo(now()->subMinutes(10)), 409);
+
+        $taskId = $task->id;
+        $task->delete();
+        $request->user()->notifications()
+            ->get()
+            ->filter(fn ($notification) => (int) ($notification->data['task_id'] ?? 0) === $taskId)
+            ->each->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'AI-created task removed.',
+        ]);
     }
 
     /**

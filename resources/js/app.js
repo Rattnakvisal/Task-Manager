@@ -1292,7 +1292,7 @@ quickAddForm?.addEventListener('submit', async (e) => {
         return;
     }
 
-    const parsed = parseClientNlp(rawTitle);
+    let parsed = parseClientNlp(rawTitle);
     const submitBtn = document.getElementById('quick-add-submit');
 
     if (submitBtn) {
@@ -1300,13 +1300,36 @@ quickAddForm?.addEventListener('submit', async (e) => {
         submitBtn.textContent = '...';
     }
 
-    const finalTitle = parsed.cleanTitle || rawTitle;
-    const finalCategory = quickAddCategoryInput?.value || parsed.category || null;
-    const finalPriority = quickAddPriorityInput?.value || parsed.priority || 'medium';
-    const finalDueDate = quickAddDueDateInput?.value || parsed.dueDate || null;
-
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     try {
+        const parseResponse = await fetch('/tasks/ai/parse-nlp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+            },
+            body: JSON.stringify({ text: rawTitle }),
+        });
+        if (parseResponse.ok) {
+            const parseData = await parseResponse.json();
+            if (parseData.success && parseData.parsed) {
+                parsed = {
+                    ...parsed,
+                    cleanTitle: parseData.parsed.title || parsed.cleanTitle,
+                    category: parseData.parsed.category || parsed.category,
+                    priority: parseData.parsed.priority || parsed.priority,
+                    dueDate: parseData.parsed.due_date || parsed.dueDate,
+                    tags: Array.isArray(parseData.parsed.tags) ? parseData.parsed.tags : [],
+                };
+            }
+        }
+
+        const finalTitle = parsed.cleanTitle || rawTitle;
+        const finalCategory = quickAddCategoryInput?.value || parsed.category || null;
+        const finalPriority = quickAddPriorityInput?.value || parsed.priority || 'medium';
+        const finalDueDate = quickAddDueDateInput?.value || parsed.dueDate || null;
+
         const res = await fetch('/tasks/quick', {
             method: 'POST',
             headers: {
@@ -1319,6 +1342,7 @@ quickAddForm?.addEventListener('submit', async (e) => {
                 category: finalCategory,
                 priority: finalPriority,
                 due_date: finalDueDate,
+                tags: parsed.tags || [],
             }),
         });
 
@@ -2040,7 +2064,10 @@ document.addEventListener('click', async (e) => {
     }
 });
 
-// 13.2. Modal AI Magic Breakdown Buttons
+// 13.2. Reviewable AI form drafts
+const modalAiDrafts = { create: null, edit: null };
+const modalAiPrevious = { create: null, edit: null };
+
 function renderAiBreakdownInsight(isEdit, data) {
     const insight = document.getElementById(isEdit ? 'edit-ai-breakdown-insight' : 'create-ai-breakdown-insight');
     if (!insight) return;
@@ -2057,25 +2084,35 @@ function renderAiBreakdownInsight(isEdit, data) {
         : `${totalMinutes}m`;
     const tags = Array.isArray(data.suggested_tags) ? data.suggested_tags.slice(0, 4) : [];
 
+    const mode = isEdit ? 'edit' : 'create';
+    const sourceLabel = data.source === 'gemini' ? 'Gemini AI' : (currentLang === 'km' ? 'Smart fallback' : 'Smart fallback');
     insight.innerHTML = `
         <div class="flex flex-wrap items-center gap-2">
             <span class="rounded-full bg-purple-600 px-2.5 py-1 text-[10px] font-bold text-white">${escapeHtml(planLabels[data.plan_type] || 'AI plan')}</span>
             <span class="text-[11px] font-semibold text-purple-700 dark:text-purple-300">${data.subtasks?.length || 0} ${currentLang === 'km' ? 'ជំហាន' : 'steps'} · ${escapeHtml(duration)}</span>
+            <span class="rounded-full border border-purple-200 bg-white/80 px-2 py-1 text-[9px] font-bold text-purple-600 dark:border-purple-800 dark:bg-slate-800 dark:text-purple-300">${escapeHtml(sourceLabel)}</span>
             ${tags.map((tag) => `<span class="rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">#${escapeHtml(tag)}</span>`).join('')}
         </div>
+        ${data.title ? `<p class="mt-2 text-xs font-extrabold text-slate-900 dark:text-white">${escapeHtml(data.title)}</p>` : ''}
         ${data.outcome ? `<p class="mt-2 text-xs font-bold leading-5 text-slate-800 dark:text-slate-100">${escapeHtml(data.outcome)}</p>` : ''}
         ${data.summary ? `<p class="mt-1 text-[11px] leading-5 text-slate-600 dark:text-slate-400">${escapeHtml(data.summary)}</p>` : ''}
+        <div class="mt-3 flex items-center justify-end gap-2 border-t border-purple-200/70 pt-2.5 dark:border-purple-900/60">
+            <button type="button" data-cancel-ai-form-draft="${mode}" class="rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-white/80 dark:text-slate-400 dark:hover:bg-slate-800">${currentLang === 'km' ? 'បោះបង់' : 'Cancel'}</button>
+            <button type="button" data-apply-ai-form-draft="${mode}" class="rounded-lg bg-purple-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-purple-700">${currentLang === 'km' ? 'អនុវត្ត Draft' : 'Apply draft'}</button>
+        </div>
     `;
     insight.classList.remove('hidden');
 }
 
-async function handleModalAiBreakdown(isEdit = false) {
+async function handleModalAiBreakdown(isEdit = false, trigger = 'breakdown') {
     const titleInput = isEdit ? document.getElementById('edit_title') : document.getElementById('create_title');
     const descInput = isEdit ? document.getElementById('edit_description') : document.getElementById('create_description');
     const catInput = isEdit ? document.getElementById('edit_category') : document.getElementById('create_category');
     const prioInput = isEdit ? document.getElementById('edit_priority') : document.getElementById('create_priority');
     const planTypeInput = isEdit ? document.getElementById('edit_breakdown_type') : document.getElementById('create_breakdown_type');
-    const breakdownBtn = isEdit ? document.getElementById('edit-ai-breakdown-btn') : document.getElementById('create-ai-breakdown-btn');
+    const breakdownBtn = trigger === 'suggest'
+        ? (isEdit ? document.getElementById('edit-ai-suggest-btn') : document.getElementById('create-ai-suggest-btn'))
+        : (isEdit ? document.getElementById('edit-ai-breakdown-btn') : document.getElementById('create-ai-breakdown-btn'));
 
     const title = titleInput?.value.trim();
     if (!title) {
@@ -2101,7 +2138,7 @@ async function handleModalAiBreakdown(isEdit = false) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     try {
-        const res = await fetch('/tasks/ai/breakdown', {
+        const res = await fetch('/tasks/ai/analyze', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2129,36 +2166,12 @@ async function handleModalAiBreakdown(isEdit = false) {
             throw new Error('The AI plan response was incomplete.');
         }
 
-        const currentSubtasks = isEdit ? editSubtasks : createSubtasks;
-        const existingTitles = new Set(currentSubtasks.map((item) => String(item.title || '').trim().toLocaleLowerCase()));
-        const uniqueSubtasks = data.subtasks.filter((item) => {
-            const normalizedTitle = String(item.title || '').trim().toLocaleLowerCase();
-            if (!normalizedTitle || existingTitles.has(normalizedTitle)) return false;
-            existingTitles.add(normalizedTitle);
-            return true;
-        });
-
-        if (isEdit) {
-            editSubtasks = [...editSubtasks, ...uniqueSubtasks];
-            renderEditSubtasks();
-        } else {
-            createSubtasks = [...createSubtasks, ...uniqueSubtasks];
-            renderCreateSubtasks();
-        }
-
-        if (catInput && !catInput.value && data.suggested_category) {
-            catInput.value = data.suggested_category;
-        }
-
-        if (prioInput && data.suggested_priority) {
-            prioInput.value = data.suggested_priority;
-        }
-
+        modalAiDrafts[isEdit ? 'edit' : 'create'] = data;
         renderAiBreakdownInsight(isEdit, data);
         playTaskChime();
         showToast('success', currentLang === 'km'
-            ? `Nova បានបង្កើតផែនការ ${uniqueSubtasks.length} ជំហាន។`
-            : `Nova created a ${uniqueSubtasks.length}-step plan.`);
+            ? `Draft ${data.subtasks.length} ជំហានរួចរាល់សម្រាប់ពិនិត្យ។`
+            : `Your ${data.subtasks.length}-step draft is ready to review.`);
     } catch (error) {
         showErrorAlert(
             currentLang === 'km' ? 'មិនអាចបង្កើតផែនការបានទេ' : 'Could not generate the plan',
@@ -2177,84 +2190,91 @@ document.getElementById('edit-ai-breakdown-btn')?.addEventListener('click', () =
 
 // 13.3. Modal AI Suggest / Enhance Buttons
 async function handleModalAiSuggest(isEdit = false) {
-    const titleInput = isEdit ? document.getElementById('edit_title') : document.getElementById('create_title');
-    const descInput = isEdit ? document.getElementById('edit_description') : document.getElementById('create_description');
-    const catInput = isEdit ? document.getElementById('edit_category') : document.getElementById('create_category');
-    const prioInput = isEdit ? document.getElementById('edit_priority') : document.getElementById('create_priority');
-    const suggestBtn = isEdit ? document.getElementById('edit-ai-suggest-btn') : document.getElementById('create-ai-suggest-btn');
-
-    const title = titleInput?.value.trim();
-    if (!title) {
-        titleInput?.focus();
-        titleInput?.classList.add('border-rose-400', 'ring-2', 'ring-rose-200');
-        setTimeout(() => titleInput?.classList.remove('border-rose-400', 'ring-2', 'ring-rose-200'), 1500);
-        return;
-    }
-
-    if (suggestBtn) {
-        suggestBtn.disabled = true;
-        suggestBtn.dataset.origHtml = suggestBtn.innerHTML;
-        suggestBtn.innerHTML = `
-            <svg class="h-3 w-3 animate-spin text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
-                <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
-            </svg>
-            <span class="text-[11px] font-bold text-purple-700">${currentLang === 'km' ? 'កំពុងវិភាគ...' : 'Analyzing...'}</span>
-        `;
-    }
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-    try {
-        const res = await fetch('/tasks/ai/enhance', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken || '',
-            },
-            body: JSON.stringify({
-                title,
-                description: descInput?.value || null,
-                lang: currentLang,
-            }),
-        });
-
-        if (!res.ok) {
-            throw new Error(await getAiResponseError(
-                res,
-                currentLang === 'km' ? 'មិនអាចកែលម្អកិច្ចការបានទេ។' : 'Could not improve this task.',
-            ));
-        }
-
-        const data = await res.json();
-        if (data.success) {
-            if (data.title && titleInput) titleInput.value = data.title;
-            if (data.description && descInput && (!descInput.value || descInput.value.length < 10)) {
-                descInput.value = data.description;
-            }
-            if (catInput && data.suggested_category) {
-                catInput.value = data.suggested_category;
-            }
-            if (prioInput && data.suggested_priority) {
-                prioInput.value = data.suggested_priority;
-            }
-            playTaskChime();
-        }
-    } catch (error) {
-        showToast('error', error?.message || (currentLang === 'km'
-            ? 'មិនអាចកែលម្អកិច្ចការបានទេ។'
-            : 'Could not improve this task.'));
-    } finally {
-        if (suggestBtn) {
-            suggestBtn.disabled = false;
-            suggestBtn.innerHTML = suggestBtn.dataset.origHtml || '✨ AI Suggest';
-        }
-    }
+    return handleModalAiBreakdown(isEdit, 'suggest');
 }
 
 document.getElementById('create-ai-suggest-btn')?.addEventListener('click', () => handleModalAiSuggest(false));
 document.getElementById('edit-ai-suggest-btn')?.addEventListener('click', () => handleModalAiSuggest(true));
+
+document.addEventListener('click', (event) => {
+    const applyButton = event.target.closest('[data-apply-ai-form-draft]');
+    const cancelButton = event.target.closest('[data-cancel-ai-form-draft]');
+    const undoButton = event.target.closest('[data-undo-ai-form-draft]');
+    const mode = applyButton?.dataset.applyAiFormDraft
+        || cancelButton?.dataset.cancelAiFormDraft
+        || undoButton?.dataset.undoAiFormDraft;
+    if (!mode || !['create', 'edit'].includes(mode)) return;
+
+    const isEdit = mode === 'edit';
+    const insight = document.getElementById(`${mode}-ai-breakdown-insight`);
+    if (cancelButton) {
+        modalAiDrafts[mode] = null;
+        insight?.classList.add('hidden');
+        return;
+    }
+
+    const titleInput = document.getElementById(`${mode}_title`);
+    const descInput = document.getElementById(`${mode}_description`);
+    const catInput = document.getElementById(`${mode}_category`);
+    const prioInput = document.getElementById(`${mode}_priority`);
+
+    if (undoButton) {
+        const previous = modalAiPrevious[mode];
+        if (!previous) return;
+        if (titleInput) titleInput.value = previous.title;
+        if (descInput) descInput.value = previous.description;
+        if (catInput) catInput.value = previous.category;
+        if (prioInput) prioInput.value = previous.priority;
+        if (isEdit) {
+            editSubtasks = previous.subtasks;
+            renderEditSubtasks();
+        } else {
+            createSubtasks = previous.subtasks;
+            renderCreateSubtasks();
+        }
+        modalAiPrevious[mode] = null;
+        insight?.classList.add('hidden');
+        showToast('success', currentLang === 'km' ? 'បានត្រឡប់ការផ្លាស់ប្តូរ AI។' : 'AI changes were undone.');
+        return;
+    }
+
+    const draft = modalAiDrafts[mode];
+    if (!applyButton || !draft) return;
+    const currentSubtasks = isEdit ? editSubtasks : createSubtasks;
+    modalAiPrevious[mode] = {
+        title: titleInput?.value || '',
+        description: descInput?.value || '',
+        category: catInput?.value || '',
+        priority: prioInput?.value || 'medium',
+        subtasks: currentSubtasks.map((subtask) => ({ ...subtask })),
+    };
+
+    if (titleInput && draft.title) titleInput.value = draft.title;
+    if (descInput && draft.description) descInput.value = draft.description;
+    if (catInput && draft.suggested_category) catInput.value = draft.suggested_category;
+    if (prioInput && draft.suggested_priority) prioInput.value = draft.suggested_priority;
+
+    const knownTitles = new Set(currentSubtasks.map((item) => String(item.title || '').trim().toLocaleLowerCase()));
+    const additions = (draft.subtasks || []).filter((item) => {
+        const normalized = String(item.title || '').trim().toLocaleLowerCase();
+        if (!normalized || knownTitles.has(normalized)) return false;
+        knownTitles.add(normalized);
+        return true;
+    });
+    if (isEdit) {
+        editSubtasks = [...editSubtasks, ...additions];
+        renderEditSubtasks();
+    } else {
+        createSubtasks = [...createSubtasks, ...additions];
+        renderCreateSubtasks();
+    }
+
+    modalAiDrafts[mode] = null;
+    if (insight) {
+        insight.innerHTML = `<div class="flex items-center justify-between gap-3"><span class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">✓ ${currentLang === 'km' ? 'បានអនុវត្ត AI Draft' : 'AI draft applied'}</span><button type="button" data-undo-ai-form-draft="${mode}" class="rounded-lg border border-purple-200 bg-white px-3 py-1.5 text-[10px] font-bold text-purple-700 dark:border-purple-800 dark:bg-slate-800 dark:text-purple-300">${currentLang === 'km' ? 'ត្រឡប់ក្រោយ' : 'Undo'}</button></div>`;
+    }
+    showToast('success', currentLang === 'km' ? 'បានអនុវត្ត Draft ទៅក្នុង form។' : 'Draft applied to the form.');
+});
 
 
 // ============================================================================
@@ -3001,7 +3021,33 @@ function renderChatMessage(msg, autoScroll = true) {
     } else {
         let actionCardHtml = '';
 
-        // 1. Task Created Card
+        // 1. Reviewable Task Draft Card
+        if (msg.action_type === 'task_draft' && msg.action_data) {
+            const d = msg.action_data;
+            const draftSubtasks = Array.isArray(d.subtasks) ? d.subtasks.slice(0, 5) : [];
+            actionCardHtml = `
+                <div data-ai-draft-card class="mt-2.5 w-full rounded-2xl border border-purple-200/90 bg-gradient-to-br from-purple-50/90 via-white to-indigo-50/70 p-3.5 text-slate-800 shadow-sm dark:border-purple-900/60 dark:from-slate-850 dark:to-purple-950/40 dark:text-slate-100">
+                    <div class="flex items-center justify-between gap-2 border-b border-purple-100 pb-2 dark:border-purple-900/50">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-purple-700 dark:text-purple-300"><span>✨</span>${currentLang === 'km' ? 'Draft សម្រាប់ពិនិត្យ' : 'Draft ready for review'}</span>
+                        <span class="rounded-full bg-purple-100 px-2 py-0.5 text-[9px] font-bold uppercase text-purple-700 dark:bg-purple-900 dark:text-purple-200">${escapeHtml(d.priority ?? 'medium')}</span>
+                    </div>
+                    <p class="mt-2 font-bold text-xs text-slate-900 dark:text-white">${escapeHtml(d.title || '')}</p>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-3 text-[10.5px] text-slate-500 dark:text-slate-400">
+                        <span>📁 ${escapeHtml(d.category ?? 'Work')}</span>
+                        ${d.due_date ? `<span>📅 ${escapeHtml(d.due_date)}</span>` : ''}
+                        <span>🧩 ${d.subtasks_count || draftSubtasks.length} ${currentLang === 'km' ? 'ជំហាន' : 'steps'}</span>
+                    </div>
+                    ${draftSubtasks.length ? `<div class="mt-2.5 space-y-1 rounded-xl border border-purple-100 bg-white/70 p-2.5 dark:border-purple-900/50 dark:bg-slate-800/70">${draftSubtasks.map((subtask, index) => `<div class="flex items-start gap-2 text-[10.5px] leading-4"><span class="font-extrabold text-purple-600">${index + 1}.</span><span class="flex-1">${escapeHtml(subtask.title || '')}</span><span class="text-[9px] text-slate-400">${Number.parseInt(subtask.estimated_minutes, 10) || 20}m</span></div>`).join('')}</div>` : ''}
+                    <p class="mt-2 text-[9.5px] font-semibold text-slate-400">${d.breakdown?.source === 'gemini' ? 'Gemini AI' : 'Nova smart fallback'} · ${currentLang === 'km' ? 'មិនទាន់បានរក្សាទុកទេ' : 'Not saved yet'}</p>
+                    <div class="mt-3 flex gap-2 border-t border-purple-100 pt-2.5 dark:border-purple-900/50">
+                        <button type="button" data-cancel-ai-draft class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">${currentLang === 'km' ? 'បោះបង់' : 'Cancel'}</button>
+                        <button type="button" data-confirm-ai-draft="${escapeHtml(d.draft_id || '')}" class="flex-[1.5] rounded-xl bg-purple-600 px-3 py-2 text-[10.5px] font-bold text-white shadow-sm transition hover:bg-purple-700 disabled:cursor-wait disabled:opacity-60">${currentLang === 'km' ? '✓ បញ្ជាក់ និងបង្កើត' : '✓ Confirm & create'}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. Task Created Card
         if (msg.action_type === 'task_created' && msg.action_data) {
             const d = msg.action_data;
             const autoSubtasks = Array.isArray(d.subtasks) ? d.subtasks.slice(0, 5) : [];
@@ -3044,7 +3090,8 @@ function renderChatMessage(msg, autoScroll = true) {
                             </div>
                         </div>
                     ` : ''}
-                    <div class="mt-2.5 pt-2 border-t border-emerald-100 dark:border-emerald-900/50 flex items-center justify-end">
+                    <div class="mt-2.5 pt-2 border-t border-emerald-100 dark:border-emerald-900/50 flex items-center justify-between gap-2">
+                        ${d.undo_url ? `<button type="button" data-undo-ai-task="${escapeHtml(d.undo_url)}" class="rounded-lg px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40">↶ ${currentLang === 'km' ? 'ត្រឡប់ក្រោយ' : 'Undo'}</button>` : '<span></span>'}
                         <a href="${escapeHtml(taskUrl)}" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 transition hover:underline">
                             ${currentLang === 'km' ? 'បើកកិច្ចការ →' : 'Open task →'}
                         </a>
@@ -3182,6 +3229,75 @@ function renderChatMessage(msg, autoScroll = true) {
         scrollChatToBottom();
     }
 }
+
+document.addEventListener('click', async (event) => {
+    const confirmButton = event.target.closest('[data-confirm-ai-draft]');
+    const cancelButton = event.target.closest('[data-cancel-ai-draft]');
+    const undoButton = event.target.closest('[data-undo-ai-task]');
+
+    if (cancelButton) {
+        const card = cancelButton.closest('[data-ai-draft-card]');
+        if (card) {
+            card.innerHTML = `<p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">${currentLang === 'km' ? 'Draft ត្រូវបានបោះបង់។ មិនមានកិច្ចការណាត្រូវបានបង្កើតទេ។' : 'Draft cancelled. No task was created.'}</p>`;
+        }
+        return;
+    }
+
+    if (confirmButton) {
+        const draftId = confirmButton.dataset.confirmAiDraft;
+        if (!draftId) return;
+        const card = confirmButton.closest('[data-ai-draft-card]');
+        const originalText = confirmButton.textContent;
+        confirmButton.disabled = true;
+        confirmButton.textContent = currentLang === 'km' ? 'កំពុងបង្កើត...' : 'Creating...';
+        try {
+            const response = await fetch(`/tasks/ai/drafts/${encodeURIComponent(draftId)}/confirm`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+            if (!response.ok) {
+                throw new Error(await getAiResponseError(response, currentLang === 'km' ? 'មិនអាចបង្កើតកិច្ចការបានទេ។' : 'Could not create the task.'));
+            }
+            const data = await response.json();
+            const task = data.action_data;
+            if (card) {
+                card.className = 'mt-2.5 w-full rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/30';
+                card.innerHTML = `<div class="flex items-center justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase text-emerald-700 dark:text-emerald-300">✓ ${currentLang === 'km' ? 'បានបង្កើតកិច្ចការ' : 'Task created'}</p><p class="mt-1 text-xs font-bold text-slate-900 dark:text-white">${escapeHtml(task.title || '')}</p></div><div class="flex items-center gap-2">${task.undo_url ? `<button type="button" data-undo-ai-task="${escapeHtml(task.undo_url)}" class="text-[10px] font-bold text-rose-600 dark:text-rose-400">↶ ${currentLang === 'km' ? 'ត្រឡប់ក្រោយ' : 'Undo'}</button>` : ''}<a href="${escapeHtml(getAiTaskUrl(task))}" class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">${currentLang === 'km' ? 'បើក →' : 'Open →'}</a></div></div>`;
+            }
+            showAiTaskCreatedAlert(task);
+        } catch (error) {
+            confirmButton.disabled = false;
+            confirmButton.textContent = originalText;
+            showToast('error', error?.message || 'Could not create the task.');
+        }
+        return;
+    }
+
+    if (undoButton) {
+        const undoUrl = undoButton.dataset.undoAiTask;
+        if (!undoUrl) return;
+        undoButton.disabled = true;
+        try {
+            const response = await fetch(undoUrl, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+            if (!response.ok) throw new Error(currentLang === 'km' ? 'មិនអាចត្រឡប់ក្រោយបានទេ។' : 'This task can no longer be undone.');
+            const card = undoButton.closest('[data-ai-draft-card]') || undoButton.closest('.rounded-2xl');
+            if (card) card.innerHTML = `<p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">${currentLang === 'km' ? 'បានដកកិច្ចការចេញវិញ។' : 'Task creation was undone.'}</p>`;
+            showToast('success', currentLang === 'km' ? 'បានដកកិច្ចការចេញវិញ។' : 'Task creation undone.');
+        } catch (error) {
+            undoButton.disabled = false;
+            showToast('error', error?.message || 'Undo failed.');
+        }
+    }
+});
 
 async function loadAiChatHistory() {
     let hasHistory = false;

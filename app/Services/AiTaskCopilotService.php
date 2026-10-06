@@ -7,6 +7,8 @@ use App\Models\Task;
 use App\Models\User;
 use App\Notifications\AiTaskCreatedNotification;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -23,7 +25,8 @@ class AiTaskCopilotService
         ?string $description = null,
         ?string $category = null,
         string $lang = 'en',
-        string $planType = 'auto'
+        string $planType = 'auto',
+        ?User $user = null,
     ): array {
         $apiKey = config('services.gemini.key');
         $planType = in_array($planType, ['auto', 'task', 'learning', 'project', 'personal'], true)
@@ -31,7 +34,7 @@ class AiTaskCopilotService
             : 'auto';
 
         if (! empty($apiKey)) {
-            $geminiResult = $this->callGeminiForBreakdown($apiKey, $title, $description, $category, $lang, $planType);
+            $geminiResult = $this->callGeminiForBreakdown($apiKey, $title, $description, $category, $lang, $planType, $user);
             if ($geminiResult !== null) {
                 return $geminiResult;
             }
@@ -167,6 +170,8 @@ class AiTaskCopilotService
             $cleanTitle = trim($input);
         }
 
+        $cleanTitle = $this->canonicalizeTechnologyNames($cleanTitle);
+
         // Fallback category detection if none specified
         if (! $category) {
             $category = $this->detectCategory($cleanTitle);
@@ -274,7 +279,8 @@ class AiTaskCopilotService
         ?string $description,
         ?string $category,
         string $lang,
-        string $planType
+        string $planType,
+        ?User $user = null,
     ): ?array {
         $models = $this->resolveGeminiModels();
 
@@ -283,6 +289,7 @@ class AiTaskCopilotService
         $cleanTitle = $this->sanitizePromptText($title, 255);
         $cleanDescription = $this->sanitizePromptText($description, 2000);
         $cleanCategory = $this->sanitizePromptText($category, 50);
+        $planningProfile = $this->planningPreferenceContext($user);
 
         $prompt = <<<PROMPT
 You are Nova, an expert planning assistant for work, study, projects, and personal goals.
@@ -293,13 +300,18 @@ Task title or topic: "{$cleanTitle}"
 User context or desired result: "{$cleanDescription}"
 Category: "{$cleanCategory}"
 Requested plan type: "{$planType}" (auto means infer the best type)
+User planning profile: {$planningProfile}
 
 Quality requirements:
 - First identify whether this is an action task, learning roadmap, project plan, or personal goal.
+- Adapt the plan length to complexity: 3 steps for a simple action, 4-5 for normal work, and 6-7 for a complex project. Never add filler steps.
 - For a learning topic, progress from foundations to hands-on practice and a knowledge check.
 - For a project, progress from scope to execution, verification, and delivery.
 - Every step must start with a clear action verb and produce a concrete result or checkpoint.
 - Use the user's specific subject in the steps; avoid generic phrases such as "do the task".
+- Apply accurate domain knowledge for technology, business, design, study, writing, health, finance, career, and personal tasks.
+- Correct obvious product-name spelling while preserving the user's intent.
+- Never invent credentials, private data, legal facts, medical diagnoses, or financial guarantees.
 - Give realistic time estimates and keep the full plan practical for one user.
 
 You MUST respond strictly with a valid JSON object in this exact schema:
@@ -322,9 +334,7 @@ PROMPT;
         foreach ($models as $model) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
             try {
-                $response = Http::withHeaders([
-                    'x-goog-api-key' => $apiKey,
-                ])->timeout(12)->post($endpoint, [
+                $response = $this->geminiHttpClient($apiKey)->post($endpoint, [
                     'contents' => [
                         [
                             'parts' => [
@@ -401,9 +411,7 @@ PROMPT;
         foreach ($models as $model) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
             try {
-                $response = Http::withHeaders([
-                    'x-goog-api-key' => $apiKey,
-                ])->timeout(12)->post($endpoint, [
+                $response = $this->geminiHttpClient($apiKey)->post($endpoint, [
                     'contents' => [
                         [
                             'parts' => [
@@ -441,6 +449,29 @@ PROMPT;
     }
 
     /**
+     * Provide compact, non-sensitive preferences so generated plans match the user.
+     */
+    protected function planningPreferenceContext(?User $user): string
+    {
+        if (! $user) {
+            return 'Not configured.';
+        }
+
+        $preferences = $user->aiPreference()->first();
+        if (! $preferences) {
+            return 'Not configured.';
+        }
+
+        return $this->sanitizePromptText(json_encode([
+            'occupation' => str_replace('_', ' ', (string) $preferences->occupation),
+            'experience_level' => $preferences->experience_level,
+            'learning_interests' => $preferences->learning_interests ?? [],
+            'work_skills' => $preferences->work_skills ?? [],
+            'assistance_areas' => $preferences->assistance_areas ?? [],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 1200);
+    }
+
+    /**
      * Highly intelligent domain-aware rule engine for instant subtask generation without API keys
      */
     protected function smartHeuristicBreakdown(
@@ -450,6 +481,8 @@ PROMPT;
         string $lang,
         string $planType = 'auto'
     ): array {
+        $title = $this->canonicalizeTechnologyNames($title);
+        $description = $description ? $this->canonicalizeTechnologyNames($description) : null;
         $t = mb_strtolower($title);
         $d = mb_strtolower($description ?? '');
         $combined = $t.' '.$d;
@@ -462,6 +495,8 @@ PROMPT;
         $detectedCategory = $category ?: ($resolvedPlanType === 'learning' ? 'Study' : $this->detectCategory($title));
         $tags = [];
         $summary = '';
+        $isSimpleAction = mb_strlen($title) <= 100
+            && preg_match('/^(call|email|send|buy|book|pay|schedule|submit|upload|download|renew|confirm|ផ្ញើ|ទិញ|កក់|បង់|ហៅ|បញ្ជាក់)\b/u', $t);
 
         // Priority heuristics
         if (preg_match('/(urgent|asap|critical|fix|bug|broken|crash|error|emergency|deadline|today|បន្ទាន់|បញ្ហា)/u', $combined)) {
@@ -490,6 +525,97 @@ PROMPT;
             $summary = $isKhmer
                 ? 'រៀនជាវគ្គខ្លីៗ ហើយអនុវត្តភ្លាមៗ ដើម្បីបង្កើនការចងចាំ។'
                 : 'Use short study sessions and apply each concept immediately for stronger retention.';
+        } elseif (preg_match('/(supabase|superbase|postgresql|postgres|pgsql|postgis)/u', $combined)) {
+            $detectedCategory = 'Dev';
+            $tags = ['supabase', 'postgresql', 'database'];
+            $subtasks = $isKhmer ? [
+                ['title' => 'បង្កើត Supabase project និងរក្សាទុក database password ដោយសុវត្ថិភាព', 'estimated_minutes' => 10],
+                ['title' => 'ចម្លង Session pooler connection ពី Supabase Connect និងប្រើ port 5432', 'estimated_minutes' => 10],
+                ['title' => 'កំណត់ Laravel .env ជា DB_CONNECTION=pgsql, DB_URL និង SSL mode=require', 'estimated_minutes' => 15],
+                ['title' => 'សម្អាត config cache ហើយផ្ទៀងផ្ទាត់ connection ដោយ php artisan migrate:status', 'estimated_minutes' => 10],
+                ['title' => 'ដំណើរការ migrations និងសាកល្បង CRUD ពី Laravel ទៅ Supabase PostgreSQL', 'estimated_minutes' => 20],
+            ] : [
+                ['title' => 'Create the Supabase project and store the database password securely', 'estimated_minutes' => 10],
+                ['title' => 'Copy the Session pooler connection from Supabase Connect using port 5432', 'estimated_minutes' => 10],
+                ['title' => 'Configure Laravel .env with DB_CONNECTION=pgsql, DB_URL, and SSL mode=require', 'estimated_minutes' => 15],
+                ['title' => 'Clear cached config and verify the connection with php artisan migrate:status', 'estimated_minutes' => 10],
+                ['title' => 'Run migrations and test Laravel CRUD against Supabase PostgreSQL', 'estimated_minutes' => 20],
+            ];
+            $summary = $isKhmer
+                ? 'ប្រើ Session pooler port 5432 សម្រាប់ Laravel; កុំប្រើ Transaction pooler port 6543 ជា main connection។'
+                : 'Use the Session pooler on port 5432 for Laravel; do not use the transaction pooler on port 6543 as the main connection.';
+        } elseif (preg_match('/(security|cyber|vulnerability|penetration|owasp|xss|csrf|injection|malware|phishing|firewall|encryption|សុវត្ថិភាព|សន្តិសុខ)/u', $combined)) {
+            $detectedCategory = 'Dev';
+            $tags = ['security', 'risk', 'verification'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់ទ្រព្យសម្បត្តិ វិសាលភាព និង threat model សម្រាប់ {$title}", 'estimated_minutes' => 25],
+                ['title' => 'ពិនិត្យ configuration, dependencies, access control និង attack surface', 'estimated_minutes' => 35],
+                ['title' => 'ធ្វើ security checks ក្នុង test environment និងកត់ត្រាភស្តុតាង', 'estimated_minutes' => 45],
+                ['title' => 'ជួសជុលចំណុចខ្សោយតាមលំដាប់ហានិភ័យ និងបន្ថែម regression tests', 'estimated_minutes' => 45],
+                ['title' => 'ផ្ទៀងផ្ទាត់ការជួសជុល និងរៀបចំរបាយការណ៍ហានិភ័យដែលនៅសល់', 'estimated_minutes' => 25],
+            ] : [
+                ['title' => "Define assets, scope, and a threat model for {$title}", 'estimated_minutes' => 25],
+                ['title' => 'Review configuration, dependencies, access controls, and attack surface', 'estimated_minutes' => 35],
+                ['title' => 'Run authorized security checks in a test environment and capture evidence', 'estimated_minutes' => 45],
+                ['title' => 'Remediate findings by risk and add security regression tests', 'estimated_minutes' => 45],
+                ['title' => 'Retest fixes and document accepted residual risks', 'estimated_minutes' => 25],
+            ];
+            $summary = $isKhmer
+                ? 'អនុវត្តតែក្នុងប្រព័ន្ធដែលមានការអនុញ្ញាត និងផ្តោតលើការវាស់ហានិភ័យ ការជួសជុល និងការផ្ទៀងផ្ទាត់។'
+                : 'Work only in authorized systems and focus on measurable risk, remediation, and verification.';
+        } elseif (preg_match('/(devops|deploy|deployment|docker|kubernetes|k8s|ci\/cd|pipeline|terraform|aws|azure|gcp|cloud|nginx|server|infrastructure|monitoring|ដាក់ឱ្យដំណើរការ|ម៉ាស៊ីនមេ)/u', $combined)) {
+            $detectedCategory = 'Dev';
+            $tags = ['devops', 'deployment', 'operations'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់ environment, dependencies និង success criteria សម្រាប់ {$title}", 'estimated_minutes' => 20],
+                ['title' => 'រៀបចំ infrastructure/configuration និងរក្សាទុក secrets ដោយសុវត្ថិភាព', 'estimated_minutes' => 35],
+                ['title' => 'បង្កើត build/deployment pipeline ជាមួយ automated checks', 'estimated_minutes' => 45],
+                ['title' => 'Deploy ទៅ staging ហើយធ្វើ smoke, health និងrollback tests', 'estimated_minutes' => 30],
+                ['title' => 'ដាក់ production និងបើក logs, metrics, alerts និងrunbook', 'estimated_minutes' => 30],
+            ] : [
+                ['title' => "Define environments, dependencies, and success criteria for {$title}", 'estimated_minutes' => 20],
+                ['title' => 'Provision infrastructure and configuration with secrets stored securely', 'estimated_minutes' => 35],
+                ['title' => 'Build the deployment pipeline with automated quality gates', 'estimated_minutes' => 45],
+                ['title' => 'Deploy to staging and run smoke, health, and rollback tests', 'estimated_minutes' => 30],
+                ['title' => 'Release to production with logs, metrics, alerts, and a runbook', 'estimated_minutes' => 30],
+            ];
+            $summary = $isKhmer
+                ? 'ដំណើរការដាក់ឱ្យប្រើប្រាស់ដែលអាចត្រឡប់ក្រោយបាន និងមាន monitoring ពេញលេញ។'
+                : 'Use a repeatable, observable deployment with a tested rollback path.';
+        } elseif (preg_match('/(network|dns|tcp|udp|vpn|router|switch|subnet|wifi|latency|connectivity|បណ្ដាញ|អ៊ីនធឺណិត)/u', $combined)) {
+            $detectedCategory = 'Dev';
+            $tags = ['networking', 'diagnostics'];
+            $subtasks = $isKhmer ? [
+                ['title' => "គូស network path និងកំណត់ expected behavior សម្រាប់ {$title}", 'estimated_minutes' => 15],
+                ['title' => 'ប្រមូល IP, DNS, route, firewall និងlatency evidence ពីចំណុចពាក់ព័ន្ធ', 'estimated_minutes' => 25],
+                ['title' => 'បំបែកបញ្ហាតាម layer និងសាកល្បង hypothesis មួយៗ', 'estimated_minutes' => 35],
+                ['title' => 'អនុវត្តការកែតូចបំផុតដែលមានសុវត្ថិភាព និងផ្ទៀងផ្ទាត់ end-to-end', 'estimated_minutes' => 30],
+                ['title' => 'កត់ត្រា topology, root cause និងការការពារកុំឱ្យកើតឡើងវិញ', 'estimated_minutes' => 15],
+            ] : [
+                ['title' => "Map the network path and expected behavior for {$title}", 'estimated_minutes' => 15],
+                ['title' => 'Collect IP, DNS, route, firewall, and latency evidence at each boundary', 'estimated_minutes' => 25],
+                ['title' => 'Isolate the failing layer and test one hypothesis at a time', 'estimated_minutes' => 35],
+                ['title' => 'Apply the smallest safe fix and verify connectivity end to end', 'estimated_minutes' => 30],
+                ['title' => 'Document topology, root cause, and recurrence prevention', 'estimated_minutes' => 15],
+            ];
+            $summary = $isKhmer ? 'ដោះស្រាយបញ្ហាបណ្ដាញតាមភស្តុតាង និងតាម layer។' : 'Diagnose networking issues from evidence and isolate one layer at a time.';
+        } elseif (preg_match('/(data|analytics|dashboard|machine learning|\bai\b|dataset|python|pandas|excel|power bi|tableau|statistics|visualization|ទិន្នន័យ|វិភាគ)/u', $combined)) {
+            $detectedCategory = preg_match('/(dashboard|visualization|power bi|tableau)/u', $combined) ? 'Design' : 'Dev';
+            $tags = ['data', 'analysis', 'validation'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់សំណួរ business, metric និងលទ្ធផលសម្រាប់ {$title}", 'estimated_minutes' => 20],
+                ['title' => 'ប្រមូលទិន្នន័យ និងពិនិត្យ schema, quality, privacy និងmissing values', 'estimated_minutes' => 35],
+                ['title' => 'សម្អាត បម្លែង និងវិភាគទិន្នន័យដោយរក្សាជំហានឱ្យអាចធ្វើឡើងវិញបាន', 'estimated_minutes' => 45],
+                ['title' => 'បង្កើត analysis/model/visualization ហើយផ្ទៀងផ្ទាត់លទ្ធផល', 'estimated_minutes' => 50],
+                ['title' => 'សង្ខេប insight, limitations និងសកម្មភាពបន្ទាប់សម្រាប់អ្នកប្រើប្រាស់', 'estimated_minutes' => 25],
+            ] : [
+                ['title' => "Define the business question, metrics, and expected decision for {$title}", 'estimated_minutes' => 20],
+                ['title' => 'Collect data and profile schema, quality, privacy, and missing values', 'estimated_minutes' => 35],
+                ['title' => 'Clean, transform, and analyze the data in a reproducible workflow', 'estimated_minutes' => 45],
+                ['title' => 'Build the analysis, model, or visualization and validate its output', 'estimated_minutes' => 50],
+                ['title' => 'Present insights, limitations, and recommended next actions', 'estimated_minutes' => 25],
+            ];
+            $summary = $isKhmer ? 'ចាប់ផ្តើមពីសំណួរដែលត្រូវសម្រេចចិត្ត និងផ្ទៀងផ្ទាត់គុណភាពទិន្នន័យមុនបកស្រាយ។' : 'Start from the decision to be made and validate data quality before interpreting results.';
         } elseif (preg_match('/(bug|fix|error|crash|issue|patch|hotfix|404|500|exception|fail|បញ្ហា|កែកំហុស)/u', $combined)) {
             $detectedCategory = $detectedCategory ?: 'Dev';
             $tags = ['bugfix', 'quality'];
@@ -520,6 +646,57 @@ PROMPT;
                 ['title' => 'Write feature test assertions & verify edge cases', 'estimated_minutes' => 25],
             ];
             $summary = $isKhmer ? 'លំហូរអភិវឌ្ឍន៍មុខងារពេញលេញពី Backend ដល់ Frontend។' : 'Full-stack development steps from architecture to testing.';
+        } elseif (preg_match('/(write|writing|article|blog|proposal|documentation|email|copywriting|script|essay|resume|cv|cover letter|សរសេរ|អត្ថបទ|ឯកសារ|សំណើ)/u', $combined)) {
+            $detectedCategory = preg_match('/(resume|cv|cover letter)/u', $combined) ? 'Personal' : 'Work';
+            $tags = ['writing', 'review'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់អ្នកអាន គោលបំណង និង call-to-action សម្រាប់ {$title}", 'estimated_minutes' => 15],
+                ['title' => 'ប្រមូល facts, examples និងឯកសារយោងដែលអាចផ្ទៀងផ្ទាត់បាន', 'estimated_minutes' => 25],
+                ['title' => 'រៀបចំ outline តាមលំដាប់ហេតុផល និងសរសេរ draft ដំបូង', 'estimated_minutes' => 40],
+                ['title' => 'កែសម្រួលភាពច្បាស់លាស់ សំឡេង សង្ខេប និងភាពត្រឹមត្រូវ', 'estimated_minutes' => 25],
+                ['title' => 'Proofread ទម្រង់ links និងព័ត៌មានចុងក្រោយ មុនបោះពុម្ពឬផ្ញើ', 'estimated_minutes' => 15],
+            ] : [
+                ['title' => "Define the audience, purpose, and call to action for {$title}", 'estimated_minutes' => 15],
+                ['title' => 'Gather verifiable facts, examples, and source material', 'estimated_minutes' => 25],
+                ['title' => 'Create a logical outline and write the first complete draft', 'estimated_minutes' => 40],
+                ['title' => 'Edit for clarity, voice, concision, and factual accuracy', 'estimated_minutes' => 25],
+                ['title' => 'Proofread formatting, links, and final details before publishing or sending', 'estimated_minutes' => 15],
+            ];
+            $summary = $isKhmer ? 'សរសេរដោយផ្តោតលើអ្នកអាន និងកែសម្រួលជាពីរជុំ៖ structure បន្ទាប់មក details។' : 'Write for a specific reader and revise in two passes: structure first, details second.';
+        } elseif (preg_match('/(marketing|campaign|seo|social media|content plan|brand|audience|lead generation|sales|conversion|launch|ផ្សព្វផ្សាយ|ទីផ្សារ|អតិថិជន|លក់)/u', $combined)) {
+            $detectedCategory = preg_match('/(brand|logo|visual)/u', $combined) ? 'Design' : 'Work';
+            $tags = ['marketing', 'growth', 'measurement'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់ audience, offer និងគោលដៅដែលអាចវាស់បានសម្រាប់ {$title}", 'estimated_minutes' => 20],
+                ['title' => 'ស្រាវជ្រាវ customer insight, competitors និងchannel constraints', 'estimated_minutes' => 30],
+                ['title' => 'បង្កើត message, creative assets និងcampaign plan', 'estimated_minutes' => 45],
+                ['title' => 'Launch ទៅ audience តូច និងពិនិត្យ tracking/attribution', 'estimated_minutes' => 25],
+                ['title' => 'វាស់ conversion, cost និងfeedback រួចកែលម្អ iteration បន្ទាប់', 'estimated_minutes' => 30],
+            ] : [
+                ['title' => "Define the audience, offer, and measurable objective for {$title}", 'estimated_minutes' => 20],
+                ['title' => 'Research customer insight, competitors, and channel constraints', 'estimated_minutes' => 30],
+                ['title' => 'Create messaging, campaign assets, and the publishing plan', 'estimated_minutes' => 45],
+                ['title' => 'Launch to a controlled audience and verify tracking attribution', 'estimated_minutes' => 25],
+                ['title' => 'Review conversion, cost, and feedback to plan the next iteration', 'estimated_minutes' => 30],
+            ];
+            $summary = $isKhmer ? 'កំណត់ metric មុន launch ហើយកែលម្អដោយប្រើលទ្ធផលពិត។' : 'Define the success metric before launch and iterate from observed results.';
+        } elseif (preg_match('/(job|career|interview|portfolio|promotion|application|recruit|hiring|ការងារ|អាជីព|សម្ភាសន៍|ប្រវត្តិរូប)/u', $combined)) {
+            $detectedCategory = 'Personal';
+            $tags = ['career', 'preparation'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់ role/company និង success criteria សម្រាប់ {$title}", 'estimated_minutes' => 15],
+                ['title' => 'ផ្គូផ្គងបទពិសោធន៍ និងសមិទ្ធផលជាមួយតម្រូវការសំខាន់ៗ', 'estimated_minutes' => 30],
+                ['title' => 'រៀបចំ resume/portfolio/examples ឱ្យមានភស្តុតាង និងលេខវាស់វែង', 'estimated_minutes' => 40],
+                ['title' => 'ហាត់សំណួរ និងចម្លើយខ្លីៗជាមួយ feedback', 'estimated_minutes' => 35],
+                ['title' => 'បញ្ចប់ application/follow-up និងកត់ត្រាជំហានបន្ទាប់', 'estimated_minutes' => 15],
+            ] : [
+                ['title' => "Define the target role, organization, and success criteria for {$title}", 'estimated_minutes' => 15],
+                ['title' => 'Map relevant experience and achievements to the key requirements', 'estimated_minutes' => 30],
+                ['title' => 'Tailor the resume, portfolio, and examples with measurable evidence', 'estimated_minutes' => 40],
+                ['title' => 'Practice concise interview answers and improve them from feedback', 'estimated_minutes' => 35],
+                ['title' => 'Complete the application or follow-up and record the next action', 'estimated_minutes' => 15],
+            ];
+            $summary = $isKhmer ? 'បង្ហាញភស្តុតាងនៃសមិទ្ធផល និងកែសម្រួលឯកសារតាម role នីមួយៗ។' : 'Lead with evidence of results and tailor every artifact to the specific role.';
         } elseif (preg_match('/(design|ui|ux|figma|logo|banner|landing|poster|prototype|wireframe|mockup|រចនា|គំនូរ)/u', $combined)) {
             $detectedCategory = $detectedCategory ?: 'Design';
             $tags = ['design', 'ui-ux'];
@@ -535,7 +712,7 @@ PROMPT;
                 ['title' => 'Test mobile responsive states & export production assets', 'estimated_minutes' => 20],
             ];
             $summary = $isKhmer ? 'ដំណើរការរចនាបែបស្តង់ដារពីគំនិតដល់ការនាំចេញឯកសារ។' : 'End-to-end design pipeline focusing on clarity and polish.';
-        } elseif (preg_match('/(meeting|interview|client|presentation|demo|call|sync|pitch|ជួប|ប្រជុំ|បទបង្ហាញ)/u', $combined)) {
+        } elseif (preg_match('/(meeting|client meeting|client call|sales call|phone call|presentation|demo|sync|pitch|ជួប|ប្រជុំ|បទបង្ហាញ)/u', $combined)) {
             $detectedCategory = $detectedCategory ?: 'Work';
             $tags = ['meeting', 'communication'];
             $subtasks = $isKhmer ? [
@@ -550,6 +727,23 @@ PROMPT;
                 ['title' => 'Send recap email with agreed next steps & deadlines', 'estimated_minutes' => 15],
             ];
             $summary = $isKhmer ? 'រៀបចំកិច្ចប្រជុំប្រកបដោយប្រសិទ្ធភាព និងច្បាស់លាស់។' : 'Ensure impactful meetings with clear takeaways and follow-up.';
+        } elseif (preg_match('/(health|fitness|workout|exercise|sleep|meal plan|habit|wellness|doctor|សុខភាព|ហាត់ប្រាណ|គេង|ទម្លាប់)/u', $combined)) {
+            $detectedCategory = 'Personal';
+            $tags = ['wellness', 'habit', 'tracking'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់ baseline, limitation និងគោលដៅដែលអាចវាស់បានសម្រាប់ {$title}", 'estimated_minutes' => 15],
+                ['title' => 'ជ្រើសរើសសកម្មភាពតូច និងកាលវិភាគដែលអាចអនុវត្តបានជាប់លាប់', 'estimated_minutes' => 20],
+                ['title' => 'រៀបចំបរិយាកាស ឧបករណ៍ និងreminder ដើម្បីកាត់បន្ថយឧបសគ្គ', 'estimated_minutes' => 15],
+                ['title' => 'អនុវត្តផែនការ និងកត់ត្រាលទ្ធផល អារម្មណ៍ និងបញ្ហា', 'estimated_minutes' => 30],
+                ['title' => 'ពិនិត្យវឌ្ឍនភាពប្រចាំសប្តាហ៍ និងកែតម្រូវដោយសុវត្ថិភាព', 'estimated_minutes' => 15],
+            ] : [
+                ['title' => "Record a baseline, constraints, and a measurable goal for {$title}", 'estimated_minutes' => 15],
+                ['title' => 'Choose a small repeatable action and a realistic schedule', 'estimated_minutes' => 20],
+                ['title' => 'Prepare the environment, equipment, and reminders to reduce friction', 'estimated_minutes' => 15],
+                ['title' => 'Follow the plan and track outcomes, effort, and warning signs', 'estimated_minutes' => 30],
+                ['title' => 'Review progress weekly and adjust safely or seek professional guidance', 'estimated_minutes' => 15],
+            ];
+            $summary = $isKhmer ? 'ចាប់ផ្តើមតូច វាស់វឌ្ឍនភាព និងស្វែងរកអ្នកជំនាញពេលមានរោគសញ្ញាឬហានិភ័យ។' : 'Start small, measure consistency, and seek professional guidance for symptoms or material health risks.';
         } elseif (preg_match('/(report|tax|finance|invoice|budget|audit|expense|revenue|quarterly|accounting|ហិរញ្ញវត្ថុ|ពន្ធ|របាយការណ៍)/u', $combined)) {
             $detectedCategory = $detectedCategory ?: 'Finance';
             $tags = ['finance', 'reporting'];
@@ -565,6 +759,40 @@ PROMPT;
                 ['title' => 'Final review for compliance & deliver to stakeholders', 'estimated_minutes' => 15],
             ];
             $summary = $isKhmer ? 'ជំហានច្បាស់លាស់សម្រាប់របាយការណ៍ហិរញ្ញវត្ថុត្រឹមត្រូវ។' : 'Structured financial review ensuring accuracy and compliance.';
+        } elseif (preg_match('/(business plan|strategy|operations|process|workflow|vendor|inventory|procurement|policy|sop|roadmap|អាជីវកម្ម|យុទ្ធសាស្ត្រ|ដំណើរការ)/u', $combined)) {
+            $detectedCategory = 'Work';
+            $tags = ['business', 'operations', 'measurement'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់បញ្ហា stakeholder និងលទ្ធផលអាជីវកម្មសម្រាប់ {$title}", 'estimated_minutes' => 20],
+                ['title' => 'ប្រមូល baseline data, constraints, costs និងrisks', 'estimated_minutes' => 30],
+                ['title' => 'បង្កើត options ហើយប្រៀបធៀប impact, effort និងtrade-offs', 'estimated_minutes' => 35],
+                ['title' => 'ជ្រើសរើសផែនការ បែងចែកម្ចាស់ការងារ timeline និងsuccess metrics', 'estimated_minutes' => 30],
+                ['title' => 'អនុវត្ត pilot ពិនិត្យលទ្ធផល និងកែលម្អមុនពង្រីក', 'estimated_minutes' => 35],
+            ] : [
+                ['title' => "Define the problem, stakeholders, and business outcome for {$title}", 'estimated_minutes' => 20],
+                ['title' => 'Collect baseline data, constraints, costs, and material risks', 'estimated_minutes' => 30],
+                ['title' => 'Develop options and compare impact, effort, and trade-offs', 'estimated_minutes' => 35],
+                ['title' => 'Select the plan and assign owners, timeline, and success metrics', 'estimated_minutes' => 30],
+                ['title' => 'Run a pilot, review measured results, and improve before scaling', 'estimated_minutes' => 35],
+            ];
+            $summary = $isKhmer ? 'ចាប់ផ្តើមពី baseline និងសាកល្បង pilot មុនពង្រីកការផ្លាស់ប្តូរ។' : 'Start with a baseline and validate the change in a pilot before scaling it.';
+        } elseif (preg_match('/(event|wedding|party|conference|workshop|travel|trip|vacation|booking|ព្រឹត្តិការណ៍|អាពាហ៍ពិពាហ៍|ដំណើរ|ទេសចរណ៍)/u', $combined)) {
+            $detectedCategory = 'Personal';
+            $tags = ['planning', 'schedule', 'logistics'];
+            $subtasks = $isKhmer ? [
+                ['title' => "កំណត់គោលបំណង ថវិកា កាលបរិច្ឆេទ និងអ្នកចូលរួមសម្រាប់ {$title}", 'estimated_minutes' => 20],
+                ['title' => 'ស្រាវជ្រាវទីកន្លែង/ជម្រើស ពិនិត្យលក្ខខណ្ឌ និងរៀបចំ shortlist', 'estimated_minutes' => 30],
+                ['title' => 'កក់ធាតុសំខាន់ៗ និងរក្សាទុក confirmations/receipts នៅកន្លែងតែមួយ', 'estimated_minutes' => 30],
+                ['title' => 'បង្កើត timeline, checklist, contacts និងbackup plan', 'estimated_minutes' => 25],
+                ['title' => 'ផ្ទៀងផ្ទាត់ព័ត៌មានចុងក្រោយ និងចែករំលែក itinerary/brief', 'estimated_minutes' => 15],
+            ] : [
+                ['title' => "Define the objective, budget, dates, and participants for {$title}", 'estimated_minutes' => 20],
+                ['title' => 'Research options, compare constraints, and create a shortlist', 'estimated_minutes' => 30],
+                ['title' => 'Book critical items and centralize confirmations and receipts', 'estimated_minutes' => 30],
+                ['title' => 'Build the timeline, checklist, contact list, and contingency plan', 'estimated_minutes' => 25],
+                ['title' => 'Reconfirm final details and share the itinerary or participant brief', 'estimated_minutes' => 15],
+            ];
+            $summary = $isKhmer ? 'កក់ធាតុដែលមានហានិភ័យខ្ពស់មុន និងរក្សាទុក confirmations នៅកន្លែងតែមួយ។' : 'Book high-risk dependencies first and keep every confirmation in one place.';
         } elseif (preg_match('/(study|learn|read|book|exam|course|chapter|research|រៀន|អាន|ប្រឡង|ស្រាវជ្រាវ)/u', $combined)) {
             $detectedCategory = $detectedCategory ?: 'Study';
             $tags = ['learning', 'knowledge'];
@@ -581,21 +809,36 @@ PROMPT;
             ];
             $summary = $isKhmer ? 'វិធីសាស្ត្រសិក្សាផ្អែកលើ Active Recall និងការអនុវត្ត។' : 'Study workflow optimized for high retention and active recall.';
         } else {
-            // General high-utility decomposition
+            // General adaptive decomposition: concise for a simple action, fuller for an open-ended task.
             $detectedCategory = $detectedCategory ?: 'Work';
             $tags = ['action-plan'];
-            $subtasks = $isKhmer ? [
-                ['title' => 'ស្រាវជ្រាវ និងកំណត់វិសាលភាពលម្អិតនៃកិច្ចការ', 'estimated_minutes' => 15],
-                ['title' => 'អនុវត្តជំហានស្នូល និងលទ្ធផលចម្បង', 'estimated_minutes' => 45],
-                ['title' => 'ត្រួតពិនិត្យគុណភាព និងផ្ទៀងផ្ទាត់ភាពត្រឹមត្រូវ', 'estimated_minutes' => 20],
-                ['title' => 'បញ្ចប់ និងកត់ត្រាលទ្ធផលជោគជ័យ', 'estimated_minutes' => 10],
-            ] : [
-                ['title' => 'Define scope & prepare required prerequisites', 'estimated_minutes' => 15],
-                ['title' => 'Execute core implementation deliverables', 'estimated_minutes' => 45],
-                ['title' => 'Review outcome, quality check & verify completeness', 'estimated_minutes' => 20],
-                ['title' => 'Finalize documentation & mark milestone achieved', 'estimated_minutes' => 10],
-            ];
-            $summary = $isKhmer ? 'ផែនការ ៤ ជំហានសម្រេចកិច្ចការប្រកបដោយប្រសិទ្ធភាព។' : 'Practical 4-phase execution plan for maximum momentum.';
+            if ($isSimpleAction) {
+                $subtasks = $isKhmer ? [
+                    ['title' => "ប្រមូលព័ត៌មាន ឬឯកសារដែលត្រូវការសម្រាប់ {$title}", 'estimated_minutes' => 5],
+                    ['title' => "អនុវត្ត {$title} និងកត់ត្រាលទ្ធផល", 'estimated_minutes' => 15],
+                    ['title' => 'ផ្ទៀងផ្ទាត់ confirmation និងកំណត់ follow-up ប្រសិនបើចាំបាច់', 'estimated_minutes' => 5],
+                ] : [
+                    ['title' => "Gather the exact information or materials needed for {$title}", 'estimated_minutes' => 5],
+                    ['title' => "Complete {$title} and record the result", 'estimated_minutes' => 15],
+                    ['title' => 'Verify confirmation and schedule a follow-up only if needed', 'estimated_minutes' => 5],
+                ];
+                $summary = $isKhmer ? 'ផែនការខ្លីសម្រាប់សកម្មភាពតែមួយ ដោយគ្មានជំហានបន្ថែមមិនចាំបាច់។' : 'A concise plan for a single action without unnecessary filler.';
+            } else {
+                $subtasks = $isKhmer ? [
+                    ['title' => "កំណត់ definition of done និងវិសាលភាពសម្រាប់ {$title}", 'estimated_minutes' => 15],
+                    ['title' => 'ប្រមូល prerequisites, inputs និងconstraints ដែលចាំបាច់', 'estimated_minutes' => 20],
+                    ['title' => "បង្កើតលទ្ធផលដំបូងដែលអាចប្រើបានសម្រាប់ {$title}", 'estimated_minutes' => 40],
+                    ['title' => 'ពិនិត្យលទ្ធផលជាមួយលក្ខខណ្ឌជោគជ័យ និងកែចំណុចខ្វះខាត', 'estimated_minutes' => 20],
+                    ['title' => 'ប្រគល់លទ្ធផល កត់ត្រាសេចក្តីសម្រេច និងកំណត់ជំហានបន្ទាប់', 'estimated_minutes' => 10],
+                ] : [
+                    ['title' => "Define the scope and definition of done for {$title}", 'estimated_minutes' => 15],
+                    ['title' => 'Gather the required inputs, prerequisites, and constraints', 'estimated_minutes' => 20],
+                    ['title' => "Produce the first usable result for {$title}", 'estimated_minutes' => 40],
+                    ['title' => 'Review the result against success criteria and close quality gaps', 'estimated_minutes' => 20],
+                    ['title' => 'Deliver the result, record decisions, and identify the next action', 'estimated_minutes' => 10],
+                ];
+                $summary = $isKhmer ? 'ផែនការដែលផ្តោតលើលទ្ធផលជាក់លាក់ ការផ្ទៀងផ្ទាត់ និងការប្រគល់។' : 'A result-focused plan with explicit preparation, verification, and delivery.';
+            }
         }
 
         $formattedSubtasks = [];
@@ -745,7 +988,7 @@ PROMPT;
     protected function smartHeuristicEnhance(string $title, ?string $description, string $lang): array
     {
         $isKhmer = ($lang === 'km');
-        $cleanTitle = trim($title);
+        $cleanTitle = $this->canonicalizeTechnologyNames(trim($title));
 
         $category = $this->detectCategory($cleanTitle);
         $priority = 'medium';
@@ -787,7 +1030,7 @@ PROMPT;
     {
         $lower = mb_strtolower($text);
 
-        if (preg_match('/(code|bug|api|test|feature|database|git|deploy|server|sql|app|front|back|auth|docker|laravel|flutter|កូដ|កែកូដ|សរសេរកូដ|កំហុស|ប្រព័ន្ធ)/u', $lower)) {
+        if (preg_match('/(code|bug|api|test|feature|database|postgres|supabase|superbase|pgsql|git|deploy|server|network|security|cyber|cloud|kubernetes|docker|data|analytics|machine learning|sql|app|front|back|auth|laravel|flutter|កូដ|កែកូដ|សរសេរកូដ|កំហុស|ប្រព័ន្ធ|បណ្ដាញ|សុវត្ថិភាព)/u', $lower)) {
             return 'Dev';
         }
         if (preg_match('/(design|ui|ux|figma|logo|banner|color|layout|poster|mockup|រចនា|គំនូរ|ប្លង់|រូបភាព)/u', $lower)) {
@@ -802,11 +1045,26 @@ PROMPT;
         if (preg_match('/(urgent|asap|emergency|crisis|danger|critical|បន្ទាន់|ប្រញាប់|អាសន្ន)/u', $lower)) {
             return 'Urgent';
         }
-        if (preg_match('/(gym|workout|health|doctor|grocer|clean|home|family|dinner|cook|buy|call|ផ្ទាល់ខ្លួន|សុខភាព|ហាត់ប្រាណ|ពេទ្យ|ទិញ|ចម្អិន|គ្រួសារ)/u', $lower)) {
+        if (preg_match('/(gym|workout|health|doctor|career|interview|resume|cv|job application|event|wedding|travel|trip|grocer|clean|home|family|dinner|cook|buy|call|ផ្ទាល់ខ្លួន|សុខភាព|ហាត់ប្រាណ|ពេទ្យ|អាជីព|សម្ភាសន៍|ព្រឹត្តិការណ៍|ដំណើរ|ទិញ|ចម្អិន|គ្រួសារ)/u', $lower)) {
             return 'Personal';
         }
 
         return 'Work';
+    }
+
+    /**
+     * Fix frequent technology-name typos without rewriting the user's intent.
+     */
+    protected function canonicalizeTechnologyNames(string $text): string
+    {
+        $replacements = [
+            '/\bsuperbase\b/iu' => 'Supabase',
+            '/\bsupa\s+base\b/iu' => 'Supabase',
+            '/\bpostgresql\b/iu' => 'PostgreSQL',
+            '/\bpostgres\b/iu' => 'PostgreSQL',
+        ];
+
+        return preg_replace(array_keys($replacements), array_values($replacements), $text) ?? $text;
     }
 
     /**
@@ -862,8 +1120,10 @@ PROMPT;
                         null,
                         $parsed['category'] ?? 'Work',
                         $lang,
+                        'auto',
+                        $user,
                     );
-                    $task = $this->createTaskWithAutoBreakdown($user, [
+                    $draftAttributes = [
                         'title' => $taskTitle,
                         'priority' => $parsed['priority'] ?? 'medium',
                         'category' => $parsed['category'] ?? 'Work',
@@ -871,11 +1131,11 @@ PROMPT;
                         'tags' => $parsed['tags'] ?? [],
                         'status' => 'pending',
                         'description' => 'Created via Nova in WorkMind.',
-                    ], $breakdownResult);
+                    ];
 
-                    $actionType = 'task_created';
-                    $actionData = $this->taskCreatedActionData($task, $breakdownResult);
-                    $reply = $this->taskCreatedReply($task, $isKhmer);
+                    $actionType = 'task_draft';
+                    $actionData = $this->taskDraftActionData($draftAttributes, $breakdownResult);
+                    $reply = $this->taskDraftReply($actionData, $isKhmer);
                 } catch (\Throwable $e) {
                     Log::error('Failed to create task via direct chat regex: '.$e->getMessage());
                     $reply = $isKhmer
@@ -967,7 +1227,7 @@ PROMPT;
         // 4. Direct Intent: Task Breakdown / Checklist
         if (! $reply && preg_match('/^(?:breakdown|break\s+down|checklist\s+for|how\s+to|បំបែក|របៀបធ្វើ)(?:\s*[:៖\-]\s*|\s+)(.+)$/iu', $message, $m)) {
             $topic = trim($m[1]);
-            $breakdownResult = $this->breakdown($topic, null, null, $lang);
+            $breakdownResult = $this->breakdown($topic, null, null, $lang, 'auto', $user);
             $subtasks = $breakdownResult['subtasks'] ?? [];
 
             $actionType = 'task_breakdown';
@@ -1079,7 +1339,7 @@ PROMPT;
                         );
 
                         try {
-                            $task = $this->createTaskWithAutoBreakdown($user, [
+                            $draftAttributes = [
                                 'title' => $taskArgs['title'],
                                 'priority' => $taskArgs['priority'],
                                 'category' => $taskArgs['category'],
@@ -1087,11 +1347,11 @@ PROMPT;
                                 'tags' => $taskArgs['tags'],
                                 'status' => 'pending',
                                 'description' => $taskArgs['description'],
-                            ], $breakdownResult);
+                            ];
 
-                            $actionType = 'task_created';
-                            $actionData = $this->taskCreatedActionData($task, $breakdownResult);
-                            $reply = $this->taskCreatedReply($task, $isKhmer);
+                            $actionType = 'task_draft';
+                            $actionData = $this->taskDraftActionData($draftAttributes, $breakdownResult);
+                            $reply = $this->taskDraftReply($actionData, $isKhmer);
                         } catch (\Throwable $e) {
                             Log::error('Failed to create task from Gemini tool call: '.$e->getMessage());
                             $reply = $isKhmer
@@ -1380,9 +1640,7 @@ SYS;
         foreach ($models as $model) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
             try {
-                $response = Http::withHeaders([
-                    'x-goog-api-key' => $apiKey,
-                ])->timeout(12)->post($endpoint, [
+                $response = $this->geminiHttpClient($apiKey)->post($endpoint, [
                     'system_instruction' => [
                         'parts' => [
                             ['text' => $systemPrompt],
@@ -1623,6 +1881,33 @@ SYS;
     }
 
     /**
+     * Build a verified Gemini client, using an explicit CA bundle only when PHP
+     * has no CA store configured. Never disable TLS certificate verification.
+     */
+    protected function geminiHttpClient(string $apiKey): PendingRequest
+    {
+        $client = Http::withHeaders([
+            'x-goog-api-key' => $apiKey,
+        ])->timeout(12);
+
+        $configuredBundle = config('services.gemini.ca_bundle');
+        $bundleCandidates = array_filter([
+            is_string($configuredBundle) ? trim($configuredBundle) : null,
+            ini_get('curl.cainfo') ?: null,
+            ini_get('openssl.cafile') ?: null,
+            PHP_OS_FAMILY === 'Windows' ? 'C:/Program Files/Git/usr/ssl/certs/ca-bundle.crt' : null,
+        ]);
+
+        foreach ($bundleCandidates as $bundlePath) {
+            if (is_file($bundlePath)) {
+                return $client->withOptions(['verify' => $bundlePath]);
+            }
+        }
+
+        return $client;
+    }
+
+    /**
      * Resolve valid official Gemini models list, avoiding fictional or unsupported model names.
      */
     protected function resolveGeminiModels(): array
@@ -1660,6 +1945,96 @@ SYS;
 
             return $task;
         });
+    }
+
+    /**
+     * Confirm a server-side AI draft. The draft ID doubles as an idempotency key,
+     * so browser retries and double-clicks return the original task.
+     */
+    public function confirmTaskDraft(User $user, string $draftId, array $draft): Task
+    {
+        $existing = $user->tasks()->where('ai_request_id', $draftId)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        $attributes = [
+            'ai_request_id' => $draftId,
+            'title' => $draft['title'] ?? 'New Task',
+            'description' => $draft['description'] ?? 'Created via Nova in WorkMind.',
+            'priority' => $draft['priority'] ?? 'medium',
+            'status' => 'pending',
+            'due_date' => $draft['due_date_value'] ?? null,
+            'category' => $draft['category'] ?? 'Work',
+            'tags' => $draft['tags'] ?? [],
+        ];
+        $breakdown = is_array($draft['breakdown'] ?? null) ? $draft['breakdown'] : [];
+        $breakdown['subtasks'] = is_array($draft['subtasks'] ?? null) ? $draft['subtasks'] : [];
+
+        try {
+            return $this->createTaskWithAutoBreakdown($user, $attributes, $breakdown);
+        } catch (QueryException $exception) {
+            $existing = $user->tasks()->where('ai_request_id', $draftId)->first();
+            if ($existing) {
+                return $existing;
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Convert a safe draft payload into the response used by the confirmed card.
+     */
+    public function confirmedTaskActionData(Task $task, array $draft): array
+    {
+        $breakdown = is_array($draft['breakdown'] ?? null) ? $draft['breakdown'] : [];
+
+        return array_merge($this->taskCreatedActionData($task, $breakdown), [
+            'undo_url' => route('tasks.ai.undo', $task, false),
+            'undo_until' => now()->addMinutes(10)->toIso8601String(),
+        ]);
+    }
+
+    protected function taskDraftActionData(array $attributes, array $breakdown): array
+    {
+        $dueDateValue = is_string($attributes['due_date'] ?? null) ? $attributes['due_date'] : null;
+        $dueDate = null;
+        if ($dueDateValue) {
+            try {
+                $dueDate = Carbon::parse($dueDateValue)->format('M d, Y');
+            } catch (\Throwable) {
+                $dueDateValue = null;
+            }
+        }
+
+        return [
+            'title' => mb_substr(trim(strip_tags((string) ($attributes['title'] ?? 'New Task'))), 0, 255),
+            'description' => mb_substr(trim(strip_tags((string) ($attributes['description'] ?? ''))), 0, 5000),
+            'priority' => in_array($attributes['priority'] ?? null, ['low', 'medium', 'high'], true) ? $attributes['priority'] : 'medium',
+            'category' => mb_substr(trim(strip_tags((string) ($attributes['category'] ?? 'Work'))), 0, 50),
+            'due_date' => $dueDate,
+            'due_date_value' => $dueDateValue,
+            'tags' => array_values($attributes['tags'] ?? []),
+            'subtasks' => array_values($breakdown['subtasks'] ?? []),
+            'subtasks_count' => count($breakdown['subtasks'] ?? []),
+            'breakdown' => [
+                'plan_type' => $breakdown['plan_type'] ?? 'task',
+                'summary' => $breakdown['summary'] ?? null,
+                'estimated_minutes' => $breakdown['estimated_minutes'] ?? null,
+                'source' => $breakdown['source'] ?? 'smart_heuristic',
+            ],
+            'source' => 'nova',
+        ];
+    }
+
+    protected function taskDraftReply(array $draft, bool $isKhmer): string
+    {
+        $count = count($draft['subtasks'] ?? []);
+
+        return $isKhmer
+            ? "ខ្ញុំបានរៀបចំ Draft សម្រាប់ **{$draft['title']}** ជាមួយ {$count} ជំហាន។ សូមពិនិត្យមើល រួចចុច Confirm ដើម្បីបង្កើតកិច្ចការ។"
+            : "I prepared a draft for **{$draft['title']}** with {$count} steps. Review it, then confirm to create the task.";
     }
 
     protected function taskCreatedActionData(Task $task, array $breakdown): array
@@ -1711,7 +2086,7 @@ SYS;
     protected function normalizeTaskToolArguments(array $arguments, string $fallbackTitle): array
     {
         $rawTitle = is_string($arguments['title'] ?? null) ? $arguments['title'] : $fallbackTitle;
-        $title = mb_substr(trim(strip_tags($rawTitle)), 0, 255);
+        $title = mb_substr($this->canonicalizeTechnologyNames(trim(strip_tags($rawTitle))), 0, 255);
         if ($title === '') {
             $title = 'New Task';
         }
@@ -1774,7 +2149,7 @@ SYS;
         string $source,
         ?string $model = null,
     ): ?array {
-        $enhancedTitle = trim(strip_tags((string) ($result['title'] ?? '')));
+        $enhancedTitle = $this->canonicalizeTechnologyNames(trim(strip_tags((string) ($result['title'] ?? ''))));
         if ($enhancedTitle === '') {
             return null;
         }
