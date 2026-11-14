@@ -25,6 +25,7 @@ class UserProfile extends Model
         'skills',
         'interests',
         'website',
+        'onboarding_completed_at',
     ];
 
     protected function casts(): array
@@ -33,6 +34,7 @@ class UserProfile extends Model
             'skills' => 'array',
             'interests' => 'array',
             'profile_sections' => 'array',
+            'onboarding_completed_at' => 'datetime',
         ];
     }
 

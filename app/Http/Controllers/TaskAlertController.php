@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Notifications\AiTaskCreatedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 
 class TaskAlertController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $unreadCount = $request->user()->unreadNotifications()->count();
+        $unreadReminderCount = $this->reminderTasks($request)
+            ->where(function ($query) {
+                $query->whereNull('reminder_read_at')
+                    ->orWhereColumn('reminder_read_at', '<', 'updated_at');
+            })
+            ->count();
         $notifications = $request->user()->notifications()
             ->latest()
             ->limit(20)
@@ -20,6 +26,7 @@ class TaskAlertController extends Controller
         return response()->json([
             'success' => true,
             'unread_count' => $unreadCount,
+            'unread_reminder_count' => $unreadReminderCount,
             'notifications' => $notifications->map(fn (DatabaseNotification $notification) => [
                 'notification_id' => $notification->id,
                 ...$notification->data,
@@ -43,11 +50,45 @@ class TaskAlertController extends Controller
 
     public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+        DB::transaction(function () use ($request) {
+            $request->user()->unreadNotifications()->update(['read_at' => now()]);
+            $this->reminderTasks($request)->update(['reminder_read_at' => now()]);
+        });
 
         return response()->json([
             'success' => true,
             'unread_count' => 0,
+            'unread_reminder_count' => 0,
         ]);
+    }
+
+    public function markReminderRead(Request $request, string $task): JsonResponse
+    {
+        $updated = $this->reminderTasks($request)
+            ->whereKey($task)
+            ->update(['reminder_read_at' => now()]);
+
+        abort_unless($updated === 1, 404);
+
+        return response()->json([
+            'success' => true,
+            'unread_reminder_count' => $this->reminderTasks($request)
+                ->where(function ($query) {
+                    $query->whereNull('reminder_read_at')
+                        ->orWhereColumn('reminder_read_at', '<', 'updated_at');
+                })
+                ->count(),
+        ]);
+    }
+
+    private function reminderTasks(Request $request)
+    {
+        return $request->user()->tasks()
+            ->whereNotNull('end_date')
+            ->where('status', '!=', 'completed')
+            ->where(function ($query) {
+                $query->whereDate('end_date', now()->toDateString())
+                    ->orWhereDate('end_date', now()->addDay()->toDateString());
+            });
     }
 }

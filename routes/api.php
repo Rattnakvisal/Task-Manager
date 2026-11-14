@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\TaskApiController;
 use App\Http\Controllers\TaskAlertController;
 use Illuminate\Support\Facades\Route;
 
+require __DIR__.'/mobile.php';
+
 Route::middleware(['web', 'auth', 'auth.session'])->group(function () {
     Route::get('/dashboard', [TaskApiController::class, 'dashboard']);
     Route::get('/calendar', [TaskApiController::class, 'calendar']);
@@ -14,6 +16,7 @@ Route::middleware(['web', 'auth', 'auth.session'])->group(function () {
     Route::get('/notifications', [TaskApiController::class, 'notifications']);
     Route::get('/task-alerts', [TaskAlertController::class, 'index'])->name('api.task-alerts.index');
     Route::patch('/task-alerts/read-all', [TaskAlertController::class, 'markAllRead'])->name('api.task-alerts.read-all');
+    Route::patch('/task-reminders/{task}/read', [TaskAlertController::class, 'markReminderRead'])->name('api.task-reminders.read');
     Route::patch('/task-alerts/{notification}/read', [TaskAlertController::class, 'markRead'])->name('api.task-alerts.read');
 
     Route::apiResource('tasks', TaskApiController::class)->names([

@@ -2254,7 +2254,169 @@ a.dashboard-button:active,
     }
 }
 
-/* 15. Universal Reduced Motion Support */
+/* 15. New-user onboarding motion system */
+@keyframes onboarding-orb-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(28px, 20px, 0) scale(1.08); }
+}
+
+@keyframes onboarding-shell-enter {
+    from { opacity: 0; transform: translateY(24px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes onboarding-intro-enter {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes onboarding-ring-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes onboarding-core-float {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-7px) rotate(2deg); }
+}
+
+@keyframes onboarding-button-shine {
+    0% { transform: translateX(-160%) skewX(-22deg); }
+    45%, 100% { transform: translateX(260%) skewX(-22deg); }
+}
+
+.onboarding-page {
+    isolation: isolate;
+    overflow-x: hidden;
+}
+
+.onboarding-grid {
+    background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.onboarding-orb {
+    animation: onboarding-orb-drift 12s ease-in-out infinite;
+    will-change: transform;
+}
+
+.onboarding-orb--two {
+    animation-delay: -5s;
+    animation-direction: reverse;
+}
+
+.onboarding-topbar,
+.onboarding-intro {
+    animation: onboarding-intro-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.onboarding-intro { animation-delay: 0.08s; }
+
+.onboarding-shell {
+    animation: onboarding-shell-enter 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
+    transform-origin: 50% 20%;
+}
+
+.onboarding-aside::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+    pointer-events: none;
+    background: radial-gradient(circle at 18% 75%, rgba(255,255,255,0.12), transparent 30%);
+}
+
+.onboarding-aside > * { position: relative; z-index: 1; }
+
+.onboarding-aside-glow {
+    box-shadow: 0 0 70px rgba(255, 255, 255, 0.15), inset 0 0 40px rgba(255, 255, 255, 0.08);
+    animation: onboarding-core-float 6s ease-in-out infinite;
+}
+
+.onboarding-step-link {
+    transform-origin: left center;
+}
+
+.onboarding-step-link[aria-current="step"] {
+    transform: translateX(6px);
+    opacity: 1;
+}
+
+.onboarding-step-link[aria-current="step"] [data-onboarding-step-indicator] {
+    border-color: rgba(255,255,255,0.8);
+    background: white;
+    color: #4f46e5;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.22);
+    transform: scale(1.08);
+}
+
+.onboarding-step-link.is-complete [data-onboarding-step-indicator] {
+    border-color: rgba(167,243,208,0.75);
+    background: rgba(16,185,129,0.24);
+    color: white;
+}
+
+.onboarding-nova-ring {
+    border-top-color: rgba(255,255,255,0.8);
+    animation: onboarding-ring-spin 9s linear infinite;
+}
+
+.onboarding-nova-ring--reverse {
+    animation-direction: reverse;
+    animation-duration: 6s;
+}
+
+.onboarding-nova-core {
+    animation: onboarding-core-float 3.8s ease-in-out infinite;
+}
+
+.onboarding-nova-dot {
+    box-shadow: 0 0 18px currentColor;
+    animation: onboarding-core-float 3s ease-in-out infinite -1s;
+}
+
+.onboarding-nova-dot--two { animation-delay: -2.2s; }
+
+.onboarding-form {
+    min-width: 0;
+}
+
+.onboarding-progress-bar {
+    box-shadow: 0 0 16px rgba(99,102,241,0.45);
+    transition: width 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-primary-button {
+    transform: translateZ(0);
+}
+
+.onboarding-primary-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px -14px rgba(37,99,235,0.65);
+}
+
+.onboarding-primary-button:active { transform: translateY(0) scale(0.98); }
+
+.onboarding-finish-button::after {
+    position: absolute;
+    inset: -40% auto -40% 0;
+    width: 35%;
+    content: '';
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+    animation: onboarding-button-shine 3.4s ease-in-out infinite;
+}
+
+.onboarding-finish-button { position: relative; }
+
+.onboarding-finish-button.is-loading {
+    cursor: wait;
+    opacity: 0.8;
+}
+
+@media (max-width: 1023px) {
+    .onboarding-step-link[aria-current="step"] { transform: translateX(3px); }
+}
+
+/* 16. Universal Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
         animation-duration: 0.01ms !important;

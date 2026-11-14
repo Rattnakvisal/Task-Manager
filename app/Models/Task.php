@@ -23,6 +23,7 @@ class Task extends Model
         'subtasks',
         'tags',
         'is_pinned',
+        'reminder_read_at',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class Task extends Model
         'subtasks' => 'array',
         'tags' => 'array',
         'is_pinned' => 'boolean',
+        'reminder_read_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

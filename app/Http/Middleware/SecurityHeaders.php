@@ -11,14 +11,31 @@ class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->is('api/*') && $request->isMethod('OPTIONS')) {
+            return response('', 204, [
+                'Access-Control-Allow-Origin' => '*',
+                'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+                'Access-Control-Max-Age' => '86400',
+            ]);
+        }
+
         $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
-        $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
-        $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
+
+        if ($request->is('api/*')) {
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+            $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+            $response->headers->set('Cross-Origin-Resource-Policy', 'cross-origin');
+        } else {
+            $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+            $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
+        }
 
         if (app()->isProduction()) {
             $response->headers->set(

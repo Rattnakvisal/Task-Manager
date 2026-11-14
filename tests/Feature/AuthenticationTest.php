@@ -84,7 +84,7 @@ test('a user can register with a strong password', function () {
         'password_confirmation' => 'Abcd123!',
     ]);
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('onboarding.show'));
     $this->assertAuthenticated();
     expect(Hash::check('Abcd123!', User::first()->password))->toBeTrue();
 });

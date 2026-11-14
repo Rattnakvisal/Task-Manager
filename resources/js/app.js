@@ -26,6 +26,7 @@ const i18n = {
         workspace: 'កន្លែងធ្វើការ',
         account: 'គណនី',
         my_profile: 'ប្រវត្តិរូបរបស់ខ្ញុំ',
+        mark_all_read: 'សម្គាល់ថាបានអានទាំងអស់',
         my_tasks: 'កិច្ចការរបស់ខ្ញុំ',
         my_tasks_sub: 'រៀបចំ តាមដាន និងគ្រប់គ្រងកិច្ចការងារយ៉ាងរលូនលើក្ដារ Kanban និងបញ្ជី។',
         dashboard: 'ផ្ទាំងគ្រប់គ្រង',
@@ -176,6 +177,7 @@ const i18n = {
         workspace: 'Workspace',
         account: 'Account',
         my_profile: 'My Profile',
+        mark_all_read: 'Mark all read',
         my_tasks: 'My Tasks',
         my_tasks_sub: 'Plan, prioritize, and track work from one interactive Kanban and list board.',
         dashboard: 'Dashboard',
@@ -1849,6 +1851,123 @@ if (profileTabButtons.length) {
     activateProfileTab(validTab ? requestedTab : 'personal');
 }
 
+// Guided account setup: the WorkMind profile and Nova preferences are saved together.
+const onboardingRoot = document.querySelector('[data-onboarding-root]');
+if (onboardingRoot) {
+    const form = onboardingRoot.querySelector('[data-onboarding-form]');
+    const panels = [...onboardingRoot.querySelectorAll('[data-onboarding-step]')];
+    const stepLinks = [...onboardingRoot.querySelectorAll('[data-onboarding-step-link]')];
+    const nextButton = onboardingRoot.querySelector('[data-onboarding-next]');
+    const backButton = onboardingRoot.querySelector('[data-onboarding-back]');
+    const submitButton = onboardingRoot.querySelector('[data-onboarding-submit]');
+    const progress = onboardingRoot.querySelector('[data-onboarding-progress]');
+    const progressBar = onboardingRoot.querySelector('[data-onboarding-progress-bar]');
+    const areaChoices = [...onboardingRoot.querySelectorAll('[data-onboarding-area]')];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let activeStep = Math.min(3, Math.max(1, Number.parseInt(onboardingRoot.dataset.initialStep, 10) || 1));
+
+    const syncAreaPanels = () => {
+        const selected = new Set(areaChoices.filter((choice) => choice.checked).map((choice) => choice.value));
+        onboardingRoot.querySelectorAll('[data-onboarding-area-panel]').forEach((panel) => {
+            const isSelected = selected.has(panel.dataset.onboardingAreaPanel);
+            const isEntering = isSelected && panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !isSelected);
+            panel.querySelectorAll('input, select, textarea').forEach((field) => {
+                field.disabled = !isSelected;
+            });
+            if (isEntering && !reduceMotion) {
+                panel.animate([
+                    { opacity: 0, transform: 'translateY(-10px)' },
+                    { opacity: 1, transform: 'translateY(0)' },
+                ], { duration: 360, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+            }
+        });
+    };
+
+    const showStep = (step) => {
+        const previousStep = activeStep;
+        const nextStep = Math.min(3, Math.max(1, step));
+        const direction = nextStep >= previousStep ? 1 : -1;
+        activeStep = nextStep;
+        let activePanel = null;
+        panels.forEach((panel) => {
+            const isActive = Number(panel.dataset.onboardingStep) === activeStep;
+            panel.classList.toggle('hidden', !isActive);
+            if (isActive) activePanel = panel;
+        });
+        if (activePanel && !reduceMotion) {
+            activePanel.animate([
+                { opacity: 0, transform: `translateX(${direction * 30}px) scale(0.99)` },
+                { opacity: 1, transform: 'translateX(0) scale(1)' },
+            ], { duration: 480, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+        }
+        stepLinks.forEach((link) => {
+            const stepNumber = Number(link.dataset.onboardingStepLink);
+            const isActive = stepNumber === activeStep;
+            const isComplete = stepNumber < activeStep;
+            link.classList.toggle('opacity-60', !isActive);
+            link.classList.toggle('opacity-100', isActive);
+            link.classList.toggle('is-complete', isComplete);
+            link.setAttribute('aria-current', isActive ? 'step' : 'false');
+            const indicator = link.querySelector('[data-onboarding-step-indicator]');
+            if (indicator) indicator.textContent = isComplete ? '✓' : String(stepNumber);
+        });
+        backButton?.classList.toggle('invisible', activeStep === 1);
+        nextButton?.classList.toggle('hidden', activeStep === 3);
+        submitButton?.classList.toggle('hidden', activeStep !== 3);
+        if (progress) progress.textContent = `${activeStep} / 3`;
+        if (progressBar) progressBar.style.width = `${(activeStep / 3) * 100}%`;
+        window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    };
+
+    const validateCurrentStep = () => {
+        const panel = panels.find((item) => Number(item.dataset.onboardingStep) === activeStep);
+        const invalidField = [...(panel?.querySelectorAll('input, select, textarea') || [])]
+            .find((field) => !field.disabled && !field.checkValidity());
+        if (invalidField) {
+            invalidField.reportValidity();
+            return false;
+        }
+        if (activeStep === 2 && !areaChoices.some((choice) => choice.checked)) {
+            showToast('error', currentLang === 'km' ? 'សូមជ្រើសរើសយ៉ាងហោចណាស់មួយ' : 'Choose at least one profile area.');
+            return false;
+        }
+        if (activeStep === 3) {
+            const hasLearning = form.querySelectorAll('input[name="learning_interests[]"]:checked').length > 0;
+            const hasHelp = form.querySelectorAll('input[name="assistance_areas[]"]:checked').length > 0;
+            if (!hasLearning || !hasHelp) {
+                showToast('error', currentLang === 'km' ? 'សូមជ្រើសរើសចំណាប់អារម្មណ៍ និងជំនួយសម្រាប់ Nova' : 'Choose at least one learning interest and one way Nova can help.');
+                return false;
+            }
+        }
+        return true;
+    };
+
+    areaChoices.forEach((choice) => choice.addEventListener('change', syncAreaPanels));
+    nextButton?.addEventListener('click', () => {
+        if (validateCurrentStep()) showStep(activeStep + 1);
+    });
+    backButton?.addEventListener('click', () => showStep(activeStep - 1));
+    stepLinks.forEach((link) => link.addEventListener('click', () => {
+        const requestedStep = Number(link.dataset.onboardingStepLink);
+        if (requestedStep > activeStep + 1) return;
+        if (requestedStep < activeStep || validateCurrentStep()) showStep(requestedStep);
+    }));
+    form?.addEventListener('submit', (event) => {
+        if (!validateCurrentStep()) {
+            event.preventDefault();
+            return;
+        }
+        submitButton.disabled = true;
+        submitButton.classList.add('is-loading');
+        const label = submitButton.querySelector('span');
+        if (label) label.textContent = currentLang === 'km' ? 'កំពុងរៀបចំ WorkMind...' : 'Setting up WorkMind...';
+    });
+
+    syncAreaPanels();
+    showStep(activeStep);
+}
+
 if (dashboard && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     dashboard.querySelectorAll('[data-dashboard-count]').forEach((counter) => {
         const target = Number.parseInt(counter.dataset.dashboardCount, 10);
@@ -2449,15 +2568,21 @@ function addAiTaskToNotificationPanel(task) {
     }
 }
 
-function setPersistentTaskAlertCount(unreadAiCount) {
+function setPersistentTaskAlertCount(unreadAiCount, unreadReminderCount = null) {
     const notificationCount = document.querySelector('[data-notification-count]');
     if (!notificationCount) return;
 
+    if (unreadReminderCount !== null) {
+        notificationCount.dataset.reminderCount = String(Number.parseInt(unreadReminderCount, 10) || 0);
+    }
     const reminderCount = Number.parseInt(notificationCount.dataset.reminderCount, 10) || 0;
     const total = reminderCount + (Number.parseInt(unreadAiCount, 10) || 0);
     notificationCount.textContent = total > 99 ? '99+' : String(total);
     notificationCount.classList.toggle('hidden', total === 0);
     notificationCount.classList.toggle('flex', total > 0);
+    const markAllButton = document.querySelector('[data-mark-all-task-alerts-read]');
+    markAllButton?.classList.toggle('hidden', total === 0);
+    markAllButton?.classList.toggle('inline-flex', total > 0);
 }
 
 let taskAlertSyncInFlight = false;
@@ -2477,7 +2602,6 @@ async function syncPersistentAiTaskAlerts() {
         const data = await response.json();
         if (!data.success) return;
 
-        setPersistentTaskAlertCount(data.unread_count);
         (data.notifications || []).slice().reverse().forEach((task) => {
             const taskKey = String(task.task_id ?? '');
             const createdAt = task.created_at ? Date.parse(task.created_at) : 0;
@@ -2490,6 +2614,7 @@ async function syncPersistentAiTaskAlerts() {
                 if (taskKey) deliveredAiTaskAlerts.add(taskKey);
             }
         });
+        setPersistentTaskAlertCount(data.unread_count, data.unread_reminder_count);
     } catch (_error) {
         // Keep the rest of the application usable while temporarily offline.
     } finally {
@@ -2562,13 +2687,13 @@ document.addEventListener('click', async (event) => {
                 credentials: 'same-origin',
             });
             if (response.ok) {
-                document.querySelectorAll('[data-notification-id]').forEach((item) => {
+                document.querySelectorAll('[data-notification-id], [data-task-reminder-id]').forEach((item) => {
                     item.classList.add('opacity-60');
                     item.querySelector('[aria-label="Unread"]')?.remove();
                 });
                 markAllButton.classList.add('hidden');
                 markAllButton.classList.remove('inline-flex');
-                setPersistentTaskAlertCount(0);
+                setPersistentTaskAlertCount(0, 0);
                 showToast('success', currentLang === 'km' ? 'បានសម្គាល់ការជូនដំណឹងទាំងអស់ថាបានអាន' : 'All notifications marked as read');
             }
         } catch (_err) {
@@ -2577,6 +2702,37 @@ document.addEventListener('click', async (event) => {
             markAllButton.disabled = false;
             markAllButton.style.opacity = '';
         }
+        return;
+    }
+
+    const reminderLink = event.target.closest('[data-task-reminder-id]');
+    if (reminderLink && !event.target.closest('button')) {
+        event.preventDefault();
+        const taskId = reminderLink.dataset.taskReminderId;
+        const targetHref = reminderLink.href;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        reminderLink.classList.add('opacity-60');
+        reminderLink.querySelector('[aria-label="Unread"]')?.remove();
+
+        if (taskId) {
+            try {
+                const response = await fetch(`/api/task-reminders/${encodeURIComponent(taskId)}/read`, {
+                    method: 'PATCH',
+                    headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken || '' },
+                    credentials: 'same-origin',
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const notificationCount = document.querySelector('[data-notification-count]');
+                    const currentTotal = Number.parseInt(notificationCount?.textContent, 10) || 0;
+                    const currentReminders = Number.parseInt(notificationCount?.dataset.reminderCount, 10) || 0;
+                    const unreadAi = Math.max(0, currentTotal - currentReminders);
+                    setPersistentTaskAlertCount(unreadAi, data.unread_reminder_count);
+                }
+            } catch (_e) {}
+        }
+        window.location.assign(targetHref);
         return;
     }
 

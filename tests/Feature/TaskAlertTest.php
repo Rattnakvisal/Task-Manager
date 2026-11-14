@@ -65,6 +65,33 @@ test('user can mark all Nova task alerts as read without changing another users 
         ->and($otherUser->fresh()->unreadNotifications()->count())->toBe(1);
 });
 
+test('mark all read also persists the read state of current task reminders', function () {
+    $user = User::factory()->create();
+    $task = Task::create([
+        'user_id' => $user->id,
+        'title' => 'Reminder due today',
+        'priority' => 'high',
+        'status' => 'pending',
+        'end_date' => today(),
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('api.task-alerts.index'))
+        ->assertOk()
+        ->assertJsonPath('unread_reminder_count', 1);
+
+    $this->actingAs($user)
+        ->patchJson(route('api.task-alerts.read-all'))
+        ->assertOk()
+        ->assertJsonPath('unread_reminder_count', 0);
+
+    expect($task->fresh()->reminder_read_at)->not->toBeNull();
+
+    $this->actingAs($user)
+        ->getJson(route('api.task-alerts.index'))
+        ->assertJsonPath('unread_reminder_count', 0);
+});
+
 test('user cannot mark another users alert as read', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();

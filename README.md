@@ -2,6 +2,8 @@
 
 A responsive task management application built with Laravel, Blade, Tailwind CSS, and SQLite. Each user has a private workspace for creating, organizing, filtering, and completing tasks.
 
+The Flutter Android app lives in [`mobile/`](mobile/README.md), with a new Material 3 interface and Sanctum token authentication through `/api/mobile`.
+
 ## Features
 
 - User registration, sign-in, and sign-out

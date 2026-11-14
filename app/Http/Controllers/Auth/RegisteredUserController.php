@@ -44,10 +44,13 @@ class RegisteredUserController extends Controller
         ]);
 
         $user = User::create($validated);
+        // A persisted, incomplete profile is the marker that this newly-created
+        // account still needs the one-time onboarding flow.
+        $user->profile()->create();
         event(new Registered($user));
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        return redirect()->route('onboarding.show');
     }
 }

@@ -50,6 +50,11 @@ class AuthenticatedSessionController extends Controller
         RateLimiter::clear($key);
         $request->session()->regenerate();
 
+        $profile = $request->user()->profile;
+        if ($profile && ! $profile->onboarding_completed_at) {
+            return redirect()->route('onboarding.show');
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 

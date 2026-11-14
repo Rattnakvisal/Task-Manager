@@ -86,6 +86,7 @@
         $notificationTasks = collect();
         $aiTaskNotifications = collect();
         $unreadAiTaskNotifications = 0;
+        $unreadReminderTasks = collect();
 
         if ($currentUser) {
             $notificationTasks = $currentUser->tasks()->whereNotNull('end_date')
@@ -96,7 +97,10 @@
                 })
                 ->orderBy('end_date')
                 ->orderByDesc('created_at')
-                ->get(['id', 'title', 'end_date']);
+                ->get(['id', 'title', 'end_date', 'reminder_read_at', 'updated_at']);
+            $unreadReminderTasks = $notificationTasks->filter(fn ($task) => (
+                ! $task->reminder_read_at || $task->reminder_read_at->lt($task->updated_at)
+            ));
             $aiTaskNotifications = $currentUser->notifications()
                 ->latest()
                 ->limit(10)
@@ -104,7 +108,7 @@
             $unreadAiTaskNotifications = (int) $currentUser->unreadNotifications()->count();
         }
 
-        $headerNotificationCount = $notificationTasks->count() + $unreadAiTaskNotifications;
+        $headerNotificationCount = $unreadReminderTasks->count() + $unreadAiTaskNotifications;
     @endphp
 
     {{-- Global application loading skeleton --}}
@@ -558,7 +562,7 @@
 
                                 <x-icon name="bell" class="h-[18px] w-[18px]" />
 
-                                <span data-notification-count data-reminder-count="{{ $notificationTasks->count() }}" class="absolute -right-1 -top-1 {{ $headerNotificationCount === 0 ? 'hidden' : 'flex' }} h-5 min-w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 bg-blue-600 px-1 text-[10px] font-bold text-white">
+                                <span data-notification-count data-reminder-count="{{ $unreadReminderTasks->count() }}" class="absolute -right-1 -top-1 {{ $headerNotificationCount === 0 ? 'hidden' : 'flex' }} h-5 min-w-5 items-center justify-center rounded-full border-2 border-white dark:border-slate-900 bg-blue-600 px-1 text-[10px] font-bold text-white">
                                     {{ $headerNotificationCount > 99 ? '99+' : $headerNotificationCount }}
                                 </span>
 
@@ -571,9 +575,9 @@
                                             <p class="text-sm font-bold text-slate-950 dark:text-white">Notifications</p>
                                             <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-400">Nova activity and upcoming task reminders.</p>
                                         </div>
-                                        <button type="button" data-mark-all-task-alerts-read class="{{ $unreadAiTaskNotifications > 0 ? 'inline-flex' : 'hidden' }} shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/50 transition">
+                                        <button type="button" data-mark-all-task-alerts-read class="{{ $headerNotificationCount > 0 ? 'inline-flex' : 'hidden' }} shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/50 transition">
                                             <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                            <span>Mark all read</span>
+                                            <span data-i18n="mark_all_read">Mark all read</span>
                                         </button>
                                     </div>
                                 </div>
@@ -599,18 +603,22 @@
                                     @forelse ($notificationTasks as $task)
                                         @php
                                             $endsToday = $task->end_date->isToday();
+                                            $reminderIsRead = $task->reminder_read_at && $task->reminder_read_at->gte($task->updated_at);
                                         @endphp
-                                        <a href="{{ route('all-tasks', ['q' => $task->title]) }}" class="flex gap-3 border-b border-slate-100 dark:border-slate-700 px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-700/50 last:border-b-0">
+                                        <a href="{{ route('all-tasks', ['q' => $task->title]) }}" data-task-reminder-id="{{ $task->id }}" class="flex gap-3 border-b border-slate-100 dark:border-slate-700 px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-700/50 last:border-b-0 {{ $reminderIsRead ? 'opacity-65' : '' }}">
                                             <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ $endsToday ? 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' }}">
                                                 <x-icon name="bell" class="h-4 w-4" />
                                             </span>
-                                            <span class="min-w-0">
+                                            <span class="min-w-0 flex-1">
                                                 <span class="block truncate text-sm font-bold text-slate-950 dark:text-white">{{ $task->title }}</span>
                                                 <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
                                                     {{ $endsToday ? 'End date is today' : 'End date is tomorrow' }}
                                                     - {{ $task->end_date->format('M d, Y') }}
                                                 </span>
                                             </span>
+                                            @unless ($reminderIsRead)
+                                                <span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Unread"></span>
+                                            @endunless
                                         </a>
                                     @empty
                                         @if ($aiTaskNotifications->isEmpty())
