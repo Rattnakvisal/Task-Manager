@@ -319,66 +319,164 @@ class AnimatedTaskProgress extends StatelessWidget {
   );
 }
 
-class TaskLoadingPlaceholder extends StatelessWidget {
+class TaskLoadingPlaceholder extends StatefulWidget {
   const TaskLoadingPlaceholder({super.key});
+
   @override
-  Widget build(BuildContext context) => Semantics(
-    label: 'Loading your tasks',
-    liveRegion: true,
-    child: ExcludeSemantics(
-      child: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Text(
-              'Getting your day ready…',
-              style: TextStyle(color: Colors.blueGrey),
-            ),
-          ),
-          for (var i = 0; i < 3; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+  State<TaskLoadingPlaceholder> createState() => _TaskLoadingPlaceholderState();
+}
+
+class _TaskLoadingPlaceholderState extends State<TaskLoadingPlaceholder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      label: 'Loading your tasks',
+      liveRegion: true,
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final double animVal = disableAnimations ? 0.0 : _controller.value;
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
-                        decoration: const BoxDecoration(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5B4DFF).withValues(alpha: 0.8),
                           shape: BoxShape.circle,
-                          color: Color(0xFFEDF1F8),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _bar(double.infinity),
-                            const SizedBox(height: 12),
-                            _bar(100),
-                          ],
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Syncing tasks & priorities…',
+                        style: TextStyle(
+                          color: Color(0xFF707082),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
-        ],
+                for (var i = 0; i < 3; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFF0F2F8)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(18),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _shimmerBox(
+                            width: 24,
+                            height: 24,
+                            borderRadius: BorderRadius.circular(12),
+                            animVal: animVal,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _shimmerBox(
+                                  width: double.infinity,
+                                  height: 14,
+                                  borderRadius: BorderRadius.circular(7),
+                                  animVal: animVal,
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    _shimmerBox(
+                                      width: 65,
+                                      height: 18,
+                                      borderRadius: BorderRadius.circular(6),
+                                      animVal: animVal,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _shimmerBox(
+                                      width: 90,
+                                      height: 14,
+                                      borderRadius: BorderRadius.circular(7),
+                                      animVal: animVal,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
-    ),
-  );
-  Widget _bar(double width) => Container(
-    width: width,
-    height: 12,
-    decoration: BoxDecoration(
-      color: const Color(0xFFEDF1F8),
-      borderRadius: BorderRadius.circular(6),
-    ),
-  );
+    );
+  }
+
+  Widget _shimmerBox({
+    required double width,
+    required double height,
+    required BorderRadius borderRadius,
+    required double animVal,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        gradient: LinearGradient(
+          begin: Alignment(-1.5 + (animVal * 3.0), -0.3),
+          end: Alignment(0.5 + (animVal * 3.0), 0.3),
+          colors: const [
+            Color(0xFFEFF1F7),
+            Color(0xFFF8F9FC),
+            Color(0xFFEFF1F7),
+          ],
+          stops: const [0.1, 0.5, 0.9],
+        ),
+      ),
+    );
+  }
 }
 
 class ShakeWidget extends StatefulWidget {

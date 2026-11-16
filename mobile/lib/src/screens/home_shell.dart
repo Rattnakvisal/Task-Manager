@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -15,7 +15,7 @@ import '../widgets/motion.dart';
 import '../widgets/animated_taskbar.dart';
 import '../widgets/task_clipboard_graphic.dart';
 
-import 'analytics_view.dart';
+import 'focus_view.dart';
 import 'task_editor.dart';
 import 'onboarding_screen.dart';
 
@@ -181,131 +181,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     listenable: state,
     builder: (context, _) {
       if (state.user == null) return const SizedBox.shrink();
-      final reminders = _reminders;
       return Scaffold(
-        appBar: AppBar(
-          titleSpacing: 20,
-          backgroundColor: Colors.white.withValues(alpha: 0.82),
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          flexibleSpace: ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-              child: Container(color: Colors.transparent),
-            ),
-          ),
-          shape: const Border(
-            bottom: BorderSide(
-              color: Color(0x18000000),
-              width: 0.5,
-            ),
-          ),
-          title: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(11),
-                  boxShadow: [
-                    BoxShadow(
-                      color: brandPurple.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: Image.asset(
-                    'assets/logo/app_logo.png',
-                    width: 36,
-                    height: 36,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => Container(
-                      color: brandPurple,
-                      child: const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Task Manager',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1B1D28),
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            BouncingInteractive(
-              onTap: _showReminders,
-              scaleFactor: 0.92,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F3F9),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFE5E7EB),
-                    width: 1,
-                  ),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Icon(
-                      Icons.notifications_none_rounded,
-                      color: Color(0xFF1B1D28),
-                      size: 20,
-                    ),
-                    if (reminders.isNotEmpty)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            BouncingInteractive(
-              onTap: () => _selectTab(4),
-              scaleFactor: 0.92,
-              child: CircleAvatar(
-                radius: 19,
-                backgroundColor: const Color(0xFFECE9FF),
-                child: Text(
-                  state.user!.name.characters.first.toUpperCase(),
-                  style: const TextStyle(
-                    color: brandPurple,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
-        ),
         body: Stack(
           children: [
             // Soft atmospheric ambient glow at the top right
@@ -331,17 +207,67 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               ),
             ),
             SafeArea(
-              top: false,
               child: Column(
                 children: [
-                  SizedBox(
-                    height: 2,
-                    child: state.busy
-                        ? const LinearProgressIndicator(minHeight: 2)
-                        : null,
+                  // Floating iOS Sync Pill when refreshing tasks
+                  AnimatedSlide(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    offset: state.busy && _tab != 3
+                        ? Offset.zero
+                        : const Offset(0, -1),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: state.busy && _tab != 3 ? 1.0 : 0.0,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 4),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFFE5E7EB),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: brandPurple.withValues(alpha: 0.12),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CupertinoActivityIndicator(
+                                  radius: 7,
+                                  color: brandPurple,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Syncing workspace…',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: brandPurple,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   MotionSwitcher(
-                    child: _error == null
+                    child: _error == null || _tab == 3
                         ? const SizedBox.shrink(key: ValueKey('no-error'))
                         : MaterialBanner(
                             key: ValueKey(_error),
@@ -356,67 +282,81 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                           ),
                   ),
                   Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _refresh,
-                      child: MotionSwitcher(
-                        child: CustomScrollView(
-                          key: PageStorageKey(
-                            'tab-$_tab-${state.hasLoadedTasks || state.tasks.isNotEmpty || _tab == 4}',
-                          ),
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          slivers: [
-                            SliverPadding(
-                              padding: EdgeInsets.fromLTRB(
-                                (MediaQuery.sizeOf(context).width - 640).clamp(
-                                      32,
-                                      double.infinity,
-                                    ) /
-                                    2,
-                                12,
-                                (MediaQuery.sizeOf(context).width - 640).clamp(
-                                      32,
-                                      double.infinity,
-                                    ) /
-                                    2,
-                                100,
+                    child: IndexedStack(
+                      index: _tab == 3 ? 1 : 0,
+                      children: [
+                        RefreshIndicator(
+                          color: brandPurple,
+                          backgroundColor: Colors.white,
+                          strokeWidth: 2.5,
+                          onRefresh: _refresh,
+                          child: MotionSwitcher(
+                            child: CustomScrollView(
+                              key: PageStorageKey(
+                                'tab-$_tab-${state.hasLoadedTasks || state.tasks.isNotEmpty || _tab == 4}',
                               ),
-                              sliver: SliverMainAxisGroup(
-                                slivers:
-                                    !state.hasLoadedTasks &&
-                                            state.tasks.isEmpty &&
-                                            _tab != 4 &&
-                                            _tab != 3
-                                        ? [
-                                            SliverToBoxAdapter(
-                                              child: state.busy
-                                                  ? const TaskLoadingPlaceholder()
-                                                  : const EmptyTasks(
-                                                      title: 'Let’s reconnect',
-                                                      message:
-                                                          'Pull down or tap Retry to load your tasks.',
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              slivers: [
+                                SliverPadding(
+                                  padding: EdgeInsets.fromLTRB(
+                                    (MediaQuery.sizeOf(context).width - 640).clamp(
+                                          32,
+                                          double.infinity,
+                                        ) /
+                                        2,
+                                    12,
+                                    (MediaQuery.sizeOf(context).width - 640).clamp(
+                                          32,
+                                          double.infinity,
+                                        ) /
+                                        2,
+                                    100,
+                                  ),
+                                  sliver: SliverMainAxisGroup(
+                                    slivers:
+                                        !state.hasLoadedTasks &&
+                                                state.tasks.isEmpty &&
+                                                _tab != 4 &&
+                                                _tab != 3
+                                            ? [
+                                                SliverToBoxAdapter(
+                                                  child: state.busy
+                                                      ? const TaskLoadingPlaceholder()
+                                                      : const EmptyTasks(
+                                                          title: 'Let’s reconnect',
+                                                          message:
+                                                              'Pull down or tap Retry to load your tasks.',
+                                                        ),
+                                                ),
+                                              ]
+                                            : switch (_tab) {
+                                                0 => _home(),
+                                                1 => _tasks(),
+                                                2 => _calendar(),
+                                                3 => const <Widget>[],
+                                                _ => [
+                                                    SliverToBoxAdapter(
+                                                      child: _profile(),
                                                     ),
-                                            ),
-                                          ]
-                                        : switch (_tab) {
-                                            0 => _home(),
-                                            1 => _tasks(),
-                                            2 => _calendar(),
-                                            3 => [
-                                                SliverToBoxAdapter(
-                                                  child: AnalyticsView(state: state),
-                                                ),
-                                              ],
-                                            _ => [
-                                                SliverToBoxAdapter(
-                                                  child: _profile(),
-                                                ),
-                                              ],
-                                          },
-                              ),
+                                                  ],
+                                              },
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
+                        ),
+                      SingleChildScrollView(
+                        key: const PageStorageKey('focus-scroll'),
+                        padding: const EdgeInsets.only(top: 12, bottom: 24),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 640),
+                            child: FocusView(state: state),
+                          ),
                         ),
                       ),
+                      ],
                     ),
                   ),
                 ],
@@ -425,11 +365,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           ],
         ),
         floatingActionButton: ExcludeSemantics(
-          excluding: _tab == 4,
+          excluding: _tab == 4 || _tab == 3,
           child: IgnorePointer(
-            ignoring: _tab == 4,
+            ignoring: _tab == 4 || _tab == 3,
             child: AnimatedScale(
-              scale: _tab == 4 ? 0 : 1,
+              scale: _tab == 4 || _tab == 3 ? 0 : 1,
               duration: motionDuration(context),
               curve: Curves.easeOutCubic,
               child: PulsingGlowFAB(
@@ -491,9 +431,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               label: 'Calendar',
             ),
             const TaskbarItem(
-              icon: Icons.bar_chart_rounded,
-              selectedIcon: Icons.bar_chart_rounded,
-              label: 'Analytics',
+              icon: Icons.center_focus_weak_rounded,
+              selectedIcon: Icons.center_focus_strong_rounded,
+              label: 'Focus',
             ),
             const TaskbarItem(
               icon: Icons.person_outline_rounded,
@@ -505,6 +445,105 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       );
     },
   );
+
+  Widget _buildCleanHeader({
+    required String eyebrow,
+    required String title,
+    required String subtitle,
+    Widget? trailing,
+    Color eyebrowColor = brandPurple,
+    String? emoji,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: eyebrowColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 4.5,
+                          height: 4.5,
+                          decoration: BoxDecoration(
+                            color: eyebrowColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          eyebrow,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: eyebrowColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1B1D28),
+                            letterSpacing: -0.6,
+                            height: 1.15,
+                          ),
+                        ),
+                      ),
+                      if (emoji != null) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF8E95A5),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (trailing != null) ...[
+              const SizedBox(width: 12),
+              trailing,
+            ],
+          ],
+        ),
+      ],
+    );
+  }
 
   List<Widget> _home() {
     final user = state.user!;
@@ -531,26 +570,61 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 6),
-            // Greeting Header
-            Text(
-              'Hello, ${user.name.split(' ').first} 👋',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1B1D28),
-                letterSpacing: -0.5,
+            // Clean iOS Greeting Header
+            _buildCleanHeader(
+              eyebrow: DateFormat('EEEE, MMM d').format(DateTime.now()).toUpperCase(),
+              title: 'Hello, ${user.name.split(' ').first}',
+              emoji: '👋',
+              subtitle: 'Let’s make today productive!',
+              trailing: BouncingInteractive(
+                onTap: _showReminders,
+                scaleFactor: 0.92,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFE5E7EB),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1B1D28).withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      const Icon(
+                        Icons.notifications_none_rounded,
+                        color: Color(0xFF1B1D28),
+                        size: 21,
+                      ),
+                      if (_reminders.isNotEmpty)
+                        Positioned(
+                          top: 9,
+                          right: 9,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF3B30),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Let’s make today productive!',
-              style: TextStyle(
-                color: Color(0xFF8E95A5),
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
 
             // Hero "Task Overview" Banner Card
             Container(
@@ -1191,84 +1265,76 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Page Header: Tasks title and Search / Tune actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Tasks',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
+            const SizedBox(height: 6),
+            // Clean iOS Tasks Header
+            _buildCleanHeader(
+              eyebrow: 'WORKSPACE · ALL TASKS',
+              title: 'Tasks',
+              subtitle: 'Manage and track your tasks',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  BouncingInteractive(
+                    onTap: () {
+                      _searchFocusNode.requestFocus();
+                    },
+                    scaleFactor: 0.92,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFE5E7EB),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1B1D28).withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.search_rounded,
                         color: Color(0xFF1B1D28),
-                        letterSpacing: -0.3,
+                        size: 20,
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Manage and track your tasks',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xFF8E95A5),
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    BouncingInteractive(
-                      onTap: () {
-                        _searchFocusNode.requestFocus();
-                      },
-                      scaleFactor: 0.92,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F3F9),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFE5E7EB),
-                            width: 1,
+                  ),
+                  const SizedBox(width: 8),
+                  BouncingInteractive(
+                    onTap: _showPriorityFilterSheet,
+                    scaleFactor: 0.92,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFE5E7EB),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1B1D28).withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.search_rounded,
-                          color: Color(0xFF1B1D28),
-                          size: 20,
-                        ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: Color(0xFF1B1D28),
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    BouncingInteractive(
-                      onTap: _showPriorityFilterSheet,
-                      scaleFactor: 0.92,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F3F9),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFE5E7EB),
-                            width: 1,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.tune_rounded,
-                          color: Color(0xFF1B1D28),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             // Horizontal Filter Pills: All, Todo, In Progress, Done
@@ -1525,28 +1591,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Calendar',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1B1D28),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Track your schedule & deadlines',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF8E95A5),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 6),
+            _buildCleanHeader(
+              eyebrow: 'SCHEDULE & DEADLINES',
+              title: 'Calendar',
+              subtitle: 'Track your schedule & deadlines',
+              eyebrowColor: const Color(0xFF3864ED),
             ),
             const SizedBox(height: 16),
             Container(
@@ -1804,7 +1854,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                   ],
                 ),
               ),
-              if (trailing != null) trailing,
+              ?trailing,
             ],
           ),
         ),
@@ -1827,28 +1877,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Profile',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1B1D28),
-                letterSpacing: -0.3,
-              ),
-            ),
-            SizedBox(height: 2),
-            Text(
-              'Account settings & preferences',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFF8E95A5),
-              ),
-            ),
-          ],
+        const SizedBox(height: 6),
+        _buildCleanHeader(
+          eyebrow: 'SETTINGS & ACCOUNT',
+          title: 'Profile',
+          subtitle: 'Account settings & preferences',
+          eyebrowColor: const Color(0xFF168268),
         ),
         const SizedBox(height: 20),
         Center(

@@ -24,31 +24,59 @@ class AnalyticsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 4),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'Analytics',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1B1D28),
-                  letterSpacing: -0.3,
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: brandPurple.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 4.5,
+                  height: 4.5,
+                  decoration: const BoxDecoration(
+                    color: brandPurple,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Performance & productivity insights',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF8E95A5),
+                const SizedBox(width: 5),
+                const Text(
+                  'PRODUCTIVITY INSIGHTS',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: brandPurple,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 6),
+          const Text(
+            'Analytics',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1B1D28),
+              letterSpacing: -0.6,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Performance & completion trends',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF8E95A5),
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 18),
           // Productivity Score Hero Card
           Container(
             width: double.infinity,

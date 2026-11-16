@@ -2,6 +2,10 @@
 
 Flutter app with a new Material 3 interface, connected to the existing Laravel database through `/api/mobile`.
 
+Signed-out users start with the onboarding walkthrough, including returning users. `Get Started` or `Skip` opens registration, `Sign In` opens sign-in, and Android Back returns to onboarding. A valid saved session opens the dashboard directly; signing out returns to onboarding.
+
+The three onboarding pages introduce tasks, priorities and dates, and progress. They support swiping, page indicators, Android Back, reduced motion, and larger text on small screens. Previews: [Plan](previews/onboarding-1.png), [Priorities](previews/onboarding-2.png), [Progress](previews/onboarding-3.png). Regenerate with `flutter test tool/render_onboarding.dart --dart-define=FLUTTER_SDK=C:/flutter`.
+
 Included: sign in/register/sign out, secure token storage and session restoration, dashboard progress, task create/edit/delete/complete, subtasks, tags, pinning, search, status/priority filters, a monthly calendar, account information, and in-app reminders for tasks ending today/tomorrow.
 
 Phone-size previews with sample tasks: [Home](previews/home.png), [Tasks](previews/tasks.png), [Calendar](previews/calendar.png), [Profile](previews/profile.png). Regenerate with `flutter test tool/render_previews.dart --dart-define=FLUTTER_SDK=C:/flutter` (use your Flutter SDK path).

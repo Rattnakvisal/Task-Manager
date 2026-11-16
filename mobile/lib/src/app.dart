@@ -4,6 +4,7 @@ import 'app_state.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/onboarding_screen.dart';
+import 'widgets/workspace_loading.dart';
 
 const brandBlue = Color(0xFF5B4DFF);
 const brandPurple = Color(0xFF5B4DFF);
@@ -82,7 +83,7 @@ class _SessionGate extends StatefulWidget {
 
 class _SessionGateState extends State<_SessionGate> {
   late Object _snapshot;
-  bool _seenOnboarding = false;
+  bool _showAuthentication = false;
   bool _initialRegister = false;
 
   Object get _current =>
@@ -93,27 +94,27 @@ class _SessionGateState extends State<_SessionGate> {
     super.initState();
     _snapshot = _current;
     widget.state.addListener(_update);
-    _checkOnboarding();
   }
 
-  Future<void> _checkOnboarding() async {
-    final seen = await widget.state.store.read('has_seen_onboarding');
-    if (mounted && seen == 'true') {
-      setState(() => _seenOnboarding = true);
-    }
-  }
-
-  void _finishOnboarding({bool register = false}) {
-    widget.state.store.write('has_seen_onboarding', 'true');
+  void _openAuthentication({bool register = false}) {
     setState(() {
-      _seenOnboarding = true;
+      _showAuthentication = true;
       _initialRegister = register;
     });
   }
 
   void _update() {
     final next = _current;
-    if (next != _snapshot) setState(() => _snapshot = next);
+    if (next != _snapshot) {
+      setState(() {
+        _snapshot = next;
+        // A later sign-out starts the guest flow at onboarding again.
+        if (widget.state.user != null) {
+          _showAuthentication = false;
+          _initialRegister = false;
+        }
+      });
+    }
   }
 
   @override
@@ -123,6 +124,8 @@ class _SessionGateState extends State<_SessionGate> {
       oldWidget.state.removeListener(_update);
       widget.state.addListener(_update);
       _snapshot = _current;
+      _showAuthentication = false;
+      _initialRegister = false;
     }
   }
 
@@ -136,7 +139,7 @@ class _SessionGateState extends State<_SessionGate> {
   Widget build(BuildContext context) {
     final state = widget.state;
     if (state.starting) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const WorkspaceLoading();
     }
     if (state.startupError != null) {
       return Scaffold(
@@ -167,15 +170,20 @@ class _SessionGateState extends State<_SessionGate> {
       );
     }
     if (state.user == null) {
-      if (!_seenOnboarding) {
+      if (!_showAuthentication) {
         return OnboardingScreen(
-          onGetStarted: () => _finishOnboarding(register: true),
-          onSignIn: () => _finishOnboarding(register: false),
+          onGetStarted: () => _openAuthentication(register: true),
+          onSignIn: () => _openAuthentication(register: false),
         );
       }
-      return AuthScreen(
-        state: state,
-        initialRegister: _initialRegister,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            setState(() => _showAuthentication = false);
+          }
+        },
+        child: AuthScreen(state: state, initialRegister: _initialRegister),
       );
     }
     return HomeShell(state: state);

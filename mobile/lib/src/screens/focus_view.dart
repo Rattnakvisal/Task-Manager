@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app.dart';
 import '../app_state.dart';
 import '../models.dart';
+import '../focus_timer.dart';
 
 class FocusView extends StatefulWidget {
   const FocusView({super.key, required this.state});
@@ -14,78 +14,66 @@ class FocusView extends StatefulWidget {
   State<FocusView> createState() => _FocusViewState();
 }
 
-class _FocusViewState extends State<FocusView> {
-  int _totalSeconds = 25 * 60;
-  int _remainingSeconds = 25 * 60;
-  Timer? _timer;
-  bool _isRunning = false;
-  String _mode = 'work'; // 'work', 'short_break', 'long_break'
-  Task? _selectedTask;
-  int _sessionsCompleted = 2;
+class _FocusViewState extends State<FocusView> with WidgetsBindingObserver {
+  final _session = FocusTimer();
+  int? _selectedTaskId;
+  int _handledCompletions = 0;
+
+  int get _totalSeconds => _session.totalSeconds;
+  int get _remainingSeconds => _session.remainingSeconds;
+  bool get _isRunning => _session.isRunning;
+  String get _mode => _session.mode;
 
   @override
   void initState() {
     super.initState();
-    final pending = widget.state.tasks.where((t) => !t.completed).toList();
-    if (pending.isNotEmpty) {
-      _selectedTask = pending.first;
+    WidgetsBinding.instance.addObserver(this);
+    _session.addListener(_updateTimer);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _session.sync();
+  }
+
+  void _updateTimer() {
+    if (!mounted) return;
+    setState(() {});
+    if (_session.completionCount != _handledCompletions) {
+      _handledCompletions = _session.completionCount;
+      HapticFeedback.heavyImpact();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showFinishedDialog();
+      });
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _session.removeListener(_updateTimer);
+    _session.dispose();
     super.dispose();
   }
 
   void _setMode(String mode) {
-    if (_isRunning) _pauseTimer();
-    setState(() {
-      _mode = mode;
-      _totalSeconds = switch (mode) {
-        'short_break' => 5 * 60,
-        'long_break' => 15 * 60,
-        _ => 25 * 60,
-      };
-      _remainingSeconds = _totalSeconds;
-    });
+    HapticFeedback.selectionClick();
+    _session.setMode(mode);
   }
 
   void _startTimer() {
-    _timer?.cancel();
     HapticFeedback.lightImpact();
-    setState(() => _isRunning = true);
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      if (_remainingSeconds > 0) {
-        setState(() => _remainingSeconds--);
-      } else {
-        _timer?.cancel();
-        HapticFeedback.heavyImpact();
-        setState(() {
-          _isRunning = false;
-          if (_mode == 'work') {
-            _sessionsCompleted++;
-          }
-        });
-        _showFinishedDialog();
-      }
-    });
+    _session.start();
   }
 
   void _pauseTimer() {
-    _timer?.cancel();
     HapticFeedback.lightImpact();
-    setState(() => _isRunning = false);
+    _session.pause();
   }
 
   void _resetTimer() {
-    _timer?.cancel();
     HapticFeedback.selectionClick();
-    setState(() {
-      _isRunning = false;
-      _remainingSeconds = _totalSeconds;
-    });
+    _session.reset();
   }
 
   void _showFinishedDialog() {
@@ -124,6 +112,7 @@ class _FocusViewState extends State<FocusView> {
   Widget build(BuildContext context) {
     final pendingTasks =
         widget.state.tasks.where((t) => !t.completed).toList();
+    final selectedTask = pendingTasks.where((task) => task.id == _selectedTaskId).firstOrNull ?? pendingTasks.firstOrNull;
     final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
     final progress = _totalSeconds > 0
@@ -133,8 +122,61 @@ class _FocusViewState extends State<FocusView> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: brandPurple.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 4.5,
+                  height: 4.5,
+                  decoration: const BoxDecoration(
+                    color: brandPurple,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                const Text(
+                  'DEEP WORK & TIMER',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: brandPurple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Focus Session',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1B1D28),
+              letterSpacing: -0.6,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Stay in the zone with interval timers',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF8E95A5),
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 18),
           // Mode Switcher Pills
           Container(
             padding: const EdgeInsets.all(4),
@@ -262,7 +304,7 @@ class _FocusViewState extends State<FocusView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _selectedTask?.title ??
+                        selectedTask?.title ??
                             (pendingTasks.isNotEmpty
                                 ? pendingTasks.first.title
                                 : 'Take a deep breath'),
@@ -283,7 +325,7 @@ class _FocusViewState extends State<FocusView> {
                       Icons.arrow_drop_down_circle_outlined,
                       color: Color(0xFF8E95A5),
                     ),
-                    onSelected: (task) => setState(() => _selectedTask = task),
+                    onSelected: (task) => setState(() => _selectedTaskId = task.id),
                     itemBuilder: (context) => [
                       for (final task in pendingTasks)
                         PopupMenuItem(
@@ -328,7 +370,7 @@ class _FocusViewState extends State<FocusView> {
                   size: 28,
                 ),
                 label: Text(
-                  _isRunning ? 'Pause' : 'Start Focus',
+                  _isRunning ? 'Pause' : (_mode == 'work' ? 'Start Focus' : 'Start Break'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -357,8 +399,8 @@ class _FocusViewState extends State<FocusView> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'Sessions Today',
-                  '$_sessionsCompleted',
+                  'Sessions finished',
+                  '${_session.completedSessions}',
                   Icons.check_circle_outline_rounded,
                   const Color(0xFF10B981),
                 ),
@@ -366,8 +408,8 @@ class _FocusViewState extends State<FocusView> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  'Minutes Focused',
-                  '${_sessionsCompleted * 25}m',
+                  'Focus completed',
+                  '${_session.completedMinutes}m',
                   Icons.timer_outlined,
                   brandPurple,
                 ),

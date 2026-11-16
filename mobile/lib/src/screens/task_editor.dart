@@ -7,7 +7,6 @@ import '../api.dart';
 import '../app.dart';
 import '../app_state.dart';
 import '../models.dart';
-import '../widgets/motion.dart';
 
 class TaskEditor extends StatefulWidget {
   const TaskEditor({super.key, required this.state, this.task});

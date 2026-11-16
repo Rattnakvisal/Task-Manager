@@ -1,5 +1,7 @@
 *.log
 .DS_Store
+desktop.ini
+.folder-icons-main.ico
 .env
 .env.backup
 .env.production
@@ -20,6 +22,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/framework/lsp-*.php
 /vendor
 /database/*.sqlite
 _ide_helper.php
