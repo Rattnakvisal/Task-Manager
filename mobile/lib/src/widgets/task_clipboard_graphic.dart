@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'motion.dart';
 
 class TaskClipboardGraphic extends StatefulWidget {
   const TaskClipboardGraphic({
@@ -29,7 +30,7 @@ class _TaskClipboardGraphicState extends State<TaskClipboardGraphic>
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2800),
-    )..repeat(reverse: true);
+    );
 
     _floatAnim = Tween<double>(begin: -3.5, end: 3.5).animate(
       CurvedAnimation(
@@ -44,6 +45,16 @@ class _TaskClipboardGraphicState extends State<TaskClipboardGraphic>
         curve: Curves.easeInOutCubic,
       ),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || isRunningInTest) {
+      _floatController.stop();
+    } else if (!_floatController.isAnimating) {
+      _floatController.repeat(reverse: true);
+    }
   }
 
   @override

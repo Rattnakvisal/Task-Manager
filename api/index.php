@@ -37,7 +37,7 @@ if ($requestPath !== '' && $requestPath !== '/' && $requestPath !== '/index.php'
     $publicDir = realpath(__DIR__.'/../public');
     $assetPath = realpath(__DIR__.'/../public'.$requestPath);
 
-    if ($publicDir !== false && $assetPath !== false && str_starts_with($assetPath, $publicDir) && is_file($assetPath)) {
+    if ($publicDir !== false && $assetPath !== false && str_starts_with($assetPath, $publicDir.DIRECTORY_SEPARATOR) && is_file($assetPath)) {
         $ext = strtolower(pathinfo($assetPath, PATHINFO_EXTENSION));
         $contentTypes = [
             'png' => 'image/png',
@@ -56,7 +56,12 @@ if ($requestPath !== '' && $requestPath !== '/' && $requestPath !== '/index.php'
             'txt' => 'text/plain; charset=UTF-8',
         ];
 
-        $contentType = $contentTypes[$ext] ?? (mime_content_type($assetPath) ?: 'application/octet-stream');
+        // Only public asset types can be served by this PHP fallback.
+        if (! isset($contentTypes[$ext])) {
+            http_response_code(404);
+            exit;
+        }
+        $contentType = $contentTypes[$ext];
 
         header('Content-Type: '.$contentType);
         header('Content-Length: '.(string) filesize($assetPath));
@@ -65,6 +70,8 @@ if ($requestPath !== '' && $requestPath !== '/' && $requestPath !== '/index.php'
         exit;
     }
 }
+
+require __DIR__.'/../bootstrap/vercel-request.php';
 
 try {
     require __DIR__.'/../public/index.php';

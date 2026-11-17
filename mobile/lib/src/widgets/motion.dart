@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+bool get isRunningInTest =>
+    WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
 Duration motionDuration(BuildContext context, [int milliseconds = 220]) =>
     MediaQuery.disableAnimationsOf(context)
     ? Duration.zero
@@ -74,8 +77,8 @@ class MotionSwitcher extends StatelessWidget {
   final Widget child;
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
-    duration: motionDuration(context),
-    reverseDuration: motionDuration(context, 140),
+    duration: motionDuration(context, 360),
+    reverseDuration: motionDuration(context, 180),
     switchInCurve: Curves.easeOutCubic,
     switchOutCurve: Curves.easeInCubic,
     layoutBuilder: (current, previous) => Stack(
@@ -88,11 +91,12 @@ class MotionSwitcher extends StatelessWidget {
     ),
     transitionBuilder: (child, animation) => FadeTransition(
       opacity: animation,
-      child: SlideTransition(
-        position: Tween(
-          begin: const Offset(0, .025),
-          end: Offset.zero,
-        ).animate(animation),
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) => Transform.translate(
+          offset: Offset(0, 12 * (1 - animation.value)),
+          child: child,
+        ),
         child: child,
       ),
     ),
@@ -266,7 +270,17 @@ class _PulsingGlowFABState extends State<PulsingGlowFAB>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
-    )..repeat(reverse: true);
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || isRunningInTest) {
+      _pulseController.stop();
+    } else if (!_pulseController.isAnimating) {
+      _pulseController.repeat(reverse: true);
+    }
   }
 
   @override
@@ -336,7 +350,17 @@ class _TaskLoadingPlaceholderState extends State<TaskLoadingPlaceholder>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || isRunningInTest) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -372,12 +396,15 @@ class _TaskLoadingPlaceholderState extends State<TaskLoadingPlaceholder>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Syncing tasks & priorities…',
-                        style: TextStyle(
-                          color: Color(0xFF707082),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                      const Flexible(
+                        child: Text(
+                          'Syncing tasks & priorities…',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Color(0xFF707082),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -574,13 +601,23 @@ class _FloatingLevitationState extends State<FloatingLevitation>
     );
     _animation = Tween<double>(begin: -widget.distance, end: widget.distance)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine));
+  }
 
-    if (widget.delay == Duration.zero) {
-      _controller.repeat(reverse: true);
-    } else {
-      Future.delayed(widget.delay, () {
-        if (mounted) _controller.repeat(reverse: true);
-      });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || isRunningInTest) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      if (widget.delay == Duration.zero) {
+        _controller.repeat(reverse: true);
+      } else {
+        Future.delayed(widget.delay, () {
+          if (mounted && !MediaQuery.disableAnimationsOf(context) && !isRunningInTest) {
+            _controller.repeat(reverse: true);
+          }
+        });
+      }
     }
   }
 

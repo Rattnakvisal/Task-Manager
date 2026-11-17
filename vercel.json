@@ -12,16 +12,11 @@
     },
     "routes": [
         {
-            "src": "/build/(.*)",
-            "dest": "/build/$1"
+            "src": "/(index\\.php|\\.htaccess|hot|fonts-manifest\\.dev\\.json)$",
+            "status": 404
         },
         {
-            "src": "/images/(.*)",
-            "dest": "/images/$1"
-        },
-        {
-            "src": "/(favicon\\.ico|robots\\.txt)",
-            "dest": "/$1"
+            "handle": "filesystem"
         },
         {
             "src": "/(.*)",

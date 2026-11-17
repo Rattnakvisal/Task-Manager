@@ -99,6 +99,8 @@ The application timezone defaults to `Asia/Phnom_Penh` so phrases such as “tod
 
 ## Production checklist
 
+For the shared website and Android deployment, see [Vercel deployment](docs/vercel-deployment.md).
+
 - Set `APP_ENV=production` and `APP_DEBUG=false`.
 - Set `APP_URL` to the public application URL.
 - Use a production database and secure credentials.

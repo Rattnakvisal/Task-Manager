@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 
 import 'api.dart';
@@ -13,9 +11,6 @@ class AppState extends ChangeNotifier {
   List<Task> _tasks = const [];
   List<Task> get tasks => _tasks;
   bool starting = true, busy = false, hasLoadedTasks = false;
-  bool isConnected = true, isCheckingConnection = false;
-  int? lastPingLatencyMs;
-  String connectionType = 'USB Tunnel';
   String? startupError;
   int _sessionVersion = 0, _taskVersion = 0;
   bool _disposed = false, _authenticating = false;
@@ -53,51 +48,16 @@ class AppState extends ChangeNotifier {
     startupError = null;
     _emit();
     try {
-      final saved = await _withStore(
-        () async =>
-            (await store.read('server_url'), await store.read('access_token')),
-      );
+      final savedToken = await _withStore(() async {
+        // Retire manually saved LAN/USB URLs from older app versions.
+        await store.delete('server_url');
+        return store.read('access_token');
+      });
       if (!_active(version)) return;
-      var savedUrl = saved.$1;
-      if (savedUrl != null && savedUrl.contains(':8001')) {
-        savedUrl = savedUrl.replaceAll(':8001', ':8000');
-        await store.write('server_url', savedUrl);
-      }
-
-      // Dynamically discover working server for real network runs
-      if (!api.isCustomClient) {
-        final activeUrl = await ApiClient.autoDiscoverServer(
-          preferred: savedUrl ?? api.baseUrl,
-        );
-        if (!_active(version)) return;
-        if (activeUrl != null) {
-          api.baseUrl = activeUrl;
-          if (activeUrl != savedUrl) {
-            await store.write('server_url', activeUrl);
-          }
-        } else if (savedUrl != null) {
-          api.baseUrl = savedUrl;
-        }
-      } else if (savedUrl != null) {
-        api.baseUrl = savedUrl;
-      }
-      api.onBaseUrlChanged = (newUrl) {
-        if (!_disposed) {
-          _withStore(() => store.write('server_url', newUrl));
-          _emit();
-        }
-      };
-
-      api.token = saved.$2;
+      api.token = savedToken;
       if (api.token != null) {
         final data = await api.request('GET', '/me');
         if (_active(version)) user = AppUser.fromJson(data['user']);
-      }
-      if (_active(version)) {
-        _updateConnectionType();
-        if (!api.isCustomClient) {
-          unawaited(checkConnection());
-        }
       }
     } on ApiException catch (error) {
       if (!_active(version)) return;
@@ -116,74 +76,6 @@ class AppState extends ChangeNotifier {
         _emit();
       }
     }
-  }
-
-  Future<void> setServer(String value) async {
-    final validated = ApiClient.validateBaseUrl(value);
-    await _withStore(() => store.write('server_url', validated));
-    if (_disposed) return;
-    api.baseUrl = validated;
-    _emit();
-  }
-
-  Future<String?> autoDetectServer() async {
-    final discovered = await ApiClient.autoDiscoverServer(preferred: api.baseUrl);
-    if (discovered != null) {
-      await setServer(discovered);
-    }
-    return discovered;
-  }
-
-  void _updateConnectionType() {
-    final url = api.baseUrl;
-    if (url.contains('127.0.0.1') || url.contains('localhost')) {
-      connectionType = 'USB Tunnel / Local';
-    } else if (url.contains('10.0.2.2')) {
-      connectionType = 'Android Emulator';
-    } else {
-      connectionType = 'Wi-Fi LAN';
-    }
-  }
-
-  Future<bool> checkConnection() async {
-    if (isCheckingConnection || _disposed || api.isCustomClient) return isConnected;
-    isCheckingConnection = true;
-    _emit();
-    try {
-      final sw = Stopwatch()..start();
-      final healthy = await ApiClient.probeUrl(
-        api.baseUrl,
-        timeout: const Duration(seconds: 2),
-      );
-      sw.stop();
-      if (healthy != null) {
-        isConnected = true;
-        lastPingLatencyMs = sw.elapsedMilliseconds;
-        _updateConnectionType();
-      } else {
-        // Automatically try to auto-discover
-        final found = await ApiClient.autoDiscoverServer(preferred: api.baseUrl);
-        if (found != null) {
-          api.baseUrl = found;
-          isConnected = true;
-          lastPingLatencyMs = 28;
-          _updateConnectionType();
-          await store.write('server_url', found);
-        } else {
-          isConnected = false;
-          lastPingLatencyMs = null;
-        }
-      }
-    } catch (_) {
-      isConnected = false;
-      lastPingLatencyMs = null;
-    } finally {
-      if (!_disposed) {
-        isCheckingConnection = false;
-        _emit();
-      }
-    }
-    return isConnected;
   }
 
   Future<void> authenticate({

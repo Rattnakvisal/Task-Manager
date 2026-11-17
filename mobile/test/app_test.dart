@@ -9,6 +9,9 @@ import 'package:task_manager_mobile/src/api.dart';
 import 'package:task_manager_mobile/src/app.dart';
 import 'package:task_manager_mobile/src/app_state.dart';
 import 'package:task_manager_mobile/src/models.dart';
+import 'package:task_manager_mobile/src/screens/auth_screen.dart';
+import 'package:task_manager_mobile/src/widgets/animated_taskbar.dart';
+import 'package:task_manager_mobile/src/widgets/motion.dart';
 
 class MemoryStore implements SessionStore {
   final values = <String, String>{};
@@ -30,6 +33,76 @@ http.Response jsonResponse(Map<String, dynamic> data, [int status = 200]) =>
 const user = {'id': 1, 'name': 'Visal', 'email': 'visal@example.com'};
 
 void main() {
+  test('startup retires legacy URLs and restores the Vercel session', () async {
+    for (final legacyUrl in [
+      'http://127.0.0.1:8001/api/mobile',
+      'http://192.168.20.110:8000/api/mobile',
+      'https://old-deployment.example.com/api/mobile',
+    ]) {
+      final store = MemoryStore()
+        ..values['server_url'] = legacyUrl
+        ..values['access_token'] = 'saved';
+      final state = AppState(
+        ApiClient(
+          client: MockClient((request) async {
+            expect(request.url.toString(), '${ApiClient.productionBaseUrl}/me');
+            expect(request.headers['Authorization'], 'Bearer saved');
+            return jsonResponse({'user': user});
+          }),
+        ),
+        store,
+      );
+      await state.initialize();
+      expect(state.api.baseUrl, ApiClient.productionBaseUrl);
+      expect(store.values['server_url'], isNull);
+      expect(store.values['access_token'], 'saved');
+      expect(state.user?.email, user['email']);
+      state.dispose();
+    }
+  });
+
+  testWidgets('sign-in uses Vercel without server configuration controls', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    Uri? loginUrl;
+    final state = AppState(
+      ApiClient(
+        client: MockClient((request) async {
+          loginUrl = request.url;
+          return jsonResponse({'token': 'secret', 'user': user});
+        }),
+      ),
+      MemoryStore(),
+    );
+    addTearDown(state.dispose);
+    await tester.pumpWidget(MaterialApp(home: AuthScreen(state: state)));
+    expect(find.text('Server address'), findsNothing);
+    expect(find.widgetWithText(TextFormField, 'Server URL'), findsNothing);
+    await tester.tap(find.text('Create Account'));
+    await tester.pumpAndSettle();
+    expect(find.text('Server address'), findsNothing);
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email address'),
+      'visal@example.com',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Password'),
+      'SecurePass1!',
+    );
+    await tester.ensureVisible(find.text('Sign in').last);
+    await tester.tap(find.text('Sign in').last);
+    await tester.pumpAndSettle();
+    expect(loginUrl.toString(), '${ApiClient.productionBaseUrl}/login');
+    expect(state.user?.email, 'visal@example.com');
+    await tester.pumpWidget(const SizedBox());
+  });
+
   test('a late refresh cannot overwrite a newly saved task', () async {
     final pendingRefresh = Completer<http.Response>();
     final state = AppState(
@@ -166,6 +239,15 @@ void main() {
       );
       await tester.pumpWidget(TaskManagerApp(state: state));
       await tester.pumpAndSettle();
+      if (find
+          .text('Already have an account? Sign In', findRichText: true)
+          .evaluate()
+          .isNotEmpty) {
+        await tester.tap(
+          find.text('Already have an account? Sign In', findRichText: true),
+        );
+        await tester.pumpAndSettle();
+      }
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Email address'),
         'visal@example.com',
@@ -174,22 +256,22 @@ void main() {
         find.widgetWithText(TextFormField, 'Password'),
         'SecurePass1!',
       );
-      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.tap(find.text('Sign in').last);
       await tester.pumpAndSettle();
-      expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.text('Hello, Visal'), findsOneWidget);
-      await tester.tap(find.text('New task'));
+      expect(find.byType(AnimatedTaskbar), findsOneWidget);
+      expect(find.textContaining('Hello,'), findsOneWidget);
+      await tester.tap(find.byType(PulsingGlowFAB));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextFormField, 'What needs to get done?'),
         'Build Android app',
       );
-      await tester.ensureVisible(find.text('Create task'));
-      await tester.tap(find.text('Create task'));
+      await tester.ensureVisible(find.text('Done'));
+      await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
       expect(created?['title'], 'Build Android app');
       expect(state.tasks.single.title, 'Build Android app');
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(AnimatedTaskbar), findsOneWidget);
       await tester.tap(find.text('Tasks'));
       await tester.pumpAndSettle();
       expect(find.text('Build Android app'), findsOneWidget);

@@ -32,144 +32,30 @@ class SecureSessionStore implements SessionStore {
 }
 
 class ApiClient {
-  ApiClient({http.Client? client, this.timeout = const Duration(seconds: 20)})
-    : _client = client ?? http.Client(),
-      isCustomClient = client != null;
+  ApiClient({
+    http.Client? client,
+    String? baseUrl,
+    this.timeout = const Duration(seconds: 20),
+  }) : _client = client ?? http.Client(),
+       _baseUrl = validateBaseUrl(baseUrl ?? defaultBaseUrl);
   final http.Client _client;
-  final bool isCustomClient;
+  String _baseUrl;
+  String get baseUrl => _baseUrl;
   final Duration timeout;
   final _pending = <Completer<void>>{};
 
-  static String get defaultBaseUrl {
-    const envUrl = String.fromEnvironment('API_BASE_URL');
-    if (envUrl.isNotEmpty) return envUrl;
-    if (!kDebugMode) return '';
-    if (kIsWeb) return 'http://localhost:8000/api/mobile';
-    try {
-      if (Platform.isAndroid) return 'http://127.0.0.1:8000/api/mobile';
-    } catch (_) {}
-    return 'http://127.0.0.1:8000/api/mobile';
-  }
+  // The stable production domain follows Vercel production deployments.
+  // Developers can override it at build time; app users never enter an address.
+  static const productionBaseUrl =
+      'https://taskflow-ai-kh.vercel.app/api/mobile';
+  static const defaultBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: productionBaseUrl,
+  );
 
   bool _closed = false;
-  String baseUrl = defaultBaseUrl;
+  Future<String?>? _routeResolution;
   String? token;
-  void Function(String newUrl)? onBaseUrlChanged;
-
-  /// Gathers all dynamic server candidate URLs for auto-discovery
-  static Future<List<String>> getCandidates({String? current}) async {
-    final list = <String>{};
-    if (current != null && current.isNotEmpty) {
-      try {
-        list.add(validateBaseUrl(current));
-      } catch (_) {}
-    }
-    const envUrl = String.fromEnvironment('API_BASE_URL');
-    if (envUrl.isNotEmpty) {
-      try {
-        list.add(validateBaseUrl(envUrl));
-      } catch (_) {}
-    }
-
-    // 1. USB cable / localhost
-    list.add('http://127.0.0.1:8000/api/mobile');
-    list.add('http://localhost:8000/api/mobile');
-
-    // 2. Android emulator
-    list.add('http://10.0.2.2:8000/api/mobile');
-
-    // 3. Known host machine Wi-Fi / LAN IPs
-    list.add('http://192.168.132.238:8000/api/mobile');
-    list.add('http://172.16.129.104:8000/api/mobile');
-
-    // 4. Dynamic subnet candidates from local network interfaces
-    if (!kIsWeb) {
-      try {
-        final interfaces = await NetworkInterface.list(
-          type: InternetAddressType.IPv4,
-          includeLinkLocal: false,
-        );
-        for (final iface in interfaces) {
-          for (final addr in iface.addresses) {
-            if (!addr.isLoopback) {
-              final parts = addr.address.split('.');
-              if (parts.length == 4) {
-                final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
-                list.add('http://$subnet.238:8000/api/mobile');
-                list.add('http://$subnet.104:8000/api/mobile');
-                list.add('http://$subnet.1:8000/api/mobile');
-                list.add('http://$subnet.222:8000/api/mobile');
-              }
-            }
-          }
-        }
-      } catch (_) {}
-    }
-
-    return list.toList();
-  }
-
-  /// Tests if a candidate URL responds with a healthy ping
-  static Future<String?> probeUrl(
-    String url, {
-    Duration timeout = const Duration(milliseconds: 1400),
-    http.Client? client,
-  }) async {
-    final httpClient = client ?? http.Client();
-    final shouldClose = client == null;
-    try {
-      final clean = validateBaseUrl(url);
-      final response = await httpClient
-          .get(Uri.parse('$clean/ping'))
-          .timeout(timeout);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map && data['status'] == 'ok') {
-          return clean;
-        }
-      }
-    } catch (_) {
-    } finally {
-      if (shouldClose) {
-        httpClient.close();
-      }
-    }
-    return null;
-  }
-
-  /// Probes candidate URLs in parallel and returns the fastest responding server
-  static Future<String?> autoDiscoverServer({
-    String? preferred,
-    http.Client? client,
-  }) async {
-    final candidates = await getCandidates(current: preferred);
-    if (candidates.isEmpty) return null;
-
-    final completer = Completer<String?>();
-    int pending = candidates.length;
-
-    for (final url in candidates) {
-      probeUrl(url, client: client)
-          .then((working) {
-            if (working != null && !completer.isCompleted) {
-              completer.complete(working);
-            } else {
-              pending--;
-              if (pending == 0 && !completer.isCompleted) {
-                completer.complete(null);
-              }
-            }
-          })
-          .catchError((_) {
-            pending--;
-            if (pending == 0 && !completer.isCompleted) {
-              completer.complete(null);
-            }
-          });
-    }
-
-    return completer.future;
-  }
 
   static String validateBaseUrl(String input) {
     var value = input.trim().replaceFirst(RegExp(r'/+$'), '');
@@ -208,38 +94,90 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     try {
-      return await _execute(method, path, body);
-    } on SocketException {
-      // Auto-discover if network address changed (e.g. Wi-Fi switched or USB reconnected)
-      final discovered = await autoDiscoverServer();
-      if (discovered != null && discovered != baseUrl) {
-        baseUrl = discovered;
-        onBaseUrlChanged?.call(discovered);
-        return await _execute(method, path, body);
-      }
+      return await _requestWithRouteRecovery(method, path, body);
+    } on HandshakeException {
       throw const ApiException(
-        'Cannot connect. Check your internet connection and server address.',
+        'Could not establish a secure connection. Please try again.',
+      );
+    } on SocketException {
+      throw const ApiException(
+        'Cannot connect. Check your internet connection and try again.',
       );
     } on http.ClientException {
-      final discovered = await autoDiscoverServer();
-      if (discovered != null && discovered != baseUrl) {
-        baseUrl = discovered;
-        onBaseUrlChanged?.call(discovered);
-        return await _execute(method, path, body);
-      }
       throw const ApiException(
-        'Cannot reach the server. Check your connection and try again.',
+        'Cannot reach the server. Check your internet connection and try again.',
       );
     }
+  }
+
+  Future<Map<String, dynamic>> _requestWithRouteRecovery(
+    String method,
+    String path,
+    Map<String, dynamic>? body,
+  ) async {
+    final attemptedBaseUrl = baseUrl;
+    try {
+      return await _execute(method, path, body);
+    } on ApiException catch (error) {
+      // Older Vercel PHP deployments infer /api as the script's base path.
+      // Resolve that compatibility path only on our known production origin.
+      if (error.statusCode != 404 ||
+          !const {
+            '/login',
+            '/register',
+            '/me',
+            '/tasks',
+            '/dashboard',
+            '/calendar',
+            '/notifications',
+            '/logout',
+            '/ping',
+          }.contains(path)) {
+        rethrow;
+      }
+      if (baseUrl != attemptedBaseUrl) {
+        return _execute(method, path, body);
+      }
+      final resolved = await (_routeResolution ??= _resolveProductionRoute()
+          .whenComplete(() => _routeResolution = null));
+      if (resolved == null || _closed) rethrow;
+      _baseUrl = resolved;
+      return _execute(method, path, body);
+    }
+  }
+
+  Future<String?> _resolveProductionRoute() async {
+    final legacyBaseUrl = productionBaseUrl.replaceFirst(
+      '/api/mobile',
+      '/api/api/mobile',
+    );
+    if (!{productionBaseUrl, legacyBaseUrl}.contains(baseUrl)) return null;
+    for (final candidate in {productionBaseUrl, legacyBaseUrl}) {
+      if (candidate == baseUrl) continue;
+      try {
+        // Health checks carry no credentials. The origin always remains HTTPS
+        // on the same Vercel project; a LAN address is never a candidate.
+        final health = await _execute('GET', '/ping', null, candidate);
+        if (health['status'] == 'ok') return candidate;
+      } on ApiException {
+        // Preserve the original response when the alternative is unavailable.
+      } on IOException {
+        continue;
+      } on http.ClientException {
+        continue;
+      }
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>> _execute(
     String method,
     String path, [
     Map<String, dynamic>? body,
+    String? server,
   ]) async {
     if (_closed) throw const ApiException('This connection has been closed.');
-    final base = validateBaseUrl(baseUrl);
+    final base = validateBaseUrl(server ?? baseUrl);
     final abort = Completer<void>();
     final request =
         http.AbortableRequest(
@@ -251,7 +189,8 @@ class ApiClient {
           ..headers.addAll({
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            if (token != null) 'Authorization': 'Bearer $token',
+            if (token != null && server == null)
+              'Authorization': 'Bearer $token',
           });
     if (body != null) request.body = jsonEncode(body);
     _pending.add(abort);
@@ -281,7 +220,7 @@ class ApiClient {
             jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       } catch (_) {
         throw ApiException(
-          'The server returned an unexpected response. Check the server address.',
+          'The service is temporarily unavailable. Please try again later.',
           response.statusCode,
         );
       }

@@ -381,31 +381,41 @@ class TaskCard extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Row(
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
                             children: [
                               // Calendar & Due Date
-                              Icon(
-                                Icons.calendar_today_outlined,
-                                size: 13,
-                                color: task.overdue
-                                    ? const Color(0xFFEF4444)
-                                    : const Color(0xFF8E95A5),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 13,
+                                    color: task.overdue
+                                        ? const Color(0xFFEF4444)
+                                        : const Color(0xFF8E95A5),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      dateText,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: task.overdue
+                                            ? const Color(0xFFEF4444)
+                                            : const Color(0xFF8E95A5),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                dateText,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: task.overdue
-                                      ? const Color(0xFFEF4444)
-                                      : const Color(0xFF8E95A5),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
 
                               // Semantic Category Tag Pill (if present)
-                              if (task.category.isNotEmpty) ...[
+                              if (task.category.isNotEmpty)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 7,
@@ -437,7 +447,6 @@ class TaskCard extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                              ],
                             ],
                           ),
                           if (task.subtasks.isNotEmpty) ...[

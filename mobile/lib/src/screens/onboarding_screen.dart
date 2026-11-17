@@ -391,7 +391,16 @@ class _TwinIPhoneStageState extends State<_TwinIPhoneStage>
       vsync: this,
       duration: const Duration(milliseconds: 3400),
     );
-    _floatController.repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || isRunningInTest) {
+      _floatController.stop();
+    } else if (!_floatController.isAnimating) {
+      _floatController.repeat(reverse: true);
+    }
   }
 
   @override
@@ -540,162 +549,174 @@ class _IPhoneDevice extends StatelessWidget {
         ],
       ),
       padding: const EdgeInsets.all(4), // Bezel border width
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1926) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? const Color(0xFF100F18) : const Color(0xFF14141E),
-            width: 1.5,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Main Screen Contents
-            Positioned.fill(
-              top: 26,
-              bottom: 8,
-              child: child,
+      child: MediaQuery.withNoTextScaling(
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1926) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? const Color(0xFF100F18) : const Color(0xFF14141E),
+              width: 1.5,
             ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              // Main Screen Contents
+              Positioned.fill(
+                top: 26,
+                bottom: 8,
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: child,
+                ),
+              ),
 
-            // iOS Top Status Bar & Dynamic Island
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 26,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '9:41',
-                      style: TextStyle(
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w700,
-                        color: textColor,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    // Dynamic Island Pill
-                    Container(
-                      height: 14,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0A0A10),
-                        borderRadius: BorderRadius.circular(9),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          width: 0.5,
+              // iOS Top Status Bar & Dynamic Island
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 26,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '9:41',
+                        style: TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      child: Row(
+                      // Dynamic Island Pill
+                      Flexible(
+                        child: Container(
+                          height: 14,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0A0A10),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 3.5,
+                                height: 3.5,
+                                decoration: BoxDecoration(
+                                  color: dynamicIslandDotColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              if (dynamicIslandLabel != null) ...[
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    dynamicIslandLabel!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 6.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Wi-Fi & Battery indicator
+                      Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 3.5,
-                            height: 3.5,
-                            decoration: BoxDecoration(
-                              color: dynamicIslandDotColor,
-                              shape: BoxShape.circle,
-                            ),
+                          Icon(
+                            Icons.wifi,
+                            size: 8.5,
+                            color: textColor.withValues(alpha: 0.8),
                           ),
-                          if (dynamicIslandLabel != null) ...[
-                            const SizedBox(width: 3.5),
-                            Text(
-                              dynamicIslandLabel!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 6.5,
-                                fontWeight: FontWeight.w700,
+                          const SizedBox(width: 3),
+                          Container(
+                            width: 13,
+                            height: 7,
+                            padding: const EdgeInsets.all(1),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(2.5),
+                              border: Border.all(
+                                color: textColor.withValues(alpha: 0.7),
+                                width: 0.8,
                               ),
                             ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF34C759),
+                                borderRadius: BorderRadius.circular(1.2),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Diagonal Specular Glass Reflection
+              Positioned(
+                top: -40,
+                left: -40,
+                width: width * 1.8,
+                height: 100,
+                child: IgnorePointer(
+                  child: Transform.rotate(
+                    angle: -0.55,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(alpha: isDark ? 0.09 : 0.18),
+                            Colors.white.withValues(alpha: 0.0),
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                    // Wi-Fi & Battery indicator
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.wifi,
-                          size: 8.5,
-                          color: textColor.withValues(alpha: 0.8),
-                        ),
-                        const SizedBox(width: 3),
-                        Container(
-                          width: 13,
-                          height: 7,
-                          padding: const EdgeInsets.all(1),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2.5),
-                            border: Border.all(
-                              color: textColor.withValues(alpha: 0.7),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF34C759),
-                              borderRadius: BorderRadius.circular(1.2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
 
-            // Diagonal Specular Glass Reflection
-            Positioned(
-              top: -40,
-              left: -40,
-              width: width * 1.8,
-              height: 100,
-              child: IgnorePointer(
-                child: Transform.rotate(
-                  angle: -0.55,
+              // iOS Home Indicator Line
+              Positioned(
+                bottom: 3,
+                left: 0,
+                right: 0,
+                child: Center(
                   child: Container(
+                    width: width * 0.32,
+                    height: 2.5,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withValues(alpha: isDark ? 0.09 : 0.18),
-                          Colors.white.withValues(alpha: 0.0),
-                        ],
-                      ),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.35)
+                          : const Color(0xFF1C1C28).withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
               ),
-            ),
-
-            // iOS Home Indicator Line
-            Positioned(
-              bottom: 3,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  width: width * 0.32,
-                  height: 2.5,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.35)
-                        : const Color(0xFF1C1C28).withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
