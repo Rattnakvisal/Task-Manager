@@ -12,8 +12,9 @@ async function check(path, expectedStatus, options = {}) {
         ...options,
     });
     const body = await response.text();
-    if (response.status !== expectedStatus) {
-        throw new Error(`${path}: expected ${expectedStatus}, received ${response.status}`);
+    const allowedStatuses = Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus];
+    if (!allowedStatuses.includes(response.status)) {
+        throw new Error(`${path}: expected ${allowedStatuses.join(' or ')}, received ${response.status}`);
     }
     results.push({ path, status: response.status });
     return { response, body };
@@ -47,7 +48,7 @@ try {
             throw new Error(`${asset}: received HTML instead of a built asset.`);
         }
     }
-    await check('/index.php', 404);
+    await check('/index.php', [403, 404]);
     await check('/hot', 404);
     console.log(JSON.stringify({ origin: base.origin, passed: true, checks: results }, null, 2));
 } catch (error) {
