@@ -122,7 +122,7 @@ class TaskApiController extends Controller
 
     private function payload(Request $request, array $forcedFilters = []): array
     {
-        $allTasks = $request->user()->tasks()->get();
+        $allTasks = $request->user()->tasks()->orderBy('due_date')->orderByDesc('created_at')->get();
         $query = $request->user()->tasks();
 
         $status = $forcedFilters['status'] ?? $request->status;
@@ -148,7 +148,12 @@ class TaskApiController extends Controller
             $query->whereNotNull('due_date');
         }
 
-        $tasks = $query->orderBy('due_date')->orderByDesc('created_at')->get();
+        // The mobile app normally requests the unfiltered list. Reuse it for
+        // both statistics and tasks rather than making a second remote query.
+        $hasFilters = $status || $priority || $request->filled('q') || ($forcedFilters['with_due_date'] ?? false);
+        $tasks = $hasFilters
+            ? $query->orderBy('due_date')->orderByDesc('created_at')->get()
+            : $allTasks;
 
         return [
             'stats' => [

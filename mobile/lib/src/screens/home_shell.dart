@@ -32,6 +32,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   String _query = '', _status = 'all', _priority = 'all';
   String? _error;
   bool _signingOut = false;
+  bool _requestedInitialTasks = false;
   final _search = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final Set<String> _collapsedSections = {};
@@ -45,9 +46,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _refresh();
-    });
   }
 
   @override
@@ -180,7 +178,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: state,
     builder: (context, _) {
-      if (state.user == null) return const SizedBox.shrink();
+      if (state.user == null && !state.starting && state.startupError == null) {
+        return const SizedBox.shrink();
+      }
+      if (state.starting) _requestedInitialTasks = false;
+      if (state.user != null && !state.starting &&
+          state.startupError == null && !_requestedInitialTasks) {
+        _requestedInitialTasks = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _refresh();
+        });
+      }
+      final sessionReady = state.user != null && !state.starting && state.startupError == null;
+      final visibleError = state.startupError ?? _error;
       return Scaffold(
         body: Stack(
           children: [
@@ -209,75 +219,20 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             SafeArea(
               child: Column(
                 children: [
-                  // Floating iOS Sync Pill when refreshing tasks
-                  AnimatedSlide(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
-                    offset: state.busy && _tab != 3
-                        ? Offset.zero
-                        : const Offset(0, -1),
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: state.busy && _tab != 3 ? 1.0 : 0.0,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4, bottom: 4),
-                        child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFFE5E7EB),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: brandPurple.withValues(alpha: 0.12),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CupertinoActivityIndicator(
-                                  radius: 7,
-                                  color: brandPurple,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Syncing workspace…',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: brandPurple,
-                                    letterSpacing: -0.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                   MotionSwitcher(
-                    child: _error == null || _tab == 3
+                    child: visibleError == null || _tab == 3
                         ? const SizedBox.shrink(key: ValueKey('no-error'))
                         : MaterialBanner(
-                            key: ValueKey(_error),
-                            content: Text(_error!),
+                            key: ValueKey(visibleError),
+                            content: Text(visibleError),
                             leading: const Icon(Icons.cloud_off_outlined),
                             actions: [
                               TextButton(
-                                onPressed: _refresh,
+                                onPressed: state.startupError != null ? state.initialize : _refresh,
                                 child: const Text('Retry'),
                               ),
+                              if (state.startupError != null)
+                                TextButton(onPressed: state.clearSession, child: const Text('Sign in')),
                             ],
                           ),
                   ),
@@ -289,7 +244,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                           color: brandPurple,
                           backgroundColor: Colors.white,
                           strokeWidth: 2.5,
-                          onRefresh: _refresh,
+                          onRefresh: sessionReady ? _refresh : state.initialize,
                           child: MotionSwitcher(
                             child: CustomScrollView(
                               key: PageStorageKey(
@@ -314,11 +269,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                   ),
                                   sliver: SliverMainAxisGroup(
                                     slivers:
+                                        !sessionReady ? _homeLoading() :
                                         !state.hasLoadedTasks &&
                                                 state.tasks.isEmpty &&
                                                 _tab != 4 &&
                                                 _tab != 3
-                                            ? [
+                                            ? _tab == 0 ? _homeLoading() : [
                                                 SliverToBoxAdapter(
                                                   child: state.busy
                                                       ? const TaskLoadingPlaceholder()
@@ -362,14 +318,46 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                 ],
               ),
             ),
+            // Refresh status floats above content; it never reserves header space.
+            if (state.busy && state.hasLoadedTasks && _tab != 3)
+              Positioned(
+                bottom: 16,
+                left: 16,
+                right: 16,
+                child: IgnorePointer(
+                  child: TaskEntrance(
+                    child: Center(
+                      child: Material(
+                        elevation: 4,
+                        shadowColor: const Color(0x185B4DFF),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CupertinoActivityIndicator(radius: 7, color: brandPurple),
+                              SizedBox(width: 8),
+                              Text('Syncing workspace…', style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600, color: brandPurple,
+                              )),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
         floatingActionButton: ExcludeSemantics(
-          excluding: _tab == 4 || _tab == 3,
+          excluding: !sessionReady || _tab == 4 || _tab == 3,
           child: IgnorePointer(
-            ignoring: _tab == 4 || _tab == 3,
+            ignoring: !sessionReady || _tab == 4 || _tab == 3,
             child: AnimatedScale(
-              scale: _tab == 4 || _tab == 3 ? 0 : 1,
+              scale: !sessionReady || _tab == 4 || _tab == 3 ? 0 : 1,
               duration: motionDuration(context),
               curve: Curves.easeOutCubic,
               child: PulsingGlowFAB(
@@ -408,7 +396,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         ),
         bottomNavigationBar: AnimatedTaskbar(
           selectedIndex: _tab,
-          onItemSelected: _selectTab,
+          onItemSelected: (value) { if (sessionReady) _selectTab(value); },
           items: [
             const TaskbarItem(
               icon: Icons.home_outlined,
@@ -445,6 +433,32 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       );
     },
   );
+
+  List<Widget> _homeLoading() => [
+    SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 6),
+          _buildCleanHeader(
+            eyebrow: 'WORKSPACE',
+            title: 'Home',
+            subtitle: state.startupError != null || _error != null
+                ? 'Your workspace will appear when reconnected.'
+                : 'Loading your tasks and schedule…',
+          ),
+          const SizedBox(height: 20),
+          if (state.starting || state.busy)
+            const TaskLoadingPlaceholder()
+          else
+            const EmptyTasks(
+              title: 'Let’s reconnect',
+              message: 'Pull down or tap Retry to load your workspace.',
+            ),
+        ],
+      ),
+    ),
+  ];
 
   Widget _buildCleanHeader({
     required String eyebrow,

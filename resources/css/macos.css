@@ -1,0 +1,114 @@
+/* Desktop materials, compact controls, and colorful app symbols inspired by macOS. */
+.task-manager-ui {
+    --dashboard-border: #dce0e7;
+    --dashboard-surface: #ffffff;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Kantumruy Pro', 'Segoe UI', sans-serif;
+    background: #f3f4f7;
+    font-family: var(--font-sans);
+    letter-spacing: -.015em;
+}
+.task-manager-ui #app-sidebar {
+    background: linear-gradient(160deg, #f0f2f8f5, #e8edf4ef);
+    border-right: 1px solid #00000012;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+}
+.task-manager-ui .sidebar-brand { border-color: #0000000a; }
+.task-manager-ui .sidebar-section-title {
+    color: #858993;
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: .035em;
+}
+.task-manager-ui #app-sidebar [data-mac-nav] {
+    height: 39px;
+    margin-block: 3px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #424753;
+}
+.task-manager-ui #app-sidebar [data-mac-nav]:hover { background: #00000006; }
+.task-manager-ui #app-sidebar [data-mac-nav][aria-current='page'] {
+    color: #fff;
+    background: linear-gradient(#3489ff, #1671eb);
+    box-shadow: inset 0 1px #ffffff30, 0 2px 5px #007aff20;
+}
+.task-manager-ui #app-sidebar [data-mac-nav] > .absolute { display: none; }
+.task-manager-ui #app-sidebar [data-mac-nav] > span:has(.mac-nav-symbol) {
+    width: 25px;
+    height: 25px;
+    border-radius: 7px;
+    background: linear-gradient(145deg, #69b3ff, #0875ec);
+    color: white;
+    box-shadow: inset 0 1px 1px #ffffff70, 0 1px 2px #00000018;
+}
+.task-manager-ui #app-sidebar [data-mac-nav='kanban'] > span:has(svg) { background: linear-gradient(145deg, #68d5c1, #17a38e); }
+.task-manager-ui #app-sidebar [data-mac-nav='project'] > span:has(svg) { background: linear-gradient(145deg, #b39afa, #8260dc); }
+.task-manager-ui #app-sidebar [data-mac-nav='calendar'] > span:has(svg) { background: linear-gradient(145deg, #ff8981, #ee4c57); }
+.task-manager-ui #app-sidebar [data-mac-nav='flag'] > span:has(svg) { background: linear-gradient(145deg, #ffc167, #ed9124); }
+.task-manager-ui #app-sidebar [data-mac-nav='analytics'] > span:has(svg) { background: linear-gradient(145deg, #8bd77b, #42ad58); }
+.task-manager-ui #app-sidebar [data-mac-nav='user'] > span:has(svg) { background: linear-gradient(145deg, #a9afbc, #727b8e); }
+.task-manager-ui .mac-nav-symbol { stroke-width: 1.65; width: 16px; height: 16px; }
+.task-manager-ui header {
+    background: #ffffffcf;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid #0000000d;
+}
+.task-manager-ui header > div { min-height: 64px; }
+.task-manager-ui [data-global-search] {
+    background: #8088940b;
+    border: 1px solid #0000000c;
+    border-radius: 9px;
+    box-shadow: inset 0 1px 2px #00000004;
+}
+.task-manager-ui header [data-language-toggle],
+.task-manager-ui header [data-theme-toggle],
+.task-manager-ui header [data-toggle-notifications],
+.task-manager-ui header [data-open-command-palette] {
+    border-radius: 9px;
+    background: #ffffffa8;
+    border-color: #00000010;
+    box-shadow: 0 1px 2px #00000005;
+}
+.task-manager-ui .dashboard-surface {
+    background: var(--dashboard-surface);
+    border: 1px solid var(--dashboard-border);
+    border-radius: 14px;
+    box-shadow: 0 3px 12px #1c274705, 0 1px 2px #1c274704;
+}
+.task-manager-ui .welcome-banner {
+    border: 1px solid #ffffffb3;
+    border-radius: 17px;
+    background: radial-gradient(ellipse at 85% 0, #c5d8ff, transparent 65%), linear-gradient(120deg, #f4e9f8, #edf1ff 55%, #dfedfc);
+    box-shadow: 0 4px 18px #607aa20a;
+}
+.task-manager-ui .dashboard-button { border-radius: 8px; font-weight: 550; }
+.task-manager-ui .dashboard-button.primary {
+    background: linear-gradient(#388fff, #1674ec);
+    border: 1px solid #1468dc;
+    box-shadow: inset 0 1px #ffffff30, 0 1px 3px #007aff20;
+}
+.task-manager-ui .dashboard-button.secondary { background: #ffffffa6; border: 1px solid #00000012; color: #424957; }
+.task-manager-ui :is(input, select, textarea):focus-visible { outline: 3px solid #007aff40; outline-offset: 2px; }
+.task-manager-ui :is(button, a):focus-visible { outline: 3px solid #007aff80; outline-offset: 3px; }
+.task-manager-ui input[type='checkbox'] { accent-color: #007aff; }
+.task-manager-ui .sidebar-user-avatar { border-radius: 12px; background: #dce7fb; }
+html.dark .task-manager-ui { --dashboard-border: #ffffff14; --dashboard-surface: #25272e; background: #1b1d23; }
+html.dark .task-manager-ui #app-sidebar { background: linear-gradient(160deg, #292c35f5, #22252eef); border-color: #ffffff0d; }
+html.dark .task-manager-ui #app-sidebar [data-mac-nav] { color: #c6cbd7; }
+html.dark .task-manager-ui #app-sidebar [data-mac-nav][aria-current='page'] { color: white; }
+html.dark .task-manager-ui header { background: #25272edb; border-color: #ffffff12; }
+html.dark .task-manager-ui header :is([data-global-search], [data-theme-toggle], [data-language-toggle], [data-toggle-notifications], [data-open-command-palette]) { background: #ffffff08; border-color: #ffffff12; }
+html.dark .task-manager-ui .welcome-banner { background: radial-gradient(ellipse at 85% 0, #344b7b, transparent 65%), linear-gradient(120deg, #383047, #2c354b); border-color: #ffffff14; }
+html.dark .task-manager-ui .dashboard-button.secondary { background: #ffffff0b; color: #dce2ef; border-color: #ffffff20; }
+@media (max-width: 767px) {
+    .task-manager-ui header > div { min-height: 58px; }
+    .task-manager-ui .dashboard-surface { border-radius: 12px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+    .task-manager-ui #app-sidebar { backdrop-filter: none; background: #eef0f5; }
+    .task-manager-ui header { backdrop-filter: none; background: #fff; }
+    html.dark .task-manager-ui #app-sidebar, html.dark .task-manager-ui header { background: #25272e; }
+}

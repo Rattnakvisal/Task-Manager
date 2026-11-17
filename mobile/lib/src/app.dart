@@ -4,11 +4,12 @@ import 'app_state.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/onboarding_screen.dart';
-import 'widgets/workspace_loading.dart';
 
 const brandBlue = Color(0xFF5B4DFF);
 const brandPurple = Color(0xFF5B4DFF);
-const surfaceBg = Color(0xFFF2F2F7); // Authentic Apple iOS System Grouped Background
+const surfaceBg = Color(
+  0xFFF2F2F7,
+); // Authentic Apple iOS System Grouped Background
 
 class TaskManagerApp extends StatefulWidget {
   const TaskManagerApp({super.key, required this.state});
@@ -108,11 +109,9 @@ class _SessionGateState extends State<_SessionGate> {
     if (next != _snapshot) {
       setState(() {
         _snapshot = next;
-        // A later sign-out starts the guest flow at onboarding again.
-        if (widget.state.user != null) {
-          _showAuthentication = false;
-          _initialRegister = false;
-        }
+        // A sign-in or sign-out resets the auth sub-flow to onboarding/workspace.
+        _showAuthentication = false;
+        _initialRegister = false;
       });
     }
   }
@@ -136,38 +135,12 @@ class _SessionGateState extends State<_SessionGate> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _buildSession(context);
+
+  Widget _buildSession(BuildContext context) {
     final state = widget.state;
-    if (state.starting) {
-      return const WorkspaceLoading();
-    }
-    if (state.startupError != null) {
-      return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.cloud_off_rounded, size: 52),
-                  const SizedBox(height: 16),
-                  Text(state.startupError!, textAlign: TextAlign.center),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: state.initialize,
-                    child: const Text('Try again'),
-                  ),
-                  TextButton(
-                    onPressed: state.clearSession,
-                    child: const Text('Back to sign in'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
+    if (state.starting || state.startupError != null) {
+      return HomeShell(key: const ValueKey('workspace'), state: state);
     }
     if (state.user == null) {
       if (!_showAuthentication) {
@@ -186,6 +159,6 @@ class _SessionGateState extends State<_SessionGate> {
         child: AuthScreen(state: state, initialRegister: _initialRegister),
       );
     }
-    return HomeShell(state: state);
+    return HomeShell(key: const ValueKey('workspace'), state: state);
   }
 }

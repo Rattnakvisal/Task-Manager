@@ -2586,11 +2586,15 @@ function setPersistentTaskAlertCount(unreadAiCount, unreadReminderCount = null) 
 }
 
 let taskAlertSyncInFlight = false;
+let lastTaskAlertSync = 0;
 
 async function syncPersistentAiTaskAlerts() {
     if (!document.querySelector('[data-notifications-root]') || document.hidden || taskAlertSyncInFlight) return;
+    // Avoid repeated downloads when switching browser tabs frequently.
+    if (Date.now() - lastTaskAlertSync < 60000) return;
 
     taskAlertSyncInFlight = true;
+    lastTaskAlertSync = Date.now();
 
     try {
         const response = await fetch('/api/task-alerts', {
@@ -2765,7 +2769,7 @@ document.addEventListener('click', async (event) => {
 
 if (document.querySelector('[data-notifications-root]')) {
     window.setTimeout(syncPersistentAiTaskAlerts, 1200);
-    window.setInterval(syncPersistentAiTaskAlerts, 30000);
+    window.setInterval(syncPersistentAiTaskAlerts, 300000);
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) syncPersistentAiTaskAlerts();
     });

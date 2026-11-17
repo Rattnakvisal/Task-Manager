@@ -246,7 +246,7 @@
                                 $lastNavGroup = $item['group'];
                             @endphp
                         @endif
-                        <a href="{{ route($item['route']) }}" title="{{ $item['label'] }}"
+                        <a href="{{ route($item['route']) }}" title="{{ $item['label'] }}" data-mac-nav="{{ $item['icon'] }}" @if ($item['active']) aria-current="page" @endif
                             class="
                             group relative flex h-11 items-center gap-3 rounded-xl px-3
                             text-sm font-semibold transition-all duration-200
@@ -272,7 +272,7 @@
                                     : 'text-slate-400 group-hover:bg-white group-hover:text-slate-700 group-hover:shadow-sm dark:group-hover:bg-slate-800 dark:group-hover:text-slate-200' }}
                             ">
 
-                                <x-icon :name="$item['icon']" class="h-[17px] w-[17px]" />
+                                <x-icon :name="$item['icon']" class="mac-nav-symbol h-[17px] w-[17px]" />
 
                             </span>
 
