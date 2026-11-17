@@ -248,18 +248,16 @@ class _TaskEditorState extends State<TaskEditor> {
     ),
   );
 
-  Widget _iosCard(List<Widget> children) => Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
+  Widget _iosCard(List<Widget> children) => Material(
+    color: Colors.white,
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0x10000000), width: 0.5),
+      side: const BorderSide(color: Color(0x10000000), width: 0.5),
     ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: children,
-      ),
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     ),
   );
 
