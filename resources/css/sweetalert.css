@@ -1,0 +1,375 @@
+/* ==========================================================================
+   Ultra-Modern, Attractive SweetAlert2 Design System
+   Features: Glassmorphic Backdrop, Smooth Rounded Surfaces, Vibrant Gradient Buttons,
+   Micro-animations & Light/Dark Theme Support.
+   ========================================================================== */
+
+/* 1. Backdrop Overlay */
+.swal2-container {
+    backdrop-filter: blur(10px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(180%) !important;
+    background: rgba(15, 23, 42, 0.45) !important;
+    z-index: 99999 !important;
+    transition: all 0.25s ease !important;
+}
+
+.dark .swal2-container {
+    background: rgba(2, 6, 23, 0.72) !important;
+}
+
+/* 2. Main Dialog Popup */
+.swal2-popup {
+    border-radius: 26px !important;
+    padding: 34px 28px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(226, 232, 240, 0.95) !important;
+    box-shadow:
+        0 25px 60px -15px rgba(15, 23, 42, 0.25),
+        0 0 0 1px rgba(0, 0, 0, 0.04),
+        0 10px 20px -5px rgba(0, 0, 0, 0.06) !important;
+    font-family: 'Kantumruy Pro', var(--font-sans), system-ui, sans-serif !important;
+    animation: swal-pop-entrance 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    max-width: 440px !important;
+    width: 90% !important;
+}
+
+.dark .swal2-popup {
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow:
+        0 25px 60px -15px rgba(0, 0, 0, 0.75),
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 0 45px rgba(99, 102, 241, 0.12) !important;
+}
+
+@keyframes swal-pop-entrance {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateY(14px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* 3. Titles & Content */
+.swal2-title {
+    font-size: 1.35rem !important;
+    font-weight: 750 !important;
+    color: #0f172a !important;
+    letter-spacing: -0.02em !important;
+    padding: 0 !important;
+    margin: 4px 0 10px 0 !important;
+    line-height: 1.3 !important;
+}
+
+.dark .swal2-title {
+    color: #f8fafc !important;
+}
+
+.swal2-html-container {
+    font-size: 0.95rem !important;
+    color: #64748b !important;
+    line-height: 1.55 !important;
+    margin: 0 !important;
+    padding: 0 4px !important;
+}
+
+.dark .swal2-html-container {
+    color: #94a3b8 !important;
+}
+
+/* 4. Elegant Glowing Icons */
+.swal2-icon {
+    border-width: 3px !important;
+    margin: 0 auto 20px !important;
+    width: 68px !important;
+    height: 68px !important;
+    transform: scale(0.95);
+    transition: transform 0.25s ease;
+}
+
+.swal2-icon:hover {
+    transform: scale(1.03);
+}
+
+/* Success Icon Glow */
+.swal2-icon.swal2-success {
+    border-color: #10b981 !important;
+    color: #10b981 !important;
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0.12) !important;
+}
+.swal2-icon.swal2-success .swal2-success-ring {
+    border-color: rgba(16, 185, 129, 0.35) !important;
+}
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+    background-color: #10b981 !important;
+}
+
+/* Warning Icon Glow */
+.swal2-icon.swal2-warning {
+    border-color: #f59e0b !important;
+    color: #f59e0b !important;
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0.14) !important;
+    animation: swal-pulse-warning 2.2s infinite ease-in-out !important;
+}
+
+@keyframes swal-pulse-warning {
+    0%, 100% {
+        box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.12);
+    }
+    50% {
+        box-shadow: 0 0 0 16px rgba(245, 158, 11, 0.22);
+    }
+}
+
+/* Error / Danger Icon Glow */
+.swal2-icon.swal2-error {
+    border-color: #f43f5e !important;
+    color: #f43f5e !important;
+    box-shadow: 0 0 0 10px rgba(244, 63, 94, 0.14) !important;
+    animation: swal-wobble-error 0.55s ease-in-out !important;
+}
+.swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+    background-color: #f43f5e !important;
+}
+
+@keyframes swal-wobble-error {
+    0%, 100% { transform: scale(0.95) rotate(0deg); }
+    20% { transform: scale(0.95) rotate(-6deg); }
+    40% { transform: scale(0.95) rotate(6deg); }
+    60% { transform: scale(0.95) rotate(-3deg); }
+    80% { transform: scale(0.95) rotate(3deg); }
+}
+
+/* Question Icon Glow */
+.swal2-icon.swal2-question {
+    border-color: #6366f1 !important;
+    color: #6366f1 !important;
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0.14) !important;
+}
+
+/* Info Icon Glow */
+.swal2-icon.swal2-info {
+    border-color: #0ea5e9 !important;
+    color: #0ea5e9 !important;
+    box-shadow: 0 0 0 10px rgba(14, 165, 233, 0.14) !important;
+}
+
+/* 5. Modern Button Actions */
+.swal2-actions {
+    margin-top: 26px !important;
+    gap: 12px !important;
+    width: 100% !important;
+    justify-content: center !important;
+}
+
+.swal2-styled {
+    margin: 0 !important;
+    padding: 12px 28px !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    border-radius: 14px !important;
+    letter-spacing: -0.01em !important;
+    transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    outline: none !important;
+    cursor: pointer !important;
+}
+
+.swal2-styled:hover {
+    transform: translateY(-2px) !important;
+}
+
+.swal2-styled:active {
+    transform: translateY(0) scale(0.98) !important;
+}
+
+/* Primary Confirm Button (Indigo Gradient) */
+.swal2-confirm {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.38) !important;
+    border: none !important;
+}
+
+.swal2-confirm:hover {
+    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5) !important;
+    filter: brightness(1.05) !important;
+}
+
+/* Danger Confirm Button (Rose Gradient) */
+.swal2-confirm.swal2-danger-btn,
+.swal2-popup.swal2-danger-dialog .swal2-confirm {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+    box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.38) !important;
+    color: #ffffff !important;
+}
+
+.swal2-confirm.swal2-danger-btn:hover,
+.swal2-popup.swal2-danger-dialog .swal2-confirm:hover {
+    box-shadow: 0 6px 20px 0 rgba(225, 29, 72, 0.5) !important;
+}
+
+/* Success Confirm Button (Emerald Gradient) */
+.swal2-confirm.swal2-success-btn,
+.swal2-popup.swal2-success-dialog .swal2-confirm {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.38) !important;
+}
+
+/* Cancel Button */
+.swal2-cancel {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.swal2-cancel:hover {
+    background: #e2e8f0 !important;
+    color: #1e293b !important;
+}
+
+.dark .swal2-cancel {
+    background: #1e293b !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+}
+
+.dark .swal2-cancel:hover {
+    background: #334155 !important;
+    color: #f8fafc !important;
+}
+
+/* 6. Ultra-Sleek Floating Toast Notifications */
+.swal2-popup.swal2-toast {
+    border-radius: 18px !important;
+    padding: 14px 18px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(226, 232, 240, 0.85) !important;
+    box-shadow:
+        0 14px 30px -5px rgba(15, 23, 42, 0.12),
+        0 8px 12px -6px rgba(15, 23, 42, 0.06) !important;
+    gap: 12px !important;
+    overflow: hidden !important;
+}
+
+.dark .swal2-popup.swal2-toast {
+    background: rgba(15, 23, 42, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 14px 30px -5px rgba(0, 0, 0, 0.6) !important;
+}
+
+.swal2-popup.swal2-toast .swal2-title {
+    font-size: 0.95rem !important;
+    font-weight: 750 !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.dark .swal2-popup.swal2-toast .swal2-title {
+    color: #f8fafc !important;
+}
+
+.swal2-popup.swal2-toast .swal2-html-container {
+    font-size: 0.85rem !important;
+    color: #64748b !important;
+    margin: 2px 0 0 !important;
+    padding: 0 !important;
+}
+
+.dark .swal2-popup.swal2-toast .swal2-html-container {
+    color: #94a3b8 !important;
+}
+
+.swal2-popup.swal2-toast .swal2-icon {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    margin: 0 !important;
+    border-width: 2.5px !important;
+    transform: scale(0.9) !important;
+    box-shadow: none !important;
+}
+
+/* Toast Progress Bar */
+.swal2-timer-progress-bar {
+    height: 3.5px !important;
+    background: linear-gradient(90deg, #6366f1, #a855f7) !important;
+    border-radius: 0 0 18px 18px !important;
+}
+
+/* 7. Input Fields inside SweetAlert */
+.swal2-input, .swal2-textarea {
+    border-radius: 14px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    font-size: 0.95rem !important;
+    padding: 12px 16px !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+    font-family: inherit !important;
+}
+
+.swal2-input:focus, .swal2-textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+}
+
+.dark .swal2-input, .dark .swal2-textarea {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+/* 8. Modern Spinner for Loading Alerts */
+.swal2-loading-spinner {
+    display: inline-block;
+    width: 44px;
+    height: 44px;
+    border: 3.5px solid rgba(99, 102, 241, 0.18);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: swal-spin 0.8s linear infinite;
+    margin: 8px auto 16px;
+}
+
+@keyframes swal-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 9. Validation Error Box in Alerts */
+.swal2-error-list-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: rgba(244, 63, 94, 0.08);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    border-radius: 14px;
+    text-align: left;
+}
+
+.dark .swal2-error-list-box {
+    background: rgba(244, 63, 94, 0.14);
+    border-color: rgba(244, 63, 94, 0.35);
+}
+
+.swal2-error-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 550;
+    color: #e11d48;
+    margin-bottom: 6px;
+}
+
+.swal2-error-item:last-child {
+    margin-bottom: 0;
+}
+
+.dark .swal2-error-item {
+    color: #fda4af;
+}

@@ -150,6 +150,8 @@ const i18n = {
         ai_task_created_view: 'មើលកិច្ចការ',
         ai_task_created_now: 'ទើបតែបង្កើតដោយ Nova',
         ai_clear_confirm: 'តើអ្នកប្រាកដជាចង់លុបប្រវត្តិជជែកទាំងអស់មែនទេ?',
+        done_save: 'រួចរាល់ (Done)',
+        mark_done_btn: 'រួចរាល់ (Mark Done)',
         swal_confirm_title: 'តើអ្នកប្រាកដទេ?',
         swal_delete_task_title: 'តើអ្នកប្រាកដជាចង់លុបកិច្ចការនេះទេ?',
         swal_delete_task_text: 'កិច្ចការនេះនឹងត្រូវលុបចេញពីប្រព័ន្ធ។ អ្នកមិនអាចទាញយកមកវិញបានទេ។',
@@ -172,6 +174,23 @@ const i18n = {
         swal_submitting: 'កំពុងដំណើរការ...',
         swal_deleting: 'កំពុងលុប...',
         swal_validation_title: 'សូមពិនិត្យមើលកំហុសខាងក្រោម',
+        swal_mark_done_title: 'សម្គាល់ថាបានបញ្ចប់? (Mark Done)',
+        swal_mark_done_text: 'តើអ្នកចង់សម្គាល់កិច្ចការនេះថាបានបំពេញរួចរាល់មែនទេ?',
+        swal_mark_done_confirm: '✓ បាទ/ចាស រួចរាល់ (Mark Done)',
+        swal_mark_done_success_title: '🎉 អបអរសាទរ! កិច្ចការបានបញ្ចប់',
+        swal_mark_done_success_text: 'កិច្ចការត្រូវបានសម្គាល់ថាបានបញ្ចប់ដោយជោគជ័យ!',
+        swal_reopen_title: 'បើកកិច្ចការឡើងវិញ? (Reopen Task)',
+        swal_reopen_text: 'តើអ្នកចង់បើកកិច្ចការនេះឡើងវិញទៅជា «មិនទាន់ធ្វើ» (Pending) មែនទេ?',
+        swal_reopen_confirm: 'បាទ/ចាស បើកឡើងវិញ',
+        swal_reopen_success: 'កិច្ចការត្រូវបានបើកឡើងវិញជាមិនទាន់ធ្វើ!',
+        swal_edit_done_title: 'រក្សាទុកការកែប្រែ? (Done)',
+        swal_edit_done_text: 'តើអ្នកចង់រក្សាទុកព័ត៌មានកិច្ចការដែលបានកែសម្រួលរួចរាល់មែនទេ?',
+        swal_edit_done_confirm: '✓ បាទ/ចាស រួចរាល់ (Done)',
+        swal_edit_done_success_title: '🎉 រួចរាល់! កែសម្រួលបានជោគជ័យ',
+        swal_edit_done_success_text: 'រាល់ព័ត៌មានកិច្ចការត្រូវបានកែសម្រួល និងរក្សាទុករួចរាល់។',
+        swal_delete_subtask_title: 'លុបកិច្ចការរងនេះ?',
+        swal_delete_subtask_text: 'តើអ្នកប្រាកដជាចង់លុបជំហាននេះមែនទេ?',
+        swal_all_subtasks_completed: '🎉 អស្ចារ្យណាស់! អ្នកបានបំពេញកិច្ចការរងទាំងអស់រួចរាល់!',
     },
     en: {
         workspace: 'Workspace',
@@ -301,6 +320,8 @@ const i18n = {
         ai_task_created_view: 'View task',
         ai_task_created_now: 'Created by Nova just now',
         ai_clear_confirm: 'Are you sure you want to clear your chat history?',
+        done_save: 'Done',
+        mark_done_btn: 'Mark as Done',
         swal_confirm_title: 'Are you sure?',
         swal_delete_task_title: 'Delete this task?',
         swal_delete_task_text: 'This task will be permanently deleted. You cannot undo this action.',
@@ -323,6 +344,23 @@ const i18n = {
         swal_submitting: 'Processing...',
         swal_deleting: 'Deleting...',
         swal_validation_title: 'Please check the following errors',
+        swal_mark_done_title: 'Mark as Done?',
+        swal_mark_done_text: 'Do you want to mark this task as completed?',
+        swal_mark_done_confirm: '✓ Yes, Mark Done',
+        swal_mark_done_success_title: '🎉 Great Job! Task Completed',
+        swal_mark_done_success_text: 'The task has been marked as completed successfully!',
+        swal_reopen_title: 'Reopen this task?',
+        swal_reopen_text: 'Do you want to set this task back to Pending?',
+        swal_reopen_confirm: 'Yes, Reopen',
+        swal_reopen_success: 'Task has been reopened to Pending!',
+        swal_edit_done_title: 'Save changes and finish?',
+        swal_edit_done_text: 'Are you ready to save your edited task details?',
+        swal_edit_done_confirm: '✓ Yes, Done',
+        swal_edit_done_success_title: '🎉 Done! Task Updated Successfully',
+        swal_edit_done_success_text: 'All task changes have been saved successfully.',
+        swal_delete_subtask_title: 'Delete this checklist item?',
+        swal_delete_subtask_text: 'Are you sure you want to remove this step?',
+        swal_all_subtasks_completed: '🎉 Awesome! All checklist items completed!',
     }
 };
 
@@ -378,6 +416,8 @@ function escapeHtml(value) {
 // ============================================================================
 // SWEETALERT2 ADVANCED SYSTEM & HELPERS
 // ============================================================================
+// Ultra-Modern SweetAlert2 Alerts & Form Feedback System
+// ============================================================================
 function isDarkMode() {
     return document.documentElement.classList.contains('dark');
 }
@@ -388,7 +428,7 @@ function showToast(icon, message, title = null) {
         success: '#10b981',
         error: '#f43f5e',
         warning: '#f59e0b',
-        info: '#3b82f6',
+        info: '#6366f1',
     };
     return Swal.fire({
         toast: true,
@@ -401,7 +441,7 @@ function showToast(icon, message, title = null) {
         timerProgressBar: true,
         background: isDark ? '#0f172a' : '#ffffff',
         color: isDark ? '#f8fafc' : '#0f172a',
-        iconColor: iconColors[icon] || '#3b82f6',
+        iconColor: iconColors[icon] || '#6366f1',
         didOpen: (toast) => {
             toast.onmouseenter = Swal.stopTimer;
             toast.onmouseleave = Swal.resumeTimer;
@@ -412,53 +452,133 @@ function showToast(icon, message, title = null) {
 function showConfirmDialog(opts = {}) {
     const isDark = isDarkMode();
     const dict = i18n[currentLang] || i18n.en;
+    const isDanger = opts.isDanger !== false;
+
+    let htmlContent = opts.html || '';
+    if (!htmlContent && opts.text) {
+        if (isDanger) {
+            htmlContent = `
+                <div class="text-sm text-slate-500 dark:text-slate-400 mb-3">${escapeHtml(opts.text)}</div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>${currentLang === 'km' ? 'សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ' : 'This action cannot be undone'}</span>
+                </div>
+            `;
+        } else {
+            htmlContent = `<div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(opts.text)}</div>`;
+        }
+    }
 
     return Swal.fire({
         title: opts.title || dict.swal_confirm_title || 'Are you sure?',
-        html: opts.html || opts.text || '',
-        icon: opts.icon || 'warning',
+        html: htmlContent,
+        icon: opts.icon || (isDanger ? 'warning' : 'question'),
         showCancelButton: true,
-        confirmButtonText: opts.confirmButtonText || (opts.isDanger !== false ? dict.swal_delete_btn : (dict.swal_confirm_title || 'Confirm')),
+        confirmButtonText: opts.confirmButtonText || (isDanger ? dict.swal_delete_btn : (dict.swal_confirm_title || 'Confirm')),
         cancelButtonText: opts.cancelButtonText || dict.swal_cancel_btn || 'Cancel',
-        confirmButtonColor: opts.confirmButtonColor || (opts.isDanger !== false ? '#e11d48' : '#2563eb'),
-        cancelButtonColor: isDark ? '#334155' : '#94a3b8',
+        confirmButtonColor: isDanger ? '#e11d48' : '#4f46e5',
+        cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
         background: isDark ? '#0f172a' : '#ffffff',
         color: isDark ? '#f8fafc' : '#0f172a',
         reverseButtons: true,
         focusCancel: true,
+        customClass: {
+            popup: isDanger ? 'swal2-danger-dialog' : '',
+            confirmButton: isDanger ? 'swal2-danger-btn' : '',
+        },
     });
 }
 
-function showSuccessAlert(title, text = '') {
+function showSuccessAlert(title, text = '', html = '') {
     const isDark = isDarkMode();
     return Swal.fire({
         icon: 'success',
         title: title,
-        text: text,
+        text: html ? undefined : text,
+        html: html || undefined,
         background: isDark ? '#0f172a' : '#ffffff',
         color: isDark ? '#f8fafc' : '#0f172a',
-        confirmButtonColor: '#2563eb',
+        confirmButtonColor: '#10b981',
         confirmButtonText: currentLang === 'km' ? 'យល់ព្រម' : 'OK',
+        timer: 2500,
+        timerProgressBar: true,
+        customClass: {
+            popup: 'swal2-success-dialog',
+            confirmButton: 'swal2-success-btn',
+        },
     });
 }
 
 function showErrorAlert(title, htmlOrText = '') {
     const isDark = isDarkMode();
+    const isHtml = htmlOrText && htmlOrText.includes('<');
     return Swal.fire({
         icon: 'error',
         title: title,
-        html: htmlOrText,
+        text: isHtml ? undefined : htmlOrText,
+        html: isHtml ? htmlOrText : undefined,
         background: isDark ? '#0f172a' : '#ffffff',
         color: isDark ? '#f8fafc' : '#0f172a',
         confirmButtonColor: '#e11d48',
         confirmButtonText: currentLang === 'km' ? 'យល់ព្រម' : 'OK',
+        customClass: {
+            popup: 'swal2-danger-dialog',
+            confirmButton: 'swal2-danger-btn',
+        },
     });
+}
+
+function showWarningAlert(title, text = '', html = '') {
+    const isDark = isDarkMode();
+    return Swal.fire({
+        icon: 'warning',
+        title: title,
+        text: html ? undefined : text,
+        html: html || undefined,
+        background: isDark ? '#0f172a' : '#ffffff',
+        color: isDark ? '#f8fafc' : '#0f172a',
+        confirmButtonColor: '#f59e0b',
+        confirmButtonText: currentLang === 'km' ? 'យល់ព្រម' : 'OK',
+    });
+}
+
+function showLoadingAlert(title, subtitle = '') {
+    const isDark = isDarkMode();
+    return Swal.fire({
+        title: title,
+        html: subtitle ? `<div class="text-sm text-slate-400 dark:text-slate-500 mt-2">${escapeHtml(subtitle)}</div>` : '',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        background: isDark ? '#0f172a' : '#ffffff',
+        color: isDark ? '#f8fafc' : '#0f172a',
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+}
+
+function showFormValidationError(title, message, inputElement = null) {
+    if (inputElement) {
+        inputElement.focus();
+        inputElement.classList.add('border-rose-400', 'ring-2', 'ring-rose-200', 'dark:ring-rose-900');
+        setTimeout(() => inputElement.classList.remove('border-rose-400', 'ring-2', 'ring-rose-200', 'dark:ring-rose-900'), 2500);
+    }
+    const html = `
+        <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">${escapeHtml(message)}</div>
+    `;
+    return showWarningAlert(title, '', html);
 }
 
 window.showToast = showToast;
 window.showConfirmDialog = showConfirmDialog;
 window.showSuccessAlert = showSuccessAlert;
 window.showErrorAlert = showErrorAlert;
+window.showWarningAlert = showWarningAlert;
+window.showLoadingAlert = showLoadingAlert;
+window.showFormValidationError = showFormValidationError;
 
 // Initialize language and SweetAlert alerts on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -487,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Check for Laravel flash session success
     const flashSuccess = document.getElementById('flash-session-success');
     if (flashSuccess && flashSuccess.dataset.message) {
-        showToast('success', flashSuccess.dataset.message, dict.swal_success_title);
+        showSuccessAlert(dict.swal_success_title, flashSuccess.dataset.message);
     }
 
     // 3. Check for Laravel flash session error
@@ -503,10 +623,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorList = JSON.parse(flashErrors.dataset.errors);
             if (Array.isArray(errorList) && errorList.length > 0) {
                 const formattedHtml = `
-                    <div class="mt-2 text-left">
-                        <ul class="list-disc pl-5 space-y-1 text-xs text-rose-600 dark:text-rose-400">
-                            ${errorList.map(e => `<li>${escapeHtml(e)}</li>`).join('')}
-                        </ul>
+                    <div class="swal2-error-list-box">
+                        ${errorList.map(e => `
+                            <div class="swal2-error-item">
+                                <svg class="w-4 h-4 flex-shrink-0 text-rose-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>${escapeHtml(e)}</span>
+                            </div>
+                        `).join('')}
                     </div>
                 `;
                 showErrorAlert(dict.swal_validation_title, formattedHtml);
@@ -666,13 +791,10 @@ document.addEventListener('submit', async (event) => {
 
         if (result.isConfirmed) {
             form.dataset.swalBypassed = 'true';
-            Swal.fire({
-                title: dict.swal_deleting,
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading(),
-                background: isDarkMode() ? '#0f172a' : '#ffffff',
-                color: isDarkMode() ? '#f8fafc' : '#0f172a',
-            });
+            showLoadingAlert(
+                dict.swal_deleting || (currentLang === 'km' ? 'កំពុងលុប...' : 'Deleting...'),
+                currentLang === 'km' ? 'សូមរង់ចាំបន្តិច...' : 'Please wait a moment...'
+            );
             form.requestSubmit ? form.requestSubmit() : form.submit();
         }
         return;
@@ -689,18 +811,114 @@ document.addEventListener('submit', async (event) => {
             icon: 'question',
             confirmButtonText: dict.swal_logout_btn,
             cancelButtonText: dict.swal_cancel_btn,
-            confirmButtonColor: '#2563eb',
             isDanger: false,
         });
 
         if (result.isConfirmed) {
             form.dataset.swalBypassed = 'true';
+            showLoadingAlert(
+                currentLang === 'km' ? 'កំពុងចាកចេញ...' : 'Logging out...',
+                currentLang === 'km' ? 'សូមរង់ចាំបន្តិច...' : 'Please wait a moment...'
+            );
             form.requestSubmit ? form.requestSubmit() : form.submit();
         }
         return;
     }
 
-    // 3. Intercept any other generic confirmation
+    // 3. Intercept Status Toggle forms (Dashboard, Today, Focused, Priority, etc.)
+    const isToggleStatus = formAction.includes('/toggle-status');
+    if (isToggleStatus) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const submitBtn = event.submitter || form.querySelector('button[type="submit"]');
+        const row = form.closest('.today-task-row') || form.closest('article') || form.closest('tr') || form.closest('div');
+        const taskTitle = row?.querySelector('strong')?.textContent?.trim()
+            || row?.querySelector('a.break-words')?.textContent?.trim()
+            || form.getAttribute('aria-label')
+            || dict.task || 'Task';
+        const isCompletedNow = submitBtn?.classList.contains('task-is-complete')
+            || row?.classList.contains('task-is-complete')
+            || submitBtn?.getAttribute('aria-pressed') === 'true'
+            || (submitBtn?.getAttribute('aria-label') || '').toLowerCase().includes('reopen');
+
+        const isDark = isDarkMode();
+
+        if (!isCompletedNow) {
+            const result = await Swal.fire({
+                title: dict.swal_mark_done_title,
+                html: `
+                    <div class="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                        ${currentLang === 'km'
+                            ? `តើអ្នកចង់សម្គាល់កិច្ចការ <strong>«${escapeHtml(taskTitle)}»</strong> ថាបានបំពេញរួចរាល់មែនទេ?`
+                            : `Do you want to mark <strong>"${escapeHtml(taskTitle)}"</strong> as completed?`
+                        }
+                    </div>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span>${currentLang === 'km' ? 'កិច្ចការនឹងត្រូវផ្លាស់ប្តូរទៅជា «បានបញ្ចប់»' : 'Status will change to Completed'}</span>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: dict.swal_mark_done_confirm,
+                cancelButtonText: dict.swal_cancel_btn,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
+                reverseButtons: true,
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                customClass: {
+                    popup: 'swal2-success-dialog',
+                    confirmButton: 'swal2-success-btn',
+                }
+            });
+
+            if (result.isConfirmed) {
+                playTaskChime();
+                fireConfetti();
+                await Swal.fire({
+                    icon: 'success',
+                    title: dict.swal_mark_done_success_title,
+                    text: dict.swal_mark_done_success_text,
+                    confirmButtonText: currentLang === 'km' ? 'យល់ព្រម' : 'OK',
+                    confirmButtonColor: '#10b981',
+                    timer: 1600,
+                    timerProgressBar: true,
+                    background: isDark ? '#0f172a' : '#ffffff',
+                    color: isDark ? '#f8fafc' : '#0f172a',
+                });
+                form.dataset.swalBypassed = 'true';
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            }
+        } else {
+            const result = await Swal.fire({
+                title: dict.swal_reopen_title,
+                text: currentLang === 'km'
+                    ? `តើអ្នកចង់បើកកិច្ចការ «${taskTitle}» ឡើងវិញទៅជា «មិនទាន់ធ្វើ» (Pending) មែនទេ?`
+                    : `Do you want to set "${taskTitle}" back to Pending?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: dict.swal_reopen_confirm,
+                cancelButtonText: dict.swal_cancel_btn,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
+                reverseButtons: true,
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+            });
+
+            if (result.isConfirmed) {
+                form.dataset.swalBypassed = 'true';
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            }
+        }
+        return;
+    }
+
+    // 4. Intercept any other generic confirmation
     const confirmation = form.dataset.confirm;
     if (confirmation) {
         event.preventDefault();
@@ -722,49 +940,129 @@ document.addEventListener('submit', async (event) => {
         return;
     }
 
-    // 4. Validate Create/Edit task forms
-    if (form.matches('[data-task-form], [data-edit-task-form]')) {
+    // 5. Intercept Edit Task form submission (modal & standalone page) when user clicks Done
+    if (form.matches('[data-edit-task-form]')) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const titleInput = form.querySelector('input[name="title"]');
+        if (titleInput && !titleInput.value.trim()) {
+            showFormValidationError(
+                dict.swal_warning_title || 'Attention!',
+                dict.swal_enter_title || 'Please enter a task title first!',
+                titleInput
+            );
+            return;
+        }
+
+        const isDark = isDarkMode();
+        const confirmResult = await Swal.fire({
+            title: dict.swal_edit_done_title || 'Save changes and finish?',
+            text: dict.swal_edit_done_text || 'Are you ready to save your changes?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: dict.swal_edit_done_confirm || '✓ Yes, Done',
+            cancelButtonText: dict.swal_cancel_btn || 'Cancel',
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
+            reverseButtons: true,
+            background: isDark ? '#0f172a' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#0f172a',
+        });
+
+        if (!confirmResult.isConfirmed) return;
+
+        showLoadingAlert(
+            currentLang === 'km' ? 'កំពុងកែសម្រួលកិច្ចការ...' : 'Saving changes...',
+            currentLang === 'km' ? 'សូមរង់ចាំបន្តិច...' : 'Please wait a moment...'
+        );
+
+        try {
+            const formData = new FormData(form);
+            formData.append('_method', 'PUT');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData,
+            });
+
+            if (res.ok) {
+                await Swal.fire({
+                    icon: 'success',
+                    title: dict.swal_edit_done_success_title || 'Done!',
+                    text: dict.swal_edit_done_success_text || 'Task updated successfully.',
+                    confirmButtonText: currentLang === 'km' ? 'យល់ព្រម' : 'OK',
+                    confirmButtonColor: '#2563eb',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    background: isDark ? '#0f172a' : '#ffffff',
+                    color: isDark ? '#f8fafc' : '#0f172a',
+                });
+
+                if (window.location.pathname.includes('/edit')) {
+                    const taskIdMatch = window.location.pathname.match(/\/tasks\/(\d+)\/edit/);
+                    if (taskIdMatch) {
+                        window.location.assign(`/tasks/${taskIdMatch[1]}`);
+                    } else {
+                        window.location.assign('/tasks');
+                    }
+                } else {
+                    closeEditModal();
+                    window.location.reload();
+                }
+            } else if (res.status === 422) {
+                const data = await res.json();
+                const errorMessages = Object.values(data.errors || {}).flat();
+                const formattedHtml = `
+                    <div class="swal2-error-list-box">
+                        ${errorMessages.map(e => `
+                            <div class="swal2-error-item">
+                                <svg class="w-4 h-4 flex-shrink-0 text-rose-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>${escapeHtml(e)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                showErrorAlert(dict.swal_validation_title || 'Validation Error', formattedHtml);
+            } else {
+                showErrorAlert(dict.swal_error_title, 'Could not save task. Please try again.');
+            }
+        } catch (_err) {
+            form.dataset.swalBypassed = 'true';
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+        }
+        return;
+    }
+
+    // 6. Validate Create task form
+    if (form.matches('[data-task-form]')) {
         const titleInput = form.querySelector('input[name="title"]');
         if (titleInput && !titleInput.value.trim()) {
             event.preventDefault();
             event.stopPropagation();
 
-            Swal.fire({
-                icon: 'warning',
-                title: dict.swal_warning_title || 'Attention!',
-                text: dict.swal_enter_title || 'Please enter a task title first!',
-                confirmButtonColor: '#2563eb',
-                confirmButtonText: currentLang === 'km' ? 'យល់ព្រម' : 'OK',
-                background: isDarkMode() ? '#0f172a' : '#ffffff',
-                color: isDarkMode() ? '#f8fafc' : '#0f172a',
-            });
+            showFormValidationError(
+                dict.swal_warning_title || 'Attention!',
+                dict.swal_enter_title || 'Please enter a task title first!',
+                titleInput
+            );
             showToast('warning', dict.swal_enter_title);
-
-            titleInput.focus();
-            titleInput.classList.add('border-rose-400', 'ring-2', 'ring-rose-200');
-            setTimeout(() => titleInput.classList.remove('border-rose-400', 'ring-2', 'ring-rose-200'), 1500);
             return;
         }
 
         // Show SweetAlert loading dialog on valid submit
         if (!event.defaultPrevented) {
-            const isEditing = form.matches('[data-edit-task-form]');
-            const loadingTitle = isEditing
-                ? (currentLang === 'km' ? 'កំពុងកែសម្រួលកិច្ចការ...' : 'Updating task...')
-                : (currentLang === 'km' ? 'កំពុងបង្កើតកិច្ចការ...' : 'Creating task...');
-
-            Swal.fire({
-                title: loadingTitle,
-                text: currentLang === 'km' ? 'សូមរង់ចាំបន្តិច...' : 'Please wait a moment...',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                background: isDarkMode() ? '#0f172a' : '#ffffff',
-                color: isDarkMode() ? '#f8fafc' : '#0f172a',
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+            showLoadingAlert(
+                currentLang === 'km' ? 'កំពុងបង្កើតកិច្ចការ...' : 'Creating task...',
+                currentLang === 'km' ? 'សូមរង់ចាំបន្តិច...' : 'Please wait a moment...'
+            );
         }
     }
 
@@ -1046,13 +1344,80 @@ if (storedView) {
 // 6. 1-CLICK COMPLETE TOGGLE & PIN TOGGLE
 // ============================================================================
 document.addEventListener('click', async (e) => {
-    // 1-Click Complete Toggle
+    // 1-Click Complete Toggle with SweetAlert confirmation & celebration
     const completeBtn = e.target.closest('[data-toggle-complete-id]');
     if (completeBtn) {
         e.preventDefault();
         e.stopPropagation();
         const taskId = completeBtn.dataset.toggleCompleteId;
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const dict = i18n[currentLang] || i18n.en;
+        const isDark = isDarkMode();
+
+        const card = document.getElementById(`task-card-${taskId}`);
+        const listRow = document.getElementById(`list-row-${taskId}`);
+        const currentStatus = card?.dataset.taskStatus
+            || (completeBtn.classList.contains('bg-emerald-500') ? 'completed' : 'pending');
+        const taskTitle = card?.querySelector(`#card-title-${taskId}`)?.textContent?.trim()
+            || listRow?.querySelector(`#task-title-${taskId}`)?.textContent?.trim()
+            || document.getElementById('hero-task-title')?.textContent?.trim()
+            || dict.task || 'Task';
+        const isCurrentlyCompleted = currentStatus === 'completed';
+
+        // 1. If marking as completed, show SweetAlert confirm
+        if (!isCurrentlyCompleted) {
+            const confirmResult = await Swal.fire({
+                title: dict.swal_mark_done_title,
+                html: `
+                    <div class="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                        ${currentLang === 'km'
+                            ? `តើអ្នកចង់សម្គាល់កិច្ចការ <strong>«${escapeHtml(taskTitle)}»</strong> ថាបានបំពេញរួចរាល់មែនទេ?`
+                            : `Do you want to mark <strong>"${escapeHtml(taskTitle)}"</strong> as completed?`
+                        }
+                    </div>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span>${currentLang === 'km' ? 'កិច្ចការនឹងត្រូវផ្លាស់ប្តូរទៅជា «បានបញ្ចប់»' : 'Status will change to Completed'}</span>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: dict.swal_mark_done_confirm,
+                cancelButtonText: dict.swal_cancel_btn,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
+                reverseButtons: true,
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                customClass: {
+                    popup: 'swal2-success-dialog',
+                    confirmButton: 'swal2-success-btn',
+                }
+            });
+
+            if (!confirmResult.isConfirmed) return;
+        } else {
+            // Reopening task
+            const reopenResult = await Swal.fire({
+                title: dict.swal_reopen_title,
+                text: currentLang === 'km'
+                    ? `តើអ្នកចង់បើកកិច្ចការ «${taskTitle}» ឡើងវិញទៅជា «មិនទាន់ធ្វើ» (Pending) មែនទេ?`
+                    : `Do you want to set "${taskTitle}" back to Pending?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: dict.swal_reopen_confirm,
+                cancelButtonText: dict.swal_cancel_btn,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
+                reverseButtons: true,
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+            });
+
+            if (!reopenResult.isConfirmed) return;
+        }
 
         try {
             const res = await fetch(`/tasks/${taskId}/toggle-status`, {
@@ -1062,32 +1427,33 @@ document.addEventListener('click', async (e) => {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': csrfToken || '',
                 },
+                body: JSON.stringify({ status: isCurrentlyCompleted ? 'pending' : 'completed' }),
             });
             const data = await res.json();
             if (data.success) {
                 const isCompleted = data.status === 'completed';
 
                 // Update cards
-                const card = document.getElementById(`task-card-${taskId}`);
-                if (card) {
-                    card.dataset.taskStatus = data.status;
-                    const cardTitle = card.querySelector(`#card-title-${taskId}`);
+                const cardEl = document.getElementById(`task-card-${taskId}`);
+                if (cardEl) {
+                    cardEl.dataset.taskStatus = data.status;
+                    const cardTitle = cardEl.querySelector(`#card-title-${taskId}`);
                     cardTitle?.classList.toggle('task-completed-text', isCompleted);
 
                     // Move to completed/pending column if in Kanban
                     const targetCol = document.querySelector(`[data-status-col="${data.status}"] [data-col-cards]`);
-                    if (targetCol && card.closest('.kanban-board')) {
-                        targetCol.prepend(card);
+                    if (targetCol && cardEl.closest('.kanban-board')) {
+                        targetCol.prepend(cardEl);
                         updateColumnCounters();
                     }
                 }
 
                 // Update list view row
-                const listRow = document.getElementById(`list-row-${taskId}`);
-                if (listRow) {
-                    const rowTitle = listRow.querySelector(`#task-title-${taskId}`);
+                const listRowEl = document.getElementById(`list-row-${taskId}`);
+                if (listRowEl) {
+                    const rowTitle = listRowEl.querySelector(`#task-title-${taskId}`);
                     rowTitle?.classList.toggle('task-completed-text', isCompleted);
-                    const btn = listRow.querySelector('[data-toggle-complete-id]');
+                    const btn = listRowEl.querySelector('[data-toggle-complete-id]');
                     if (btn) {
                         btn.className = `flex h-5 w-5 items-center justify-center rounded-md border ${isCompleted ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800'}`;
                         btn.innerHTML = isCompleted ? `<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>` : '';
@@ -1097,6 +1463,19 @@ document.addEventListener('click', async (e) => {
                 if (isCompleted) {
                     playTaskChime();
                     fireConfetti();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: dict.swal_mark_done_success_title,
+                        text: dict.swal_mark_done_success_text,
+                        confirmButtonText: currentLang === 'km' ? 'យល់ព្រម' : 'OK',
+                        confirmButtonColor: '#10b981',
+                        timer: 2200,
+                        timerProgressBar: true,
+                        background: isDark ? '#0f172a' : '#ffffff',
+                        color: isDark ? '#f8fafc' : '#0f172a',
+                    });
+                } else {
+                    showToast('info', dict.swal_reopen_success);
                 }
             }
         } catch (_err) {
@@ -1377,7 +1756,7 @@ document.addEventListener('change', async (e) => {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
         try {
-            await fetch(`/tasks/${taskId}/subtasks/${subtaskId}/toggle`, {
+            const res = await fetch(`/tasks/${taskId}/subtasks/${subtaskId}/toggle`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1385,10 +1764,17 @@ document.addEventListener('change', async (e) => {
                     'X-CSRF-TOKEN': csrfToken || '',
                 },
             });
+            const data = await res.json();
             const textSpan = subtaskCheckbox.nextElementSibling;
             if (textSpan) {
                 textSpan.classList.toggle('line-through', subtaskCheckbox.checked);
                 textSpan.classList.toggle('text-slate-400', subtaskCheckbox.checked);
+            }
+            if (data && data.success && data.progress === 100 && data.total_count > 0 && subtaskCheckbox.checked) {
+                playTaskChime();
+                fireConfetti();
+                const dict = i18n[currentLang] || i18n.en;
+                showToast('success', dict.swal_all_subtasks_completed);
             }
         } catch (_err) {
             // silent fail

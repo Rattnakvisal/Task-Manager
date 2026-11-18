@@ -1386,7 +1386,7 @@
                         class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-500"
                     >
                         <x-icon name="check" class="h-4 w-4" />
-                        <span data-i18n="save_changes">Save Changes</span>
+                        <span data-i18n="done_save">Done</span>
                     </button>
                 </div>
             </form>

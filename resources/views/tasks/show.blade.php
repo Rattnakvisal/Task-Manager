@@ -142,33 +142,50 @@
                     {{ $descriptionSummary }}
                 </p>
 
-                {{-- 1-Click Segmented Status Pill Container --}}
-                <div class="pt-2">
-                    <p class="mb-2 text-xs font-bold text-slate-800 dark:text-slate-200">Task Status</p>
-                    <div class="inline-flex max-w-full flex-wrap items-center rounded-full border border-slate-200/80 bg-slate-100/80 p-1 dark:border-slate-800 dark:bg-slate-800/80" role="group" aria-label="Task Status Selector">
-                        {{-- Pending Option --}}
-                        <button type="button"
-                            data-set-status="pending"
-                            class="status-segment-btn flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 {{ $task->status === 'pending' ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
-                            <span class="h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-500"></span>
-                            <span>Pending</span>
-                        </button>
+                {{-- 1-Click Segmented Status Pill Container & Mark Done Action --}}
+                <div class="pt-2 flex flex-wrap items-center gap-3">
+                    <div>
+                        <p class="mb-2 text-xs font-bold text-slate-800 dark:text-slate-200">Task Status</p>
+                        <div class="inline-flex max-w-full flex-wrap items-center rounded-full border border-slate-200/80 bg-slate-100/80 p-1 dark:border-slate-800 dark:bg-slate-800/80" role="group" aria-label="Task Status Selector">
+                            {{-- Pending Option --}}
+                            <button type="button"
+                                data-set-status="pending"
+                                class="status-segment-btn flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 {{ $task->status === 'pending' ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                <span class="h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-500"></span>
+                                <span>Pending</span>
+                            </button>
 
-                        {{-- In Progress Option --}}
-                        <button type="button"
-                            data-set-status="in_progress"
-                            class="status-segment-btn flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 {{ $task->status === 'in_progress' ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-900 dark:text-blue-400 border border-slate-200/80 dark:border-slate-700' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
-                            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                            <span>In Progress</span>
-                        </button>
+                            {{-- In Progress Option --}}
+                            <button type="button"
+                                data-set-status="in_progress"
+                                class="status-segment-btn flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 {{ $task->status === 'in_progress' ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-900 dark:text-blue-400 border border-slate-200/80 dark:border-slate-700' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                                <span>In Progress</span>
+                            </button>
 
-                        {{-- Completed Option --}}
-                        <button type="button"
-                            data-set-status="completed"
-                            class="status-segment-btn flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 {{ $task->status === 'completed' ? 'bg-white text-emerald-600 shadow-xs dark:bg-slate-900 dark:text-emerald-400 border border-slate-200/80 dark:border-slate-700' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
-                            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                            <span>Completed</span>
-                        </button>
+                            {{-- Completed Option --}}
+                            <button type="button"
+                                data-set-status="completed"
+                                class="status-segment-btn flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200 {{ $task->status === 'completed' ? 'bg-white text-emerald-600 shadow-xs dark:bg-slate-900 dark:text-emerald-400 border border-slate-200/80 dark:border-slate-700' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                <span>Completed</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Dedicated Mark Done Button --}}
+                    <div class="mt-4 sm:mt-5" id="hero-mark-done-container">
+                        @if ($task->status !== 'completed')
+                            <button
+                                type="button"
+                                id="btn-hero-mark-done"
+                                class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-95"
+                                title="Mark task as completed"
+                            >
+                                <x-icon name="check-circle" class="h-4 w-4" />
+                                <span data-i18n="mark_done_btn">Mark as Done</span>
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -456,7 +473,7 @@
                         <x-icon name="settings" class="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Properties</h3>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1.5">
                         <span class="text-xs font-bold text-slate-400 font-mono">#{{ $task->id }}</span>
                         <a href="{{ route('tasks.edit', $task) }}"
                             data-edit-task-id="{{ $task->id }}"
@@ -464,6 +481,15 @@
                             aria-label="Edit task" title="Edit task">
                             <x-icon name="edit" class="h-3.5 w-3.5" />
                         </a>
+                        <form method="POST" action="{{ route('tasks.destroy', $task) }}" data-confirm="Delete this task?" class="inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400"
+                                aria-label="Delete task" title="Delete task">
+                                <x-icon name="trash" class="h-3.5 w-3.5" />
+                            </button>
+                        </form>
                     </div>
                 </div>
 
@@ -628,6 +654,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const heroAuraGlow = document.getElementById('hero-aura-glow');
 
     async function applyStatusUpdate(newStatus) {
+        const curLang = window.localStorage.getItem('task-manager-lang') || 'en';
+        const isDark = document.documentElement.classList.contains('dark');
+        const currentTaskTitle = heroTaskTitle?.textContent?.trim() || 'Task';
+
+        // SweetAlert Confirmation when marking as completed
+        if (newStatus === 'completed' && typeof Swal !== 'undefined') {
+            const confirmResult = await Swal.fire({
+                title: curLang === 'km' ? 'សម្គាល់ថាបានបញ្ចប់? (Mark Done)' : 'Mark task as done?',
+                html: `
+                    <div class="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                        ${curLang === 'km'
+                            ? `តើអ្នកចង់សម្គាល់កិច្ចការ <strong>«${escapeHtml(currentTaskTitle)}»</strong> ថាបានបំពេញរួចរាល់មែនទេ?`
+                            : `Do you want to mark <strong>"${escapeHtml(currentTaskTitle)}"</strong> as completed?`
+                        }
+                    </div>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span>${curLang === 'km' ? 'កិច្ចការនឹងត្រូវផ្លាស់ប្តូរទៅជា «បានបញ្ចប់»' : 'Status will change to Completed'}</span>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: curLang === 'km' ? '✓ បាទ/ចាស រួចរាល់ (Mark Done)' : '✓ Yes, Mark Done',
+                cancelButtonText: curLang === 'km' ? 'បោះបង់' : 'Cancel',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
+                reverseButtons: true,
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                customClass: {
+                    popup: 'swal2-success-dialog',
+                    confirmButton: 'swal2-success-btn',
+                }
+            });
+
+            if (!confirmResult.isConfirmed) {
+                if (selectPropStatus) {
+                    const currentStatus = document.getElementById('task-details-view')?.dataset.taskStatus || 'pending';
+                    selectPropStatus.value = currentStatus;
+                }
+                return;
+            }
+        }
+
         try {
             const res = await fetch(`/tasks/${taskId}/toggle-status`, {
                 method: 'PATCH',
@@ -641,6 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success) {
                 const isCompleted = data.status === 'completed';
+                const taskDetailsView = document.getElementById('task-details-view');
+                if (taskDetailsView) taskDetailsView.dataset.taskStatus = data.status;
 
                 // Segmented button updates
                 statusBtns.forEach(btn => {
@@ -662,9 +736,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     heroTaskTitle.classList.add('line-through', 'text-slate-400', 'dark:text-slate-500');
                     if (heroAuraGlow) heroAuraGlow.className = 'pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-gradient-to-br from-emerald-400/10 via-transparent to-transparent blur-3xl transition-all duration-700';
 
+                    document.getElementById('hero-mark-done-container')?.remove();
+
                     if (typeof playTaskChime === 'function') playTaskChime();
                     if (typeof fireConfetti === 'function') fireConfetti();
-                    if (typeof showToast === 'function') showToast('success', 'Task marked as completed! 🎉');
+
+                    if (typeof Swal !== 'undefined') {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: curLang === 'km' ? '🎉 អបអរសាទរ! កិច្ចការបានបញ្ចប់' : '🎉 Great Job! Task Completed',
+                            text: curLang === 'km' ? 'កិច្ចការត្រូវបានសម្គាល់ថាបានបញ្ចប់ដោយជោគជ័យ!' : 'The task has been marked as completed successfully!',
+                            confirmButtonText: curLang === 'km' ? 'យល់ព្រម' : 'OK',
+                            confirmButtonColor: '#10b981',
+                            timer: 2200,
+                            timerProgressBar: true,
+                            background: isDark ? '#0f172a' : '#ffffff',
+                            color: isDark ? '#f8fafc' : '#0f172a',
+                        });
+                    } else if (typeof showToast === 'function') {
+                        showToast('success', 'Task marked as completed! 🎉');
+                    }
                 } else if (data.status === 'in_progress') {
                     heroStatusBadge.className = 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold tracking-wide bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900/60';
                     heroStatusDot.className = 'h-2 w-2 rounded-full bg-blue-500 animate-pulse';
@@ -678,7 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     heroStatusText.textContent = 'Pending';
                     heroTaskTitle.classList.remove('line-through', 'text-slate-400', 'dark:text-slate-500');
                     if (heroAuraGlow) heroAuraGlow.className = 'pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-gradient-to-br from-amber-400/10 via-transparent to-transparent blur-3xl transition-all duration-700';
-                    if (typeof showToast === 'function') showToast('info', 'Task reopened to Pending');
+                    if (typeof showToast === 'function') showToast('info', curLang === 'km' ? 'កិច្ចការត្រូវបានបើកឡើងវិញជាមិនទាន់ធ្វើ!' : 'Task reopened to Pending');
                 }
 
                 if (selectPropStatus) selectPropStatus.value = data.status;
@@ -687,6 +778,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof showToast === 'function') showToast('error', 'Failed to update status');
         }
     }
+
+    document.getElementById('btn-hero-mark-done')?.addEventListener('click', () => {
+        applyStatusUpdate('completed');
+    });
 
     statusBtns.forEach(btn => {
         btn.addEventListener('click', () => applyStatusUpdate(btn.dataset.setStatus));
@@ -922,6 +1017,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     textSpan.classList.toggle('dark:text-slate-200', !checkbox.checked);
                 }
                 updateChecklistProgress(data.progress, data.completed_count, data.total_count);
+                if (data.progress === 100 && data.total_count > 0 && checkbox.checked) {
+                    if (typeof playTaskChime === 'function') playTaskChime();
+                    if (typeof fireConfetti === 'function') fireConfetti();
+                    const curLang = window.localStorage.getItem('task-manager-lang') || 'en';
+                    if (typeof showToast === 'function') {
+                        showToast('success', curLang === 'km' ? '🎉 អស្ចារ្យណាស់! អ្នកបានបំពេញកិច្ចការរងទាំងអស់រួចរាល់!' : '🎉 Awesome! All checklist items completed!');
+                    }
+                }
             }
         } catch (_err) {}
     });
@@ -932,6 +1035,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const subtaskId = delBtn.dataset.deleteSubtaskId;
         const itemContainer = delBtn.closest('[data-subtask-item-id]');
+        const curLang = window.localStorage.getItem('task-manager-lang') || 'en';
+        const isDark = document.documentElement.classList.contains('dark');
+
+        if (typeof Swal !== 'undefined') {
+            const confirm = await Swal.fire({
+                title: curLang === 'km' ? 'លុបកិច្ចការរងនេះ?' : 'Delete this checklist item?',
+                text: curLang === 'km' ? 'តើអ្នកប្រាកដជាចង់លុបជំហាននេះមែនទេ?' : 'Are you sure you want to remove this step?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: curLang === 'km' ? 'បាទ/ចាស លុបចេញ' : 'Yes, delete',
+                cancelButtonText: curLang === 'km' ? 'បោះបង់' : 'Cancel',
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: isDark ? '#1e293b' : '#f1f5f9',
+                reverseButtons: true,
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+            });
+            if (!confirm.isConfirmed) return;
+        }
 
         try {
             const res = await fetch(`/tasks/${taskId}/subtasks/${subtaskId}`, {

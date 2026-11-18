@@ -153,6 +153,18 @@
         </div>
 
         <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100">
+            @if ($task->status !== 'completed')
+                <button
+                    type="button"
+                    data-toggle-complete-id="{{ $task->id }}"
+                    class="inline-flex items-center gap-1 rounded-lg border border-emerald-200/80 bg-emerald-50/80 px-2 py-1 text-[10px] font-bold text-emerald-700 transition hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60"
+                    title="Mark as Done"
+                >
+                    <x-icon name="check" class="h-3 w-3" />
+                    <span>Done</span>
+                </button>
+            @endif
+
             <button
                 type="button"
                 data-ai-card-breakdown="{{ $task->id }}"

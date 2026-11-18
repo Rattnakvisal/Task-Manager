@@ -491,6 +491,14 @@
 
                             {{-- Actions --}}
                             <div class="flex items-center justify-end gap-1">
+                                @if ($task->status !== 'completed')
+                                    <button type="button" data-toggle-complete-id="{{ $task->id }}"
+                                        class="inline-flex items-center gap-1 rounded-lg border border-emerald-200/80 bg-emerald-50/80 px-2 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60"
+                                        title="Mark as Done">
+                                        <x-icon name="check" class="h-3 w-3" />
+                                        <span>Done</span>
+                                    </button>
+                                @endif
                                 <a href="{{ route('tasks.edit', $task) }}" data-edit-task-id="{{ $task->id }}" class="rounded-lg p-1.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-800" title="Edit">
                                     <x-icon name="edit" class="h-4 w-4" />
                                 </a>

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../app.dart';
 import '../models.dart';
 import 'motion.dart';
+import 'task_status_widgets.dart';
 
 Color priorityColor(String value) => switch (value) {
   'high' => const Color(0xFFEF4444),
@@ -78,6 +80,9 @@ class TaskCard extends StatelessWidget {
     this.busy = false,
     this.onDelete,
     this.showLeftAccent = true,
+    this.onToggleSubtask,
+    this.onStatusChange,
+    this.onAddSubtask,
   });
 
   final Task task;
@@ -85,6 +90,9 @@ class TaskCard extends StatelessWidget {
   final bool busy;
   final VoidCallback? onDelete;
   final bool showLeftAccent;
+  final ValueChanged<int>? onToggleSubtask;
+  final ValueChanged<String>? onStatusChange;
+  final ValueChanged<String>? onAddSubtask;
 
   @override
   Widget build(BuildContext context) {
@@ -130,14 +138,6 @@ class TaskCard extends StatelessWidget {
     final Color checkFillColor = isDone
         ? const Color(0xFF10B981)
         : brandPurple;
-
-    final String badgeLabel = isDone
-        ? 'Done'
-        : '${task.priority[0].toUpperCase()}${task.priority.substring(1)}';
-    final Color badgeColor =
-        isDone ? const Color(0xFF10B981) : priorityColor(task.priority);
-    final Color badgeBg =
-        isDone ? const Color(0xFFD1FAE5) : priorityBgColor(task.priority);
 
     return Dismissible(
       key: ValueKey('task-dismiss-${task.id}'),
@@ -257,321 +257,559 @@ class TaskCard extends StatelessWidget {
                   ),
                 ),
 
-              // Main Row Content
+              // Main Content
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Custom squircle Checkbox with scale bounce
-                    Semantics(
-                      label:
-                          '${task.completed ? 'Reopen' : 'Complete'} ${task.title}',
-                      button: true,
-                      child: InkWell(
-                        onTap: busy
-                            ? null
-                            : () {
-                                HapticFeedback.lightImpact();
-                                onToggle();
-                              },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: MotionSwitcher(
-                            child: busy
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor:
-                                          AlwaysStoppedAnimation(brandPurple),
-                                    ),
-                                  )
-                                : TaskSparkleBurst(
-                                    trigger: isDone,
-                                    child: AnimatedScale(
-                                      scale: 1.0,
-                                      duration: const Duration(milliseconds: 140),
-                                      curve: Curves.easeOutBack,
-                                      child: AnimatedContainer(
-                                        key: ValueKey(isDone),
-                                        duration: motionDuration(context, 180),
+                    // Top Section: Checkbox, Title & Info, Priority Badge
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Custom squircle Checkbox with scale bounce
+                        Semantics(
+                          label:
+                              '${task.completed ? 'Reopen' : 'Complete'} ${task.title}',
+                          button: true,
+                          child: InkWell(
+                            onTap: busy
+                                ? null
+                                : () {
+                                    HapticFeedback.lightImpact();
+                                    onToggle();
+                                  },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: MotionSwitcher(
+                                child: busy
+                                    ? const SizedBox(
                                         width: 24,
                                         height: 24,
-                                        decoration: BoxDecoration(
-                                          color: isDone
-                                              ? checkFillColor
-                                              : Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(7.5),
-                                          border: isDone
-                                              ? null
-                                              : Border.all(
-                                                  color: const Color(0xFFCBD5E1),
-                                                  width: 1.8,
-                                                ),
-                                          boxShadow: isDone
-                                              ? [
-                                                  BoxShadow(
-                                                    color: checkFillColor
-                                                        .withValues(alpha: 0.35),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ]
-                                              : null,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation(brandPurple),
                                         ),
-                                        child: isDone
-                                            ? const Icon(
-                                                Icons.check_rounded,
-                                                size: 17,
-                                                color: Colors.white,
-                                              )
+                                      )
+                                    : TaskSparkleBurst(
+                                        trigger: isDone,
+                                        child: AnimatedScale(
+                                          scale: 1.0,
+                                          duration:
+                                              const Duration(milliseconds: 140),
+                                          curve: Curves.easeOutBack,
+                                          child: AnimatedContainer(
+                                            key: ValueKey(isDone),
+                                            duration:
+                                                motionDuration(context, 180),
+                                            width: 24,
+                                            height: 24,
+                                            decoration: BoxDecoration(
+                                              color: isDone
+                                                  ? checkFillColor
+                                                  : Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(7.5),
+                                              border: isDone
+                                                  ? null
+                                                  : Border.all(
+                                                      color:
+                                                          const Color(0xFFCBD5E1),
+                                                      width: 1.8,
+                                                    ),
+                                              boxShadow: isDone
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: checkFillColor
+                                                            .withValues(
+                                                                alpha: 0.35),
+                                                        blurRadius: 6,
+                                                        offset:
+                                                            const Offset(0, 2),
+                                                      ),
+                                                    ]
+                                                  : null,
+                                            ),
+                                            child: isDone
+                                                ? const Icon(
+                                                    Icons.check_rounded,
+                                                    size: 17,
+                                                    color: Colors.white,
+                                                  )
+                                                : null,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Main Task Details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: AnimatedDefaultTextStyle(
+                                      duration: motionDuration(context),
+                                      style: TextStyle(
+                                        fontSize: 15.5,
+                                        fontWeight: FontWeight.w700,
+                                        decoration: isDone
+                                            ? TextDecoration.lineThrough
                                             : null,
+                                        decorationColor:
+                                            const Color(0xFF7E8494),
+                                        color: isDone
+                                            ? const Color(0xFF7E8494)
+                                            : const Color(0xFF1B1D28),
+                                        letterSpacing: -0.2,
+                                      ),
+                                      child: Text(
+                                        task.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-
-                    // Main Task Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: AnimatedDefaultTextStyle(
-                                  duration: motionDuration(context),
-                                  style: TextStyle(
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.w700,
-                                    decoration: isDone
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                    decorationColor: const Color(0xFF7E8494),
-                                    color: isDone
-                                        ? const Color(0xFF7E8494)
-                                        : const Color(0xFF1B1D28),
-                                    letterSpacing: -0.2,
-                                  ),
-                                  child: Text(
-                                    task.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
+                                  if (task.isPinned)
+                                    const Padding(
+                                      padding: EdgeInsets.only(left: 6),
+                                      child: Icon(
+                                        Icons.push_pin_rounded,
+                                        size: 15,
+                                        color: brandPurple,
+                                      ),
+                                    ),
+                                ],
                               ),
-                              if (task.isPinned)
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 6),
-                                  child: Icon(
-                                    Icons.push_pin_rounded,
-                                    size: 15,
-                                    color: brandPurple,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              // Calendar & Due Date
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
+                              const SizedBox(height: 6),
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 8,
+                                runSpacing: 4,
                                 children: [
-                                  Icon(
-                                    Icons.calendar_today_outlined,
-                                    size: 13,
-                                    color: task.overdue
-                                        ? const Color(0xFFEF4444)
-                                        : const Color(0xFF8E95A5),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      dateText,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
+                                  // Calendar & Due Date
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 13,
                                         color: task.overdue
                                             ? const Color(0xFFEF4444)
                                             : const Color(0xFF8E95A5),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              // Semantic Category Tag Pill (if present)
-                              if (task.category.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 2.5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: catBg,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        categoryIcon(catName),
-                                        size: 12,
-                                        color: catClr,
-                                      ),
-                                      const SizedBox(width: 3.5),
-                                      Text(
-                                        catName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: catClr,
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          dateText,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: task.overdue
+                                                ? const Color(0xFFEF4444)
+                                                : const Color(0xFF8E95A5),
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
+
+                                  // Semantic Category Tag Pill (if present)
+                                  if (task.category.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: catBg,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            categoryIcon(catName),
+                                            size: 12,
+                                            color: catClr,
+                                          ),
+                                          const SizedBox(width: 3.5),
+                                          Text(
+                                            catName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: catClr,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
-                          if (task.subtasks.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: AnimatedTaskProgress(
-                                    value: task.completedSubtasks /
-                                        task.subtasks.length,
-                                    height: 4,
-                                    color: brandPurple,
-                                    backgroundColor: const Color(0xFFEEF1F7),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${task.completedSubtasks}/${task.subtasks.length}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF8E95A5),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                        ),
+                        const SizedBox(width: 8),
+
+                      // Status & Priority Badges (Top Right)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          // Interactive Animated Status Badge (Todo, In Progress, Done)
+                          InteractiveTaskStatusBadge(
+                            status: task.status,
+                            dense: true,
+                            onTap: busy
+                                ? null
+                                : () async {
+                                    if (onStatusChange != null) {
+                                      final chosen =
+                                          await showTaskStatusPickerSheet(
+                                        context,
+                                        currentStatus: task.status,
+                                      );
+                                      if (chosen != null &&
+                                          chosen != task.status) {
+                                        onStatusChange!(chosen);
+                                      }
+                                    } else {
+                                      onToggle();
+                                    }
+                                  },
+                          ),
+                          const SizedBox(height: 5),
+                          // Priority Badge Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
                             ),
-                          ],
+                            decoration: BoxDecoration(
+                              color: priorityBgColor(task.priority),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: priorityColor(task.priority)
+                                    .withValues(alpha: 0.25),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              '${task.priority[0].toUpperCase()}${task.priority.substring(1)}',
+                              style: TextStyle(
+                                color: priorityColor(task.priority),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
+                    ],
+                  ),
 
-                    // Priority / Status Badge Pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 11,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: badgeColor.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        badgeLabel,
-                        style: TextStyle(
-                          color: badgeColor,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-
-                    // 3-dots Menu Button
-                    PopupMenuButton<String>(
-                      icon: const Icon(
-                        Icons.more_vert_rounded,
-                        size: 20,
-                        color: Color(0xFF94A3B8),
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 120),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          onTap();
-                        } else if (value == 'toggle') {
-                          onToggle();
-                        } else if (value == 'delete' && onDelete != null) {
-                          onDelete!();
+                  // Interactive Checklist & Steps Accordion (1-tap toggle, strike-through, progress)
+                  if (task.subtasks.isNotEmpty)
+                    TaskChecklistSection(
+                      subtasks: task.subtasks,
+                      onToggleSubtask: (index) {
+                        if (onToggleSubtask != null) {
+                          onToggleSubtask!(index);
                         }
                       },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: const [
-                              Icon(Icons.edit_outlined, size: 18),
-                              SizedBox(width: 10),
-                              Text('Edit'),
-                            ],
-                          ),
+                      onAddSubtask: onAddSubtask,
+                    ),
+
+                  // Subtle separator line
+                    const SizedBox(height: 10),
+                    Container(
+                      height: 1,
+                      color: isDone
+                          ? const Color(0xFFEDE9FE)
+                          : const Color(0xFFF1F5F9),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Direct Action Bar (Mark done, Edit, Delete - No dropdown!)
+                    Row(
+                      children: [
+                        // 1. Mark Done / Mark to do Action Button
+                        _ActionPill(
+                          icon: isDone
+                              ? Icons.restart_alt_rounded
+                              : Icons.check_circle_rounded,
+                          label: isDone ? 'Mark to do' : 'Mark done',
+                          textColor: isDone
+                              ? const Color(0xFF64748B)
+                              : const Color(0xFF059669),
+                          bgColor: isDone
+                              ? const Color(0xFFF1F5F9)
+                              : const Color(0xFFECFDF5),
+                          borderColor: isDone
+                              ? const Color(0xFFE2E8F0)
+                              : const Color(0xFFA7F3D0),
+                          onTap: busy
+                              ? null
+                              : () {
+                                  HapticFeedback.lightImpact();
+                                  onToggle();
+                                },
                         ),
-                        PopupMenuItem(
-                          value: 'toggle',
-                          child: Row(
-                            children: [
-                              Icon(
-                                isDone
-                                    ? Icons.restart_alt_rounded
-                                    : Icons.check_circle_outline_rounded,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(isDone ? 'Mark to do' : 'Mark done'),
-                            ],
-                          ),
+
+                        const Spacer(),
+
+                        // 2. Edit Action Button
+                        _ActionPill(
+                          icon: Icons.edit_outlined,
+                          label: 'Edit',
+                          textColor: const Color(0xFF2563EB),
+                          bgColor: const Color(0xFFEFF6FF),
+                          borderColor: const Color(0xFFBFDBFE),
+                          onTap: busy
+                              ? null
+                              : () {
+                                  HapticFeedback.lightImpact();
+                                  onTap();
+                                },
                         ),
-                        if (onDelete != null)
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: const [
-                                Icon(
-                                  Icons.delete_outline_rounded,
-                                  size: 18,
-                                  color: Color(0xFFEF4444),
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Delete',
-                                  style: TextStyle(color: Color(0xFFEF4444)),
-                                ),
-                              ],
-                            ),
+
+                        // 3. Delete Action Button
+                        if (onDelete != null) ...[
+                          const SizedBox(width: 6),
+                          _ActionPill(
+                            icon: Icons.delete_outline_rounded,
+                            label: 'Delete',
+                            textColor: const Color(0xFFE11D48),
+                            bgColor: const Color(0xFFFEF2F2),
+                            borderColor: const Color(0xFFFECDD3),
+                            onTap: busy
+                                ? null
+                                : () async {
+                                    HapticFeedback.lightImpact();
+                                    final confirmed =
+                                        await _showDeleteConfirmation(
+                                      context,
+                                      task.title,
+                                    );
+                                    if (confirmed == true && onDelete != null) {
+                                      onDelete!();
+                                    }
+                                  },
                           ),
+                        ],
                       ],
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<bool?> _showDeleteConfirmation(BuildContext context, String taskTitle) {
+  return showGeneralDialog<bool>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Dismiss',
+    barrierColor: Colors.black.withValues(alpha: 0.5),
+    transitionDuration: const Duration(milliseconds: 250),
+    pageBuilder: (ctx, anim1, anim2) => const SizedBox(),
+    transitionBuilder: (ctx, anim, secondaryAnim, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return Transform.scale(
+        scale: 0.85 + (0.15 * curved.value),
+        child: Opacity(
+          opacity: anim.value.clamp(0.0, 1.0),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: 5 * anim.value,
+              sigmaY: 5 * anim.value,
+            ),
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 28),
+                padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 30,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEE2E2),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEF4444)
+                                  .withValues(alpha: 0.25),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Color(0xFFDC2626),
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Delete Task?',
+                        style: TextStyle(
+                          fontSize: 18.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1E293B),
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Are you sure you want to delete "$taskTitle"? This action cannot be undone.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Color(0xFF64748B),
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                side:
+                                    const BorderSide(color: Color(0xFFE2E8F0)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                backgroundColor: const Color(0xFFF8FAFC),
+                              ),
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: const Color(0xFFDC2626),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text(
+                                'Delete',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _ActionPill extends StatelessWidget {
+  const _ActionPill({
+    required this.icon,
+    required this.label,
+    required this.textColor,
+    required this.bgColor,
+    required this.borderColor,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color textColor;
+  final Color bgColor;
+  final Color borderColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14.5, color: textColor),
+              const SizedBox(width: 4.5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                  letterSpacing: -0.1,
                 ),
               ),
             ],

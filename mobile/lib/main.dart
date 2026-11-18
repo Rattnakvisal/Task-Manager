@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'src/api.dart';
 import 'src/app.dart';
-import 'src/app_state.dart';
+import 'src/services/api.dart';
+import 'src/state/app_state.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

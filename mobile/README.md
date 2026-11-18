@@ -4,6 +4,8 @@ Flutter app with a new Material 3 interface, connected to the existing Laravel d
 
 Signed-out users start with the onboarding walkthrough, including returning users. `Get Started` or `Skip` opens registration, `Sign In` opens sign-in, and Android Back returns to onboarding. A valid saved session opens the dashboard directly; signing out returns to onboarding.
 
+Every signed-out app launch starts at onboarding, even after a previous visit or an expired session. Local credentials are read before choosing the screen, so guests do not briefly see the Home workspace. Saved-session verification continues to use the Home loading state.
+
 The three onboarding pages introduce tasks, priorities and dates, and progress. They support swiping, page indicators, Android Back, reduced motion, and larger text on small screens. Previews: [Plan](previews/onboarding-1.png), [Priorities](previews/onboarding-2.png), [Progress](previews/onboarding-3.png). Regenerate with `flutter test tool/render_onboarding.dart --dart-define=FLUTTER_SDK=C:/flutter`.
 
 Included: sign in/register/sign out, secure token storage and session restoration, dashboard progress, task create/edit/delete/complete, subtasks, tags, pinning, search, status/priority filters, a monthly calendar, account information, and in-app reminders for tasks ending today/tomorrow.
@@ -87,6 +89,24 @@ Release builds use the production Vercel HTTPS URL by default. A build-time `API
 Protected endpoints require `Authorization: Bearer <token>` and `Accept: application/json`. Tokens expire after 30 days. Login/register are limited to five requests per minute per IP; authenticated mobile endpoints to 120 requests per minute. Registration uses the same password requirements as the website. Existing website accounts work in the app.
 
 Task writes require title, priority (`low`, `medium`, `high`), and status (`pending`, `in_progress`, `completed`). Other fields: description, category, due_date/end_date (`yyyy-MM-dd` or null), subtasks (`[{id,title,completed}]`), tags (string array), is_pinned (boolean).
+
+## Code Architecture & Directory Structure
+
+The Flutter app follows a Clean Layered Architecture (`lib/src/`):
+
+```
+mobile/lib/
+├── main.dart                      # Flutter Entrypoint
+└── src/
+    ├── app.dart                   # Global MaterialApp, Theming & Root Navigation
+    ├── models/                    # Data models & JSON serialization (AppUser, Task, Subtask)
+    ├── services/                  # Network & Session storage (ApiClient, SecureSessionStore)
+    ├── state/                     # Global State & Controllers (AppState, FocusTimer, FocusSession)
+    ├── screens/                   # Page Views (Dashboard, Tasks, Focus, Analytics, Auth, Onboarding)
+    └── widgets/                   # Reusable UI Components (AnimatedTaskbar, TaskCard, Motion)
+```
+
+See the full project architecture guide in [docs/PROJECT_STRUCTURE.md](../docs/PROJECT_STRUCTURE.md).
 
 ## Verify
 

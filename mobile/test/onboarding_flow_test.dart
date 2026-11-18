@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
@@ -10,7 +12,58 @@ import 'package:task_manager_mobile/src/screens/onboarding_screen.dart';
 
 import 'app_test.dart' show MemoryStore, jsonResponse, user;
 
+class PendingSessionStore extends MemoryStore {
+  final session = Completer<String?>();
+
+  @override
+  Future<String?> read(String key) =>
+      key == 'access_token' ? session.future : super.read(key);
+}
+
 void main() {
+  testWidgets('guest startup never flashes the workspace', (tester) async {
+    final store = PendingSessionStore();
+    final state = AppState(
+      ApiClient(
+        client: MockClient(
+          (_) async => throw StateError('No guest API request expected'),
+        ),
+      ),
+      store,
+    );
+    await tester.pumpWidget(TaskManagerApp(state: state));
+    await tester.pump();
+    expect(find.byType(HomeShell), findsNothing);
+    expect(find.byType(AuthScreen), findsNothing);
+    store.session.complete(null);
+    await tester.pumpAndSettle();
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    expect(find.byType(HomeShell), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    state.dispose();
+  });
+
+  testWidgets('an expired saved session returns to onboarding', (tester) async {
+    final store = MemoryStore()..values['access_token'] = 'expired';
+    final state = AppState(
+      ApiClient(
+        client: MockClient((request) async {
+          expect(request.url.path, endsWith('/me'));
+          return jsonResponse({'message': 'Unauthenticated.'}, 401);
+        }),
+      ),
+      store,
+    );
+    await tester.pumpWidget(TaskManagerApp(state: state));
+    await tester.pumpAndSettle();
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    expect(find.byType(AuthScreen), findsNothing);
+    expect(find.byType(HomeShell), findsNothing);
+    expect(store.values['access_token'], isNull);
+    await tester.pumpWidget(const SizedBox());
+    state.dispose();
+  });
+
   Future<AppState> openApp(WidgetTester tester, {bool signedIn = false}) async {
     tester.view.physicalSize = const Size(500, 960);
     tester.view.devicePixelRatio = 1;
@@ -72,6 +125,12 @@ void main() {
     expect(find.byType(OnboardingScreen), findsOneWidget);
     expect(find.byType(AuthScreen), findsNothing);
     await tester.pump(const Duration(seconds: 1));
+
+    await openSignIn(tester);
+    await tester.pumpWidget(const SizedBox());
+    await openApp(tester);
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    expect(find.byType(AuthScreen), findsNothing);
   });
 
   testWidgets('finishing onboarding opens registration', (tester) async {

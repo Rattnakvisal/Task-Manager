@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'app_state.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/onboarding_screen.dart';
+import 'state/app_state.dart';
 
 const brandBlue = Color(0xFF5B4DFF);
 const brandPurple = Color(0xFF5B4DFF);
@@ -87,8 +87,13 @@ class _SessionGateState extends State<_SessionGate> {
   bool _showAuthentication = false;
   bool _initialRegister = false;
 
-  Object get _current =>
-      (widget.state.starting, widget.state.startupError, widget.state.user);
+  Object get _current => (
+    widget.state.starting,
+    widget.state.readingSession,
+    widget.state.api.token != null,
+    widget.state.startupError,
+    widget.state.user,
+  );
 
   @override
   void initState() {
@@ -139,10 +144,11 @@ class _SessionGateState extends State<_SessionGate> {
 
   Widget _buildSession(BuildContext context) {
     final state = widget.state;
-    if (state.starting || state.startupError != null) {
-      return HomeShell(key: const ValueKey('workspace'), state: state);
+    if (state.starting && state.readingSession) {
+      // Wait for local credentials before choosing the guest or workspace UI.
+      return const Scaffold(backgroundColor: surfaceBg);
     }
-    if (state.user == null) {
+    if (state.user == null && state.api.token == null) {
       if (!_showAuthentication) {
         return OnboardingScreen(
           onGetStarted: () => _openAuthentication(register: true),

@@ -14,6 +14,11 @@ import '../widgets/task_card.dart';
 import '../widgets/motion.dart';
 import '../widgets/animated_taskbar.dart';
 import '../widgets/task_clipboard_graphic.dart';
+import '../widgets/sweet_alert.dart';
+import '../widgets/streak_widgets.dart';
+import '../widgets/hero_slideshow.dart';
+import '../widgets/task_status_widgets.dart';
+import '../state/streak_manager.dart';
 
 import 'focus_view.dart';
 import 'task_editor.dart';
@@ -28,7 +33,6 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   int _tab = 0;
-  String _homeFilter = 'all';
   String _query = '', _status = 'all', _priority = 'all';
   String? _error;
   bool _signingOut = false;
@@ -82,10 +86,17 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   }
 
   Future<void> _refresh() async {
-    if (!mounted || state.user == null) return;
+    if (!mounted) return;
     setState(() => _error = null);
     try {
-      await state.refresh();
+      if (state.user == null) {
+        await state.initialize();
+      } else {
+        await Future.wait([
+          state.refresh(),
+          state.streak.checkIn(userId: state.user?.id),
+        ]);
+      }
       _lastRefresh = DateTime.now();
     } catch (e) {
       if (mounted) {
@@ -100,14 +111,83 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   Future<void> _toggle(Task task) async {
     if (state.isTaskBusy(task.id)) return;
+
+    final willComplete = !task.completed;
+    final confirmed = await SweetAlert.confirm(
+      context,
+      title: willComplete ? 'Mark as Done?' : 'Reopen Task?',
+      message: willComplete
+          ? 'Do you want to mark "${task.title}" as completed?'
+          : 'Do you want to reopen "${task.title}" and set it to In Progress?',
+      confirmText: willComplete ? 'Yes, Done!' : 'Yes, Reopen',
+      cancelText: 'Cancel',
+      confirmColor: willComplete ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+      icon: willComplete
+          ? Icons.check_circle_outline_rounded
+          : Icons.restart_alt_rounded,
+    );
+
+    if (!confirmed || !mounted) return;
+
     try {
       await state.toggleTask(task);
-      if (mounted && !MediaQuery.disableAnimationsOf(context)) {
-        HapticFeedback.selectionClick();
+      if (mounted) {
+        if (!MediaQuery.disableAnimationsOf(context)) {
+          HapticFeedback.selectionClick();
+        }
+        if (willComplete) {
+          final count = state.streak.streakCount;
+          SweetAlert.success(
+            context,
+            title: '🎉 Great Job!',
+            message: state.streak.streakIncreasedToday
+                ? 'Task completed! Daily streak extended to $count ${count == 1 ? "Day" : "Days"}! 🔥'
+                : 'Task "${task.title}" marked as completed successfully!',
+            confirmText: 'Awesome!',
+            autoCloseDuration: const Duration(milliseconds: 2400),
+          );
+        } else {
+          SweetAlert.success(
+            context,
+            title: 'Task Reopened',
+            message: 'Task "${task.title}" is now back in progress.',
+            confirmText: 'OK',
+            autoCloseDuration: const Duration(milliseconds: 1800),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         _message(e is ApiException ? e.message : 'Could not update task.');
+      }
+    }
+  }
+
+  Future<void> _deleteTask(Task task) async {
+    if (state.isTaskBusy(task.id)) return;
+    final confirmed = await SweetAlert.danger(
+      context,
+      title: 'Delete Task?',
+      message: 'Are you sure you want to delete "${task.title}"?',
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
+    );
+    if (!confirmed || !mounted) return;
+
+    try {
+      await state.deleteTask(task.id);
+      if (mounted) {
+        SweetAlert.success(
+          context,
+          title: 'Task Deleted',
+          message: 'The task has been permanently deleted.',
+          confirmText: 'OK',
+          autoCloseDuration: const Duration(milliseconds: 1800),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _message(e is ApiException ? e.message : 'Could not delete task.');
       }
     }
   }
@@ -166,7 +246,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               busy: state.isTaskBusy(task.id),
               onTap: () => _edit(task),
               onToggle: () => _toggle(task),
-              onDelete: () => state.deleteTask(task.id),
+              onDelete: () => _deleteTask(task),
+              onToggleSubtask: (index) => state.toggleSubtask(task, index),
+              onStatusChange: (newStatus) =>
+                  state.updateTaskStatus(task, newStatus),
+              onAddSubtask: (title) => state.addSubtask(task, title),
             ),
           ),
         );
@@ -269,33 +353,35 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                   ),
                                   sliver: SliverMainAxisGroup(
                                     slivers:
-                                        !sessionReady ? _homeLoading() :
-                                        !state.hasLoadedTasks &&
-                                                state.tasks.isEmpty &&
-                                                _tab != 4 &&
-                                                _tab != 3
-                                            ? _tab == 0 ? _homeLoading() : [
-                                                SliverToBoxAdapter(
-                                                  child: state.busy
-                                                      ? const TaskLoadingPlaceholder()
-                                                      : const EmptyTasks(
-                                                          title: 'Let’s reconnect',
-                                                          message:
-                                                              'Pull down or tap Retry to load your tasks.',
-                                                        ),
-                                                ),
-                                              ]
-                                            : switch (_tab) {
-                                                0 => _home(),
-                                                1 => _tasks(),
-                                                2 => _calendar(),
-                                                3 => const <Widget>[],
-                                                _ => [
+                                        !sessionReady && _tab != 0
+                                            ? _homeLoading()
+                                            : !state.hasLoadedTasks &&
+                                                    state.tasks.isEmpty &&
+                                                    _tab != 4 &&
+                                                    _tab != 3 &&
+                                                    _tab != 0
+                                                ? [
                                                     SliverToBoxAdapter(
-                                                      child: _profile(),
+                                                      child: state.busy
+                                                          ? const TaskLoadingPlaceholder()
+                                                          : const EmptyTasks(
+                                                              title: 'Let’s reconnect',
+                                                              message:
+                                                                  'Pull down or tap Retry to load your tasks.',
+                                                            ),
                                                     ),
-                                                  ],
-                                              },
+                                                  ]
+                                                : switch (_tab) {
+                                                    0 => _home(),
+                                                    1 => _tasks(),
+                                                    2 => _calendar(),
+                                                    3 => const <Widget>[],
+                                                    _ => [
+                                                        SliverToBoxAdapter(
+                                                          child: _profile(),
+                                                        ),
+                                                      ],
+                                                  },
                                   ),
                                 ),
                               ],
@@ -560,22 +646,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   }
 
   List<Widget> _home() {
-    final user = state.user!;
+    final user = state.user;
     final total = state.tasks.length;
     final completed = state.tasks.where((t) => t.completed).length;
-    final pendingCount = state.tasks.where((t) => t.status == 'pending').length;
     final inProgressCount =
         state.tasks.where((t) => t.status == 'in_progress').length;
-
-    final today = dateOnly(DateTime.now());
-    final todayTasks = _sorted(state.tasks.where((t) => t.dueDate == today));
-
-    final List<Task> sourceTasks =
-        todayTasks.isNotEmpty ? todayTasks : _sorted(state.tasks);
-    final displayedTasks = _homeFilter == 'all'
-        ? sourceTasks
-        : _sorted(state.tasks.where((t) => t.status == _homeFilter));
-
+    final pendingCount = state.tasks.where((t) => t.status == 'pending').length;
     final progressRatio = total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
 
     return [
@@ -584,381 +660,982 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 6),
-            // Clean iOS Greeting Header
-            _buildCleanHeader(
-              eyebrow: DateFormat('EEEE, MMM d').format(DateTime.now()).toUpperCase(),
-              title: 'Hello, ${user.name.split(' ').first}',
-              emoji: '👋',
-              subtitle: 'Let’s make today productive!',
-              trailing: BouncingInteractive(
-                onTap: _showReminders,
-                scaleFactor: 0.92,
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFE5E7EB),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1B1D28).withValues(alpha: 0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      const Icon(
-                        Icons.notifications_none_rounded,
-                        color: Color(0xFF1B1D28),
-                        size: 21,
-                      ),
-                      if (_reminders.isNotEmpty)
-                        Positioned(
-                          top: 9,
-                          right: 9,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF3B30),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
+            // 1. Header: Avatar + "Hello, Chun 👋" + "Plan · Organize · Get Things Done" + Bell
+            _buildHomeMockupHeader(user),
+            const SizedBox(height: 18),
 
-            // Hero "Task Overview" Banner Card
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF4361EE),
-                    Color(0xFF5B4DFF),
-                    Color(0xFF6B48FF),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF5B4DFF).withValues(alpha: 0.38),
-                    blurRadius: 26,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(26),
-                      child: CustomPaint(
-                        painter: _WavyCardBackgroundPainter(),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 22,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Task Overview',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              const Text(
-                                'Your task progress today',
-                                style: TextStyle(
-                                  color: Color(0xFFD6DEFF),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Text(
-                                '$completed of $total tasks done',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.4,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: AnimatedTaskProgress(
-                                  value: progressRatio,
-                                  height: 8,
-                                  color: Colors.white,
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.28),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                total == 0
-                                    ? 'Ready to make today productive!'
-                                    : completed == total
-                                        ? '100% completed · All caught up! 🎉'
-                                        : '${(progressRatio * 100).toInt()}% completed',
-                                style: const TextStyle(
-                                  color: Color(0xFFE2E8FF),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        TaskClipboardGraphic(
-                          completedCount: completed,
-                          totalCount: total,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            // 2. Hero Slideshow / Carousel (Interactive, Auto-playing & Swipeable)
+            HomeHeroSlideshow(
+              total: total,
+              completed: completed,
+              streak: state.streak,
+              onOpenTasks: () => _selectTab(1),
+              onOpenFocus: () => _selectTab(3),
+              onOpenStreak: () =>
+                  showStreakCelebrationSheet(context, state.streak),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // Horizontal Row of 4 Filter Cards
-            Row(
-              children: [
-                Expanded(
-                  child: _homeFilterCard(
-                    keyName: 'all',
-                    label: 'All',
-                    subtitle: 'All Tasks',
-                    count: total,
-                    icon: Icons.layers_rounded,
-                    accentColor: brandPurple,
-                    activeBg: const Color(0xFFECE9FF),
-                    activeBorder: const Color(0xFF8C7DFF),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _homeFilterCard(
-                    keyName: 'pending',
-                    label: 'Todo',
-                    subtitle: 'To Do',
-                    count: pendingCount,
-                    icon: Icons.radio_button_unchecked_rounded,
-                    accentColor: const Color(0xFF3864ED),
-                    activeBg: const Color(0xFFEFF6FF),
-                    activeBorder: const Color(0xFF60A5FA),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _homeFilterCard(
-                    keyName: 'in_progress',
-                    label: 'In Progress',
-                    subtitle: 'In Progress',
-                    count: inProgressCount,
-                    icon: Icons.play_arrow_outlined,
-                    accentColor: const Color(0xFFF59E0B),
-                    activeBg: const Color(0xFFFEF3C7),
-                    activeBorder: const Color(0xFFFBBF24),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _homeFilterCard(
-                    keyName: 'completed',
-                    label: 'Done',
-                    subtitle: 'Completed',
-                    count: completed,
-                    icon: Icons.check_circle_outline_rounded,
-                    accentColor: const Color(0xFF10B981),
-                    activeBg: const Color(0xFFECFDF5),
-                    activeBorder: const Color(0xFF34D399),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+            // 3. "Today's Plan" Timeline Card with connecting line & status badges
+            _buildTodaysPlanCard(state.tasks),
+            const SizedBox(height: 18),
 
-            // Section Header: "Today's Tasks"
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Today's Tasks",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1B1D28),
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${displayedTasks.length} tasks for today',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFF8E95A5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => _selectTab(1),
-                  style: TextButton.styleFrom(
-                    foregroundColor: brandPurple,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'View All',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(Icons.chevron_right_rounded, size: 18),
-                    ],
-                  ),
-                ),
-              ],
+            // 4. Middle Row: "My Progress" (Donut Chart) + "Streak" (Live Animated Daily Streak)
+            _buildMockupProgressAndStreakRow(
+              total: total,
+              completed: completed,
+              inProgress: inProgressCount,
+              pending: pendingCount,
+              progressRatio: progressRatio,
+              streak: state.streak,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
+
+            // 6. "Upcoming Tasks" Card with bullet dots & category tags
+            _buildUpcomingTasksCard(state.tasks),
+            const SizedBox(height: 28),
           ],
         ),
-      ),
-      _cards(
-        displayedTasks,
-        emptyTitle: 'No tasks found',
-        emptyMessage: _homeFilter == 'all'
-            ? 'A little breathing room! No tasks are due today.'
-            : 'No tasks currently matching this filter.',
       ),
     ];
   }
 
-  Widget _homeFilterCard({
-    required String keyName,
-    required String label,
-    required String subtitle,
-    required int count,
-    required IconData icon,
-    required Color accentColor,
-    required Color activeBg,
-    required Color activeBorder,
-  }) {
-    final isSelected = _homeFilter == keyName;
-    return BouncingInteractive(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _homeFilter = keyName);
-      },
-      scaleFactor: 0.94,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? activeBg : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected ? activeBorder : const Color(0xFFF0F2F8),
-            width: isSelected ? 1.6 : 1.2,
-          ),
-          boxShadow: [
-            if (isSelected)
+  // 1. Header: Avatar, Greeting, Subtitle, Notification Bell
+  Widget _buildHomeMockupHeader(AppUser? user) {
+    final displayName = user?.name.trim().isNotEmpty == true
+        ? user!.name.split(' ').first
+        : 'Chun';
+    final initial = user?.name.trim().isNotEmpty == true
+        ? user!.name.trim()[0].toUpperCase()
+        : 'C';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // User Profile Avatar with soft ring
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
               BoxShadow(
-                color: accentColor.withValues(alpha: 0.22),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
-              )
-            else
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: accentColor, size: 22),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: const Color(0xFF1B1D28),
+            ],
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: Center(
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
-            MotionSwitcher(
-              child: Text(
-                key: ValueKey('$keyName-$count'),
-                '$count',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1B1D28),
-                  letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(width: 14),
+
+        // User Greeting & Subtitle
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Hello, $displayName',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text('👋', style: TextStyle(fontSize: 19)),
+                ],
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Plan · Organize · Get Things Done',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF64748B),
                 ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF8E95A5),
+            ],
+          ),
+        ),
+
+        // Notification Bell Button
+        BouncingInteractive(
+          onTap: _showReminders,
+          scaleFactor: 0.92,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-          ],
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Icon(
+                  Icons.notifications_outlined,
+                  color: Color(0xFF1E293B),
+                  size: 22,
+                ),
+                if (_reminders.isNotEmpty)
+                  Positioned(
+                    top: 10,
+                    right: 11,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 3. "Today's Plan" Timeline Card
+  Widget _buildTodaysPlanCard(List<Task> tasks) {
+    final today = dateOnly(DateTime.now());
+    final todayTasks = tasks.where((t) => t.dueDate == today).toList();
+    final planTasks =
+        todayTasks.isNotEmpty ? todayTasks.take(3).toList() : tasks.take(3).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_rounded,
+                  color: Color(0xFF4F46E5),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Today's Plan",
+                      style: TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${planTasks.length} tasks scheduled',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => _selectTab(1),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF4F46E5),
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View All',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, size: 14),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // Timeline items
+          if (state.busy && !state.hasLoadedTasks)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CupertinoActivityIndicator(radius: 8, color: Color(0xFF4F46E5)),
+                    SizedBox(width: 10),
+                    Text(
+                      'Loading today\'s schedule…',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (planTasks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: Column(
+                  children: [
+                    const Text(
+                      'No tasks scheduled for today',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => _edit(),
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text('Add Task to Today'),
+                      style: TextButton.styleFrom(foregroundColor: brandPurple),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...List.generate(planTasks.length, (index) {
+              final task = planTasks[index];
+              final isLast = index == planTasks.length - 1;
+              return _buildTimelineItem(task, isLast, index);
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem(Task task, bool isLast, int index) {
+    final isDone = task.completed;
+    final isInProgress = task.status == 'in_progress';
+
+    final timeStr = _formatTimelineTime(task.dueDate, index);
+
+    return InkWell(
+      onTap: () => _edit(task),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Node + Connecting vertical line
+              SizedBox(
+                width: 24,
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _toggle(task);
+                      },
+                      child: isDone
+                          ? Container(
+                              width: 22,
+                              height: 22,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 15,
+                              ),
+                            )
+                          : isInProgress
+                              ? InProgressBreathingPulse(
+                                  glowColor: const Color(0xFF7C3AED),
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFF7C3AED),
+                                        width: 2.5,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        width: 9,
+                                        height: 9,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF7C3AED),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFFCBD5E1),
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                    ),
+                    if (!isLast)
+                      Expanded(
+                        child: Container(
+                          width: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          color: const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Title & Time & Subtask checklist pill
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isDone
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF0F172A),
+                          decoration: isDone ? TextDecoration.lineThrough : null,
+                          decorationColor: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Text(
+                            timeStr,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          if (task.subtasks.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: task.completedSubtasks ==
+                                        task.subtasks.length
+                                    ? const Color(0xFFECFDF5)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.checklist_rounded,
+                                    size: 11,
+                                    color: task.completedSubtasks ==
+                                            task.subtasks.length
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFF64748B),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '${task.completedSubtasks}/${task.subtasks.length} steps',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: task.completedSubtasks ==
+                                              task.subtasks.length
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Interactive Animated Status Badge (Todo, In Progress, Done)
+              InteractiveTaskStatusBadge(
+                status: task.status,
+                dense: true,
+                onTap: () async {
+                  final chosen = await showTaskStatusPickerSheet(
+                    context,
+                    currentStatus: task.status,
+                  );
+                  if (chosen != null && chosen != task.status) {
+                    await state.updateTaskStatus(task, chosen);
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String _formatTimelineTime(DateTime? date, int index) {
+    if (date != null) {
+      final start = DateFormat('h:mm a').format(date);
+      final end =
+          DateFormat('h:mm a').format(date.add(const Duration(hours: 1)));
+      return '$start – $end';
+    }
+    const defaultSlots = [
+      '8:00 AM – 9:00 AM',
+      '10:00 AM – 12:00 PM',
+      '2:00 PM – 3:00 PM',
+      '4:00 PM – 5:00 PM',
+    ];
+    return defaultSlots[index % defaultSlots.length];
+  }
+
+  // 4. Middle Row: "My Progress" (Donut Chart) + "Streak" (Live Animated Daily Streak)
+  Widget _buildMockupProgressAndStreakRow({
+    required int total,
+    required int completed,
+    required int inProgress,
+    required int pending,
+    required double progressRatio,
+    required StreakManager streak,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left: My Progress Card
+        Expanded(
+          flex: 6,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.025),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.bar_chart_rounded,
+                        color: Color(0xFF6366F1),
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'My Progress',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          Text(
+                            "This week's completion",
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    // Donut circular progress ring
+                    SizedBox(
+                      width: 78,
+                      height: 78,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 78,
+                            height: 78,
+                            child: CircularProgressIndicator(
+                              value: progressRatio > 0 ? progressRatio : 0.05,
+                              strokeWidth: 8,
+                              strokeCap: StrokeCap.round,
+                              backgroundColor: const Color(0xFFEEF2FF),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Color(0xFF4F46E5),
+                              ),
+                            ),
+                          ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${(progressRatio * 100).toInt()}%',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF0F172A),
+                                  letterSpacing: -0.4,
+                                ),
+                              ),
+                              const Text(
+                                'Completed',
+                                style: TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    // Legend
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _progressLegendItem(
+                            icon: Icons.check_circle_rounded,
+                            iconColor: const Color(0xFF10B981),
+                            count: completed,
+                            label: 'Done',
+                          ),
+                          const SizedBox(height: 6),
+                          _progressLegendItem(
+                            icon: Icons.radio_button_checked_rounded,
+                            iconColor: const Color(0xFF7C3AED),
+                            count: inProgress,
+                            label: 'In Progress',
+                          ),
+                          const SizedBox(height: 6),
+                          _progressLegendItem(
+                            icon: Icons.radio_button_unchecked_rounded,
+                            iconColor: const Color(0xFF94A3B8),
+                            count: pending,
+                            label: 'To Do',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // Right: Animated Streak Card with Live Daily Flame & Celebration Sheet
+        Expanded(
+          flex: 4,
+          child: AnimatedStreakCard(streak: streak),
+        ),
+      ],
+    );
+  }
+
+  Widget _progressLegendItem({
+    required IconData icon,
+    required Color iconColor,
+    required int count,
+    required String label,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: iconColor),
+        const SizedBox(width: 6),
+        Text(
+          '$count',
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 6. "Upcoming Tasks" Card
+  Widget _buildUpcomingTasksCard(List<Task> tasks) {
+    final today = dateOnly(DateTime.now());
+    final upcoming = tasks
+        .where((t) =>
+            !t.completed && (t.dueDate == null || !t.dueDate!.isBefore(today)))
+        .take(3)
+        .toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_rounded,
+                  color: Color(0xFF4F46E5),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Upcoming Tasks',
+                      style: TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Next 3 tasks in your schedule',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => _selectTab(1),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF4F46E5),
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View All',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, size: 14),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Items
+          if (state.busy && !state.hasLoadedTasks)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CupertinoActivityIndicator(radius: 8, color: Color(0xFF4F46E5)),
+                    SizedBox(width: 10),
+                    Text(
+                      'Loading upcoming tasks…',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (upcoming.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Center(
+                child: Text(
+                  'No upcoming tasks in your schedule',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            )
+          else
+            ...upcoming.map((task) {
+              final cat =
+                  task.category.trim().isEmpty ? 'General' : task.category.trim();
+              final dateStr = _formatTaskDate(task.dueDate);
+
+              return InkWell(
+                onTap: () => _edit(task),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      // Bullet dot
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF6366F1),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      // Title & Date
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              task.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 13,
+                                  color: Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  dateStr,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Category Pill Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: cat.toLowerCase() == 'work'
+                              ? const Color(0xFFE0F2FE)
+                              : const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          cat,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: cat.toLowerCase() == 'work'
+                                ? const Color(0xFF0284C7)
+                                : const Color(0xFF7C3AED),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  String _formatTaskDate(DateTime? date) {
+    if (date == null) return 'Upcoming';
+    final now = DateTime.now();
+    final today = dateOnly(now);
+    final tomorrow = today.add(const Duration(days: 1));
+    final d = dateOnly(date);
+
+    final timeStr = DateFormat('h:mm a').format(date);
+    if (d == today) {
+      return 'Today, $timeStr';
+    } else if (d == tomorrow) {
+      return 'Tomorrow, $timeStr';
+    } else {
+      return DateFormat('MMM d, h:mm a').format(date);
+    }
   }
 
   Widget _section(String title, {Widget? trailing}) => Padding(
@@ -1119,7 +1796,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                   busy: state.isTaskBusy(task.id),
                   onTap: () => _edit(task),
                   onToggle: () => _toggle(task),
-                  onDelete: () => state.deleteTask(task.id),
+                  onDelete: () => _deleteTask(task),
+                  onToggleSubtask: (index) => state.toggleSubtask(task, index),
+                  onStatusChange: (newStatus) =>
+                      state.updateTaskStatus(task, newStatus),
+                  onAddSubtask: (title) => state.addSubtask(task, title),
                 ),
               ),
             );
@@ -2147,39 +2828,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   );
 }
 
-class _WavyCardBackgroundPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.08)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 32;
-
-    final path1 = Path()
-      ..moveTo(-30, size.height * 0.8)
-      ..quadraticBezierTo(
-        size.width * 0.35,
-        size.height * 0.2,
-        size.width * 0.8,
-        size.height * 0.9,
-      );
-    canvas.drawPath(path1, paint);
-
-    final path2 = Path()
-      ..moveTo(size.width * 0.2, size.height * 1.1)
-      ..quadraticBezierTo(
-        size.width * 0.6,
-        size.height * 0.4,
-        size.width * 1.1,
-        size.height * 0.3,
-      );
-    canvas.drawPath(path2, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
 class _CircularProgressDonut extends StatelessWidget {
   const _CircularProgressDonut({
     required this.progress,
@@ -2281,5 +2929,6 @@ class _DonutProgressPainter extends CustomPainter {
       old.progressColor != progressColor ||
       old.strokeWidth != strokeWidth;
 }
+
 
 

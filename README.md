@@ -4,6 +4,8 @@ A responsive task management application built with Laravel, Blade, Tailwind CSS
 
 The Flutter Android app lives in [`mobile/`](mobile/README.md), with a new Material 3 interface and Sanctum token authentication through `/api/mobile`.
 
+Architecture and code directory guide: [`docs/PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md).
+
 ## Features
 
 - User registration, sign-in, and sign-out

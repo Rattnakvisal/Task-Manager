@@ -46,7 +46,7 @@
                 <button type="submit"
                     class="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-5 text-xs font-bold text-white shadow-xs shadow-blue-500/20 transition hover:bg-blue-700 active:scale-95">
                     <x-icon name="check" class="h-3.5 w-3.5" />
-                    <span data-i18n="save_changes">Save Changes</span>
+                    <span data-i18n="done_save">Done</span>
                 </button>
             </div>
         </form>
