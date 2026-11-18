@@ -12,8 +12,16 @@
     },
     "routes": [
         {
-            "src": "/(index\\.php|\\.htaccess|hot|fonts-manifest\\.dev\\.json)$",
+            "src": "/(\\.htaccess|hot|fonts-manifest\\.dev\\.json)$",
             "status": 404
+        },
+        {
+            "src": "^/?$",
+            "dest": "/api/index.php"
+        },
+        {
+            "src": "^/index\\.php$",
+            "dest": "/api/index.php"
         },
         {
             "handle": "filesystem"

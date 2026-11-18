@@ -8,6 +8,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
+Route::redirect('/login', '/sign-in');
+Route::redirect('/register', '/sign-up');
+
 Route::middleware('guest')->group(function () {
     Route::get('/sign-in', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/sign-in', [AuthenticatedSessionController::class, 'store'])->name('login.store');
