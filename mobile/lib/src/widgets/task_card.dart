@@ -548,73 +548,77 @@ class TaskCard extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     // Direct Action Bar (Mark done, Edit, Delete - No dropdown!)
-                    Row(
-                      children: [
-                        // 1. Mark Done / Mark to do Action Button
-                        _ActionPill(
-                          icon: isDone
-                              ? Icons.restart_alt_rounded
-                              : Icons.check_circle_rounded,
-                          label: isDone ? 'Mark to do' : 'Mark done',
-                          textColor: isDone
-                              ? const Color(0xFF64748B)
-                              : const Color(0xFF059669),
-                          bgColor: isDone
-                              ? const Color(0xFFF1F5F9)
-                              : const Color(0xFFECFDF5),
-                          borderColor: isDone
-                              ? const Color(0xFFE2E8F0)
-                              : const Color(0xFFA7F3D0),
-                          onTap: busy
-                              ? null
-                              : () {
-                                  HapticFeedback.lightImpact();
-                                  onToggle();
-                                },
-                        ),
-
-                        const Spacer(),
-
-                        // 2. Edit Action Button
-                        _ActionPill(
-                          icon: Icons.edit_outlined,
-                          label: 'Edit',
-                          textColor: const Color(0xFF2563EB),
-                          bgColor: const Color(0xFFEFF6FF),
-                          borderColor: const Color(0xFFBFDBFE),
-                          onTap: busy
-                              ? null
-                              : () {
-                                  HapticFeedback.lightImpact();
-                                  onTap();
-                                },
-                        ),
-
-                        // 3. Delete Action Button
-                        if (onDelete != null) ...[
-                          const SizedBox(width: 6),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          // 1. Mark Done / Mark to do Action Button
                           _ActionPill(
-                            icon: Icons.delete_outline_rounded,
-                            label: 'Delete',
-                            textColor: const Color(0xFFE11D48),
-                            bgColor: const Color(0xFFFEF2F2),
-                            borderColor: const Color(0xFFFECDD3),
+                            icon: isDone
+                                ? Icons.restart_alt_rounded
+                                : Icons.check_circle_rounded,
+                            label: isDone ? 'Mark to do' : 'Mark done',
+                            textColor: isDone
+                                ? const Color(0xFF64748B)
+                                : const Color(0xFF059669),
+                            bgColor: isDone
+                                ? const Color(0xFFF1F5F9)
+                                : const Color(0xFFECFDF5),
+                            borderColor: isDone
+                                ? const Color(0xFFE2E8F0)
+                                : const Color(0xFFA7F3D0),
                             onTap: busy
                                 ? null
-                                : () async {
+                                : () {
                                     HapticFeedback.lightImpact();
-                                    final confirmed =
-                                        await _showDeleteConfirmation(
-                                      context,
-                                      task.title,
-                                    );
-                                    if (confirmed == true && onDelete != null) {
-                                      onDelete!();
-                                    }
+                                    onToggle();
                                   },
                           ),
+
+                          const SizedBox(width: 8),
+
+                          // 2. Edit Action Button
+                          _ActionPill(
+                            icon: Icons.edit_outlined,
+                            label: 'Edit',
+                            textColor: const Color(0xFF2563EB),
+                            bgColor: const Color(0xFFEFF6FF),
+                            borderColor: const Color(0xFFBFDBFE),
+                            onTap: busy
+                                ? null
+                                : () {
+                                    HapticFeedback.lightImpact();
+                                    onTap();
+                                  },
+                          ),
+
+                          // 3. Delete Action Button
+                          if (onDelete != null) ...[
+                            const SizedBox(width: 6),
+                            _ActionPill(
+                              icon: Icons.delete_outline_rounded,
+                              label: 'Delete',
+                              textColor: const Color(0xFFE11D48),
+                              bgColor: const Color(0xFFFEF2F2),
+                              borderColor: const Color(0xFFFECDD3),
+                              onTap: busy
+                                  ? null
+                                  : () async {
+                                      HapticFeedback.lightImpact();
+                                      final confirmed =
+                                          await _showDeleteConfirmation(
+                                        context,
+                                        task.title,
+                                      );
+                                      if (confirmed == true && onDelete != null) {
+                                        onDelete!();
+                                      }
+                                    },
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ],
                 ),

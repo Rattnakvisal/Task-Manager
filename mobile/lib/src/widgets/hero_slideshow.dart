@@ -44,6 +44,7 @@ class _HomeHeroSlideshowState extends State<HomeHeroSlideshow> {
 
   void _startTimer() {
     _timer?.cancel();
+    if (isRunningInTest) return;
     _timer = Timer.periodic(const Duration(milliseconds: 4800), (_) {
       if (!mounted || !_pageController.hasClients) return;
       final next = (_currentPage + 1) % _slideCount;
@@ -71,7 +72,7 @@ class _HomeHeroSlideshowState extends State<HomeHeroSlideshow> {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: 174,
+          height: 180,
           child: GestureDetector(
             onPanDown: (_) => _pauseTimer(),
             onPanCancel: () => _resumeTimer(),
@@ -179,7 +180,7 @@ class _HomeHeroSlideshowState extends State<HomeHeroSlideshow> {
 
             // Content
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 14, 16),
+              padding: const EdgeInsets.fromLTRB(18, 14, 12, 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -193,7 +194,7 @@ class _HomeHeroSlideshowState extends State<HomeHeroSlideshow> {
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 7,
-                            vertical: 2.5,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
@@ -209,30 +210,32 @@ class _HomeHeroSlideshowState extends State<HomeHeroSlideshow> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
                           title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 19.5,
+                            fontSize: 18.5,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.3,
                             height: 1.2,
                           ),
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 3),
                         Text(
                           subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFFE0E7FF),
-                            fontSize: 11.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w400,
-                            height: 1.35,
+                            height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Interactive Pagination Dots
                         Row(

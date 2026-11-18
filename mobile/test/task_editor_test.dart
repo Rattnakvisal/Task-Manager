@@ -19,6 +19,11 @@ void main() {
   testWidgets('TaskEditor renders modern fields, selectors, and accepts input', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final state = AppState(ApiClient(), _FakeStore());
     state.user = const AppUser(id: 1, name: 'Visal', email: 'visal@test.com');
 
@@ -44,19 +49,23 @@ void main() {
     expect(find.text('Create Task'), findsOneWidget);
 
     // Test Priority 1-tap Selection
+    await tester.ensureVisible(find.text('High'));
     await tester.tap(find.text('High'));
     await tester.pump();
 
     // Test Status 1-tap Selection
+    await tester.ensureVisible(find.text('In Progress'));
     await tester.tap(find.text('In Progress'));
     await tester.pump();
 
     // Test Quick Date Tap
+    await tester.ensureVisible(find.text('Today'));
     await tester.tap(find.text('Today'));
     await tester.pump();
     expect(find.text('Scheduled for Today'), findsOneWidget);
 
     // Test Category Preset Tap
+    await tester.ensureVisible(find.text('Work'));
     await tester.tap(find.text('Work'));
     await tester.pump();
 

@@ -266,8 +266,7 @@ void main() {
         find.widgetWithText(TextFormField, 'What needs to get done?'),
         'Build Android app',
       );
-      await tester.ensureVisible(find.text('Done'));
-      await tester.tap(find.text('Done'));
+      await tester.tap(find.widgetWithText(TextButton, 'Done'));
       await tester.pumpAndSettle();
       expect(created?['title'], 'Build Android app');
       expect(state.tasks.single.title, 'Build Android app');

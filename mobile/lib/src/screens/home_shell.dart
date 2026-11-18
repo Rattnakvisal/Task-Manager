@@ -367,7 +367,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                   ),
                                   sliver: SliverMainAxisGroup(
                                     slivers:
-                                        !sessionReady && _tab != 0
+                                        !sessionReady
                                             ? _homeLoading()
                                             : !state.hasLoadedTasks &&
                                                     state.tasks.isEmpty &&
@@ -404,7 +404,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         ),
                       SingleChildScrollView(
                         key: const PageStorageKey('focus-scroll'),
-                        padding: const EdgeInsets.only(top: 12, bottom: 24),
+                        padding: const EdgeInsets.only(top: 4, bottom: 24),
                         child: Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 640),
@@ -1113,7 +1113,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           Text(
                             timeStr,
@@ -1124,7 +1127,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                             ),
                           ),
                           if (task.subtasks.isNotEmpty) ...[
-                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
@@ -1610,8 +1612,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         FilledButton.icon(
                           onPressed: () => _edit(),
@@ -1628,7 +1632,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                 borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
-                        const SizedBox(width: 8),
                         OutlinedButton.icon(
                           onPressed: () => _openCalendarForDate(today),
                           icon: const Icon(Icons.calendar_month_rounded,
@@ -1790,14 +1793,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                 color: dateMeta.accentColor,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                dateMeta.label,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: dateMeta.isTomorrow
-                                      ? dateMeta.accentColor
-                                      : const Color(0xFF64748B),
+                              Flexible(
+                                child: Text(
+                                  dateMeta.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: dateMeta.isTomorrow
+                                        ? dateMeta.accentColor
+                                        : const Color(0xFF64748B),
+                                  ),
                                 ),
                               ),
                             ],

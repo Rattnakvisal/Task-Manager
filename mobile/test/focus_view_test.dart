@@ -68,7 +68,9 @@ void main() {
     // Test Brain Dump note addition
     final inputFinder = find.byType(TextField);
     expect(inputFinder, findsOneWidget);
+    await tester.ensureVisible(inputFinder);
     await tester.enterText(inputFinder, 'Check server deployment log');
+    await tester.ensureVisible(find.byIcon(Icons.add_rounded).first);
     await tester.tap(find.byIcon(Icons.add_rounded).first);
     await tester.pump();
 

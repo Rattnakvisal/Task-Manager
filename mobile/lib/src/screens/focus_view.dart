@@ -1327,75 +1327,78 @@ class _FocusViewState extends State<FocusView>
           const SizedBox(height: 20),
 
           // Play/Pause & Reset Controls
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Reset Button
-              IconButton.filledTonal(
-                onPressed: _resetTimer,
-                iconSize: 22,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF64748B),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  minimumSize: const Size(50, 50),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Reset Button
+                IconButton.filledTonal(
+                  onPressed: _resetTimer,
+                  iconSize: 22,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF64748B),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    minimumSize: const Size(50, 50),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded),
+                  tooltip: 'Reset timer',
                 ),
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: 'Reset timer',
-              ),
-              const SizedBox(width: 14),
+                const SizedBox(width: 14),
 
-              // Main Toggle Button
-              FilledButton.icon(
-                onPressed: _isRunning ? _pauseTimer : _startTimer,
-                icon: Icon(
-                  _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  size: 28,
-                ),
-                label: Text(
-                  _isRunning
-                      ? 'Pause'
-                      : (_mode == 'work'
-                            ? 'Start Focus'
-                            : (_mode == 'flow' ? 'Start Flow' : 'Start Break')),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                // Main Toggle Button
+                FilledButton.icon(
+                  onPressed: _isRunning ? _pauseTimer : _startTimer,
+                  icon: Icon(
+                    _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    size: 28,
+                  ),
+                  label: Text(
+                    _isRunning
+                        ? 'Pause'
+                        : (_mode == 'work'
+                              ? 'Start Focus'
+                              : (_mode == 'flow' ? 'Start Flow' : 'Start Break')),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _currentModeColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 4,
+                    shadowColor: _currentModeColor.withValues(alpha: 0.35),
                   ),
                 ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _currentModeColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  elevation: 4,
-                  shadowColor: _currentModeColor.withValues(alpha: 0.35),
-                ),
-              ),
-              const SizedBox(width: 14),
+                const SizedBox(width: 14),
 
-              // Finish Early / Skip Button
-              IconButton.filledTonal(
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  _session.finishSessionEarly();
-                },
-                iconSize: 22,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF64748B),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  minimumSize: const Size(50, 50),
+                // Finish Early / Skip Button
+                IconButton.filledTonal(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    _session.finishSessionEarly();
+                  },
+                  iconSize: 22,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF64748B),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    minimumSize: const Size(50, 50),
+                  ),
+                  icon: const Icon(Icons.skip_next_rounded),
+                  tooltip: 'Finish / Skip interval',
                 ),
-                icon: const Icon(Icons.skip_next_rounded),
-                tooltip: 'Finish / Skip interval',
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 26),
 
@@ -2160,54 +2163,61 @@ class _FocusViewState extends State<FocusView>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0FDF4),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.emoji_events_rounded,
-                      color: Color(0xFF10B981),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'DAILY FOCUS TARGET',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.6,
-                          color: Color(0xFF8E95A5),
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      Text(
-                        'Consistency builds mastery',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: Color(0xFF64748B),
-                        ),
+                      child: const Icon(
+                        Icons.emoji_events_rounded,
+                        color: Color(0xFF10B981),
+                        size: 20,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DAILY FOCUS TARGET',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: Color(0xFF8E95A5),
+                            ),
+                          ),
+                          Text(
+                            'Consistency builds mastery',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               InkWell(
                 onTap: _showDailyGoalDialog,
                 child: Text(
-                '$completed / $dailyGoal Blocks',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: brandPurple,
+                  '$completed / $dailyGoal Blocks',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: brandPurple,
+                  ),
                 ),
-              ),
               ),
             ],
           ),

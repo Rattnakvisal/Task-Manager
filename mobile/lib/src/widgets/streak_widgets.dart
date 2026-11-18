@@ -19,20 +19,21 @@ class StreakFlameLottie extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shouldAnimate = !isRunningInTest && !MediaQuery.disableAnimationsOf(context);
     return SizedBox(
       width: width,
       height: height,
       child: Lottie.asset(
         'assets/animations/Flame - Streak.json',
         fit: fit,
-        repeat: true,
-        animate: true,
+        repeat: shouldAnimate,
+        animate: shouldAnimate,
         errorBuilder: (context, error, stackTrace) {
           return Lottie.asset(
             'assets/animation/Flame - Streak.json',
             fit: fit,
-            repeat: true,
-            animate: true,
+            repeat: shouldAnimate,
+            animate: shouldAnimate,
             errorBuilder: (ctx, err, st) => const Icon(
               Icons.local_fire_department_rounded,
               color: Color(0xFFEA580C),
@@ -71,7 +72,10 @@ class _AnimatedStreakCardState extends State<AnimatedStreakCard>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
-    )..repeat(reverse: true);
+    );
+    if (!isRunningInTest) {
+      _pulseController.repeat(reverse: true);
+    }
 
     _glowAnimation = Tween<double>(begin: 0.15, end: 0.42).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
@@ -353,7 +357,10 @@ class _StreakCelebrationSheetContentState
     _flameController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
-    )..repeat();
+    );
+    if (!isRunningInTest) {
+      _flameController.repeat();
+    }
 
     _flameController.addListener(_updateEmbers);
 

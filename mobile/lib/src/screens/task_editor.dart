@@ -43,7 +43,6 @@ class _TaskEditorState extends State<TaskEditor> {
   String? _error;
 
   static const Color brandPurple = Color(0xFF5B4DFF);
-  static const Color brandPurpleLight = Color(0xFFEEF0FF);
 
   static const List<({String name, IconData icon, Color color})> _presetCategories = [
     (name: 'Work', icon: Icons.work_rounded, color: Color(0xFF6366F1)),
@@ -496,9 +495,12 @@ class _TaskEditorState extends State<TaskEditor> {
         ),
       ],
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
+    child: Material(
+      color: Colors.transparent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
     ),
   );
 
@@ -934,7 +936,10 @@ class _TaskEditorState extends State<TaskEditor> {
     padding: const EdgeInsets.all(16),
     children: [
       // Quick Due Date Shortcuts
-      Row(
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           const Text(
             'Quick set:',
@@ -944,26 +949,23 @@ class _TaskEditorState extends State<TaskEditor> {
               color: Color(0xFF94A3B8),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 2),
           _quickDateChip(
             'Today',
             () => _setQuickDueDate(0),
             isSelected: _isQuickDateActive(0),
           ),
-          const SizedBox(width: 6),
           _quickDateChip(
             'Tomorrow',
             () => _setQuickDueDate(1),
             isSelected: _isQuickDateActive(1),
           ),
-          const SizedBox(width: 6),
           _quickDateChip(
             '+3 Days',
             () => _setQuickDueDate(3),
             isSelected: _isQuickDateActive(3),
           ),
           if (_dueDate != null) ...[
-            const Spacer(),
             BouncingInteractive(
               scaleFactor: 0.94,
               onTap: () {

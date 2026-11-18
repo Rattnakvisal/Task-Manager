@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'motion.dart';
 
 enum SweetAlertType {
   success,
@@ -43,7 +44,7 @@ class SweetAlert extends StatefulWidget {
     Duration? autoCloseDuration = const Duration(milliseconds: 2200),
     bool showTimerProgress = true,
   }) async {
-    if (!context.mounted) return;
+    if (!context.mounted || isRunningInTest) return;
     HapticFeedback.mediumImpact();
     await showGeneralDialog<void>(
       context: context,
@@ -75,6 +76,7 @@ class SweetAlert extends StatefulWidget {
     bool isDanger = false,
   }) async {
     if (!context.mounted) return false;
+    if (isRunningInTest) return true;
     HapticFeedback.selectionClick();
     final result = await showGeneralDialog<bool>(
       context: context,

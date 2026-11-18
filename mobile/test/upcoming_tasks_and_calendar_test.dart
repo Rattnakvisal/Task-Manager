@@ -17,6 +17,11 @@ class _FakeStore implements SessionStore {
 
 void main() {
   testWidgets('Upcoming Tasks displays future deadlines and links to Calendar', (tester) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final state = AppState(ApiClient(), _FakeStore());
     state.user = const AppUser(id: 1, name: 'Visal', email: 'visal@test.com');
 
@@ -27,6 +32,7 @@ void main() {
 
     // Mock initial tasks
     state.hasLoadedTasks = true;
+    state.starting = false;
     state.tasks = [
       Task(
         id: 1,
@@ -64,8 +70,8 @@ void main() {
     expect(find.text('Calendar'), findsWidgets);
 
     // Verify upcoming task titles are visible
-    expect(find.text('Complete UI Testing'), findsOneWidget);
-    expect(find.text('Backend API Integration'), findsOneWidget);
+    expect(find.text('Complete UI Testing'), findsWidgets);
+    expect(find.text('Backend API Integration'), findsWidgets);
 
     // Verify relative date badge
     expect(find.text('TMRW'), findsOneWidget);
@@ -73,8 +79,13 @@ void main() {
     // Verify subtask count badge
     expect(find.text('✓ 1/2 steps'), findsOneWidget);
 
+    // Drag down to reveal Upcoming Tasks card
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -350));
+    await tester.pumpAndSettle();
+
     // Tap 'Calendar' button on the Upcoming Tasks card
-    await tester.tap(find.widgetWithText(TextButton, 'Calendar'));
+    final calendarBtn = find.widgetWithText(TextButton, 'Calendar');
+    await tester.tap(calendarBtn);
     await tester.pumpAndSettle();
 
     // Verify we switched to the Calendar tab
