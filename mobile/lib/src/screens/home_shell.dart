@@ -78,6 +78,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     setState(() => _tab = value);
   }
 
+  void _openCalendarForDate(DateTime? date) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    HapticFeedback.selectionClick();
+    setState(() {
+      final targetDate =
+          date != null ? dateOnly(date) : dateOnly(DateTime.now());
+      _selectedDay = targetDate;
+      _month = DateTime(targetDate.year, targetDate.month, 1);
+      _tab = 2; // Jump directly to Calendar tab (index 2)
+    });
+  }
+
   void _searchTasks(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 180), () {
@@ -251,6 +263,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               onStatusChange: (newStatus) =>
                   state.updateTaskStatus(task, newStatus),
               onAddSubtask: (title) => state.addSubtask(task, title),
+              onToggleSubPoint: (stepIdx, ptIdx) =>
+                  state.toggleSubPoint(task, stepIdx, ptIdx),
             ),
           ),
         );
@@ -1397,14 +1411,35 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     );
   }
 
-  // 6. "Upcoming Tasks" Card
+  // 6. "Upcoming Tasks" Card with Direct Calendar Connection
   Widget _buildUpcomingTasksCard(List<Task> tasks) {
-    final today = dateOnly(DateTime.now());
-    final upcoming = tasks
+    final now = DateTime.now();
+    final today = dateOnly(now);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    // Sort strictly future upcoming tasks chronologically
+    final futureTasks = tasks
         .where((t) =>
-            !t.completed && (t.dueDate == null || !t.dueDate!.isBefore(today)))
-        .take(3)
-        .toList();
+            !t.completed && t.dueDate != null && t.dueDate!.isAfter(today))
+        .toList()
+      ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+
+    // Fallbacks if fewer than 3 future tasks: pending due today or unscheduled
+    final remainingCapacity = 3 - futureTasks.length;
+    final List<Task> upcoming = [...futureTasks];
+    if (remainingCapacity > 0) {
+      final additional = tasks
+          .where((t) =>
+              !t.completed &&
+              !upcoming.any((u) => u.id == t.id) &&
+              (t.dueDate == null || t.dueDate == today))
+          .take(remainingCapacity)
+          .toList();
+      upcoming.addAll(additional);
+    }
+
+    final firstDate =
+        futureTasks.isNotEmpty ? futureTasks.first.dueDate : tomorrow;
 
     return Container(
       width: double.infinity,
@@ -1424,28 +1459,39 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header with Direct Calendar Button
           Row(
             children: [
               Container(
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4F46E5).withValues(alpha: 0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: const Icon(
-                  Icons.calendar_month_rounded,
+                  Icons.event_note_rounded,
                   color: Color(0xFF4F46E5),
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Upcoming Tasks',
                       style: TextStyle(
                         fontSize: 16.5,
@@ -1454,10 +1500,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         letterSpacing: -0.3,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'Next 3 tasks in your schedule',
-                      style: TextStyle(
+                      upcoming.isEmpty
+                          ? 'No tasks scheduled'
+                          : '${upcoming.length} upcoming in your calendar',
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Color(0xFF64748B),
@@ -1466,26 +1514,34 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                   ],
                 ),
               ),
-              TextButton(
-                onPressed: () => _selectTab(1),
+              // Direct Link to Calendar Page
+              TextButton.icon(
+                onPressed: () => _openCalendarForDate(firstDate),
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFF4F46E5),
-                  padding: EdgeInsets.zero,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  backgroundColor: const Color(0xFFEEF2FF),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Row(
+                icon: const Icon(Icons.calendar_month_rounded, size: 14),
+                label: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'View All',
+                      'Calendar',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: 12.5,
+                        letterSpacing: -0.1,
                       ),
                     ),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_rounded, size: 14),
+                    SizedBox(width: 3),
+                    Icon(Icons.arrow_forward_rounded, size: 13),
                   ],
                 ),
               ),
@@ -1501,7 +1557,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: const [
-                    CupertinoActivityIndicator(radius: 8, color: Color(0xFF4F46E5)),
+                    CupertinoActivityIndicator(
+                        radius: 8, color: Color(0xFF4F46E5)),
                     SizedBox(width: 10),
                     Text(
                       'Loading upcoming tasks…',
@@ -1516,125 +1573,392 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               ),
             )
           else if (upcoming.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Center(
-                child: Text(
-                  'No upcoming tasks in your schedule',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.event_available_rounded,
+                        color: Color(0xFF64748B),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'No upcoming tasks in your schedule',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Schedule a task with a future deadline to see it here.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: () => _edit(),
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('Add Task',
+                              style: TextStyle(
+                                  fontSize: 12.5, fontWeight: FontWeight.w700)),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: brandPurple,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => _openCalendarForDate(today),
+                          icon: const Icon(Icons.calendar_month_rounded,
+                              size: 15),
+                          label: const Text('Open Calendar',
+                              style: TextStyle(
+                                  fontSize: 12.5, fontWeight: FontWeight.w600)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF4F46E5),
+                            side: const BorderSide(color: Color(0xFFC7D2FE)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             )
           else
-            ...upcoming.map((task) {
-              final cat =
-                  task.category.trim().isEmpty ? 'General' : task.category.trim();
-              final dateStr = _formatTaskDate(task.dueDate);
-
-              return InkWell(
-                onTap: () => _edit(task),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      // Bullet dot
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF6366F1),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      // Title & Date
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              task.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 13,
-                                  color: Color(0xFF64748B),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  dateStr,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Category Pill Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: cat.toLowerCase() == 'work'
-                              ? const Color(0xFFE0F2FE)
-                              : const Color(0xFFF3E8FF),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          cat,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: cat.toLowerCase() == 'work'
-                                ? const Color(0xFF0284C7)
-                                : const Color(0xFF7C3AED),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+            ...List.generate(upcoming.length, (index) {
+              final task = upcoming[index];
+              final isLast = index == upcoming.length - 1;
+              return _buildUpcomingTaskItem(task, isLast);
             }),
         ],
       ),
     );
   }
 
-  String _formatTaskDate(DateTime? date) {
-    if (date == null) return 'Upcoming';
+  Widget _buildUpcomingTaskItem(Task task, bool isLast) {
+    final catName =
+        task.category.trim().isNotEmpty ? task.category.trim() : 'Work';
+    final catClr = categoryColor(catName);
+    final catBg = categoryBgColor(catName);
+    final dateMeta = _getUpcomingDateMeta(task.dueDate);
+
+    return Container(
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _edit(task),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 1. Mini Tear-off Calendar Tile (Tapping jumps to Calendar date!)
+                Tooltip(
+                  message: 'View on Calendar',
+                  child: InkWell(
+                    onTap: () => _openCalendarForDate(task.dueDate),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 48,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: dateMeta.accentColor.withValues(alpha: 0.3),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: dateMeta.accentColor.withValues(alpha: 0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Top colored stripe with Day/Month label
+                          Container(
+                            height: 17,
+                            width: double.infinity,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: dateMeta.accentColor,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(8.5),
+                              ),
+                            ),
+                            child: Text(
+                              dateMeta.header,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                          // Day number
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                dateMeta.day,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: dateMeta.accentColor,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // 2. Main Task Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Task Title
+                      Text(
+                        task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Schedule info & Subtask count
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 12.5,
+                                color: dateMeta.accentColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                dateMeta.label,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: dateMeta.isTomorrow
+                                      ? dateMeta.accentColor
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (task.subtasks.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: task.completedSubtasks ==
+                                        task.subtasks.length
+                                    ? const Color(0xFFECFDF5)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '✓ ${task.completedSubtasks}/${task.subtasks.length} steps',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: task.completedSubtasks ==
+                                          task.subtasks.length
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // 3. Category Tag & Action Button to jump to Calendar
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Category Badge Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: catBg,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(categoryIcon(catName),
+                              size: 11, color: catClr),
+                          const SizedBox(width: 3.5),
+                          Text(
+                            catName,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: catClr,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    // Quick "Open in Calendar" Icon button
+                    Tooltip(
+                      message: 'Show on Calendar',
+                      child: InkWell(
+                        onTap: () => _openCalendarForDate(task.dueDate),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(
+                                Icons.calendar_month_outlined,
+                                size: 12.5,
+                                color: Color(0xFF4F46E5),
+                              ),
+                              SizedBox(width: 3),
+                              Text(
+                                'View',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF4F46E5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  ({String header, String day, String label, Color accentColor, bool isTomorrow})
+      _getUpcomingDateMeta(DateTime? date) {
+    if (date == null) {
+      return (
+        header: 'LATER',
+        day: '--',
+        label: 'No due date set',
+        accentColor: const Color(0xFF64748B),
+        isTomorrow: false,
+      );
+    }
     final now = DateTime.now();
     final today = dateOnly(now);
     final tomorrow = today.add(const Duration(days: 1));
     final d = dateOnly(date);
-
     final timeStr = DateFormat('h:mm a').format(date);
+
     if (d == today) {
-      return 'Today, $timeStr';
+      return (
+        header: 'TODAY',
+        day: '${date.day}',
+        label: 'Today, $timeStr',
+        accentColor: const Color(0xFF10B981),
+        isTomorrow: false,
+      );
     } else if (d == tomorrow) {
-      return 'Tomorrow, $timeStr';
+      return (
+        header: 'TMRW',
+        day: '${date.day}',
+        label: 'Tomorrow, $timeStr',
+        accentColor: const Color(0xFF6366F1),
+        isTomorrow: true,
+      );
     } else {
-      return DateFormat('MMM d, h:mm a').format(date);
+      final diff = d.difference(today).inDays;
+      final header = diff > 1 && diff <= 6
+          ? DateFormat('EEE').format(date).toUpperCase()
+          : DateFormat('MMM').format(date).toUpperCase();
+      final diffLabel = diff > 0 ? ' (In $diff days)' : '';
+      return (
+        header: header,
+        day: '${date.day}',
+        label: '${DateFormat('MMM d').format(date)}, $timeStr$diffLabel',
+        accentColor: const Color(0xFF3864ED),
+        isTomorrow: false,
+      );
     }
   }
 
@@ -1801,6 +2125,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                   onStatusChange: (newStatus) =>
                       state.updateTaskStatus(task, newStatus),
                   onAddSubtask: (title) => state.addSubtask(task, title),
+                  onToggleSubPoint: (stepIdx, ptIdx) =>
+                      state.toggleSubPoint(task, stepIdx, ptIdx),
                 ),
               ),
             );
@@ -2326,6 +2652,26 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                           ),
                         ),
                       ),
+                      // Quick "Today" jump button
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: brandPurple,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          backgroundColor: const Color(0xFFECE9FF),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () =>
+                            _openCalendarForDate(DateTime.now()),
+                        icon: const Icon(Icons.today_rounded, size: 14),
+                        label: const Text('Today',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 12)),
+                      ),
+                      const SizedBox(width: 8),
                       Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFF2F2F7),
@@ -2468,7 +2814,42 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(height: 24),
-            _section(DateFormat('EEEE, MMM d').format(_selectedDay)),
+            Row(
+              children: [
+                Expanded(
+                  child: _section(
+                    _selectedDay == dateOnly(DateTime.now())
+                        ? 'Today • ${DateFormat('EEEE, MMM d').format(_selectedDay)}'
+                        : _selectedDay ==
+                                dateOnly(DateTime.now()
+                                    .add(const Duration(days: 1)))
+                            ? 'Tomorrow • ${DateFormat('EEEE, MMM d').format(_selectedDay)}'
+                            : DateFormat('EEEE, MMM d, yyyy')
+                                .format(_selectedDay),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: selected.isNotEmpty
+                        ? const Color(0xFFECE9FF)
+                        : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${selected.length} tasks',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: selected.isNotEmpty
+                          ? brandPurple
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

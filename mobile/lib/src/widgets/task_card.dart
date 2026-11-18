@@ -83,6 +83,7 @@ class TaskCard extends StatelessWidget {
     this.onToggleSubtask,
     this.onStatusChange,
     this.onAddSubtask,
+    this.onToggleSubPoint,
   });
 
   final Task task;
@@ -93,6 +94,7 @@ class TaskCard extends StatelessWidget {
   final ValueChanged<int>? onToggleSubtask;
   final ValueChanged<String>? onStatusChange;
   final ValueChanged<String>? onAddSubtask;
+  final void Function(int stepIndex, int pointIndex)? onToggleSubPoint;
 
   @override
   Widget build(BuildContext context) {
@@ -532,6 +534,7 @@ class TaskCard extends StatelessWidget {
                         }
                       },
                       onAddSubtask: onAddSubtask,
+                      onToggleSubPoint: onToggleSubPoint,
                     ),
 
                   // Subtle separator line

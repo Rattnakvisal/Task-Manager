@@ -486,12 +486,14 @@ class TaskChecklistSection extends StatefulWidget {
     required this.subtasks,
     required this.onToggleSubtask,
     this.onAddSubtask,
+    this.onToggleSubPoint,
     this.initiallyExpanded = true,
   });
 
   final List<Map<String, dynamic>> subtasks;
   final ValueChanged<int> onToggleSubtask;
   final ValueChanged<String>? onAddSubtask;
+  final void Function(int stepIndex, int pointIndex)? onToggleSubPoint;
   final bool initiallyExpanded;
 
   @override
@@ -649,118 +651,228 @@ class _TaskChecklistSectionState extends State<TaskChecklistSection> {
                   final isStepDone = step['completed'] == true;
                   final title = '${step['title'] ?? ''}';
 
+                  final points = (step['points'] as List? ?? [])
+                      .map((p) => p is Map
+                          ? Map<String, dynamic>.from(p)
+                          : {'title': '$p', 'completed': false})
+                      .toList();
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        widget.onToggleSubtask(index);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isStepDone
+                            ? Colors.white.withValues(alpha: 0.7)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
                           color: isStepDone
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isStepDone
-                                ? const Color(0xFFD1FAE5)
-                                : const Color(0xFFF1F5F9),
-                          ),
+                              ? const Color(0xFFD1FAE5)
+                              : const Color(0xFFF1F5F9),
                         ),
-                        child: Row(
-                          children: [
-                            // Step Number Chip
-                            Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                color: isStepDone
-                                    ? const Color(0xFFECFDF5)
-                                    : const Color(0xFFF1F5F9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${index + 1}',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Parent Step Row
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onToggleSubtask(index);
+                            },
+                            child: Row(
+                              children: [
+                                // Step Number Chip
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
                                     color: isStepDone
-                                        ? const Color(0xFF10B981)
-                                        : const Color(0xFF64748B),
+                                        ? const Color(0xFFECFDF5)
+                                        : const Color(0xFFF1F5F9),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: isStepDone
+                                            ? const Color(0xFF10B981)
+                                            : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+
+                                // Squircle Checkbox with scale bounce
+                                TaskSparkleBurst(
+                                  trigger: isStepDone,
+                                  color: const Color(0xFF10B981),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 180),
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: isStepDone
+                                          ? const Color(0xFF10B981)
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: isStepDone
+                                          ? null
+                                          : Border.all(
+                                              color: const Color(0xFFCBD5E1),
+                                              width: 1.6,
+                                            ),
+                                      boxShadow: isStepDone
+                                          ? [
+                                              BoxShadow(
+                                                color: const Color(0xFF10B981)
+                                                    .withValues(alpha: 0.3),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    child: isStepDone
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            size: 14,
+                                            color: Colors.white,
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+
+                                // Step Title Text with strikethrough animation
+                                Expanded(
+                                  child: AnimatedDefaultTextStyle(
+                                    duration: const Duration(milliseconds: 180),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isStepDone
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF1E293B),
+                                      decoration: isStepDone
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                      decorationColor: const Color(0xFF94A3B8),
+                                    ),
+                                    child: Text(title),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Indented Micro-Steps (Sub-points) with iOS Guidelines
+                          if (points.isNotEmpty) ...[
+                            Container(
+                              margin: const EdgeInsets.only(left: 9, top: 5, bottom: 2),
+                              padding: const EdgeInsets.only(left: 14),
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  left: BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                    width: 1.5,
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (var pIdx = 0; pIdx < points.length; pIdx++) ...[
+                                    Builder(
+                                      builder: (context) {
+                                        final isPtDone = points[pIdx]['completed'] == true;
+                                        final ptTitle = '${points[pIdx]['title'] ?? ''}';
 
-                            // Squircle Checkbox with scale bounce
-                            TaskSparkleBurst(
-                              trigger: isStepDone,
-                              color: const Color(0xFF10B981),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: isStepDone
-                                      ? const Color(0xFF10B981)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: isStepDone
-                                      ? null
-                                      : Border.all(
-                                          color: const Color(0xFFCBD5E1),
-                                          width: 1.6,
-                                        ),
-                                  boxShadow: isStepDone
-                                      ? [
-                                          BoxShadow(
-                                            color: const Color(0xFF10B981)
-                                                .withValues(alpha: 0.3),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 1),
+                                        return InkWell(
+                                          borderRadius: BorderRadius.circular(6),
+                                          onTap: widget.onToggleSubPoint != null
+                                              ? () {
+                                                  HapticFeedback.lightImpact();
+                                                  widget.onToggleSubPoint!(index, pIdx);
+                                                }
+                                              : null,
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 2.5),
+                                            child: Row(
+                                              children: [
+                                                // Mini circular iOS checkbox
+                                                AnimatedContainer(
+                                                  duration: const Duration(milliseconds: 150),
+                                                  width: 16,
+                                                  height: 16,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: isPtDone
+                                                        ? const Color(0xFF10B981)
+                                                        : Colors.white,
+                                                    border: Border.all(
+                                                      color: isPtDone
+                                                          ? const Color(0xFF10B981)
+                                                          : const Color(0xFFCBD5E1),
+                                                      width: 1.4,
+                                                    ),
+                                                  ),
+                                                  child: isPtDone
+                                                      ? const Icon(
+                                                          Icons.check_rounded,
+                                                          size: 10,
+                                                          color: Colors.white,
+                                                        )
+                                                      : null,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  '•',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isPtDone
+                                                        ? const Color(0xFFCBD5E1)
+                                                        : const Color(0xFF94A3B8),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    ptTitle,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                      decoration: isPtDone
+                                                          ? TextDecoration.lineThrough
+                                                          : null,
+                                                      decorationColor: const Color(0xFF94A3B8),
+                                                      color: isPtDone
+                                                          ? const Color(0xFF94A3B8)
+                                                          : const Color(0xFF334155),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ]
-                                      : null,
-                                ),
-                                child: isStepDone
-                                    ? const Icon(
-                                        Icons.check_rounded,
-                                        size: 14,
-                                        color: Colors.white,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-
-                            // Step Title Text with strikethrough animation
-                            Expanded(
-                              child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 180),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: isStepDone
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF1E293B),
-                                  decoration: isStepDone
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  decorationColor: const Color(0xFF94A3B8),
-                                ),
-                                child: Text(title),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   );

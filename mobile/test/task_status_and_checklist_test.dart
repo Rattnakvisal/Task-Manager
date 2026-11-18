@@ -104,6 +104,50 @@ void main() {
       await tester.pump();
       expect(addedStep, 'Run automated tests');
     });
+
+    testWidgets('renders micro-steps (sub-points) and handles sub-point click', (tester) async {
+      int? toggledStepIndex;
+      int? toggledPointIndex;
+
+      final subtasksWithPoints = [
+        {
+          'id': '1',
+          'title': 'Design high-fidelity prototype',
+          'completed': false,
+          'points': [
+            {'title': 'Draft color palette', 'completed': true},
+            {'title': 'Export iOS app icons', 'completed': false},
+          ],
+        },
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TaskChecklistSection(
+              subtasks: subtasksWithPoints,
+              onToggleSubtask: (_) {},
+              onToggleSubPoint: (stepIdx, pointIdx) {
+                toggledStepIndex = stepIdx;
+                toggledPointIndex = pointIdx;
+              },
+              initiallyExpanded: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Design high-fidelity prototype'), findsOneWidget);
+      expect(find.text('Draft color palette'), findsOneWidget);
+      expect(find.text('Export iOS app icons'), findsOneWidget);
+
+      // Tap the second sub-point
+      await tester.tap(find.text('Export iOS app icons'));
+      await tester.pump();
+      expect(toggledStepIndex, 0);
+      expect(toggledPointIndex, 1);
+    });
   });
 
   group('Task copyWith & helpers', () {

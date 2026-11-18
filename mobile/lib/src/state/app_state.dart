@@ -303,7 +303,85 @@ class AppState extends ChangeNotifier {
       'id': 'mobile-${DateTime.now().microsecondsSinceEpoch}',
       'title': clean,
       'completed': false,
+      'points': <Map<String, dynamic>>[],
     });
+    await saveTask({
+      ...current.toPayload(),
+      'subtasks': updatedSubtasks,
+    }, id: current.id);
+  }
+
+  Future<void> toggleSubPoint(
+    Task task,
+    int subtaskIndex,
+    int pointIndex,
+  ) async {
+    final current =
+        tasks.where((item) => item.id == task.id).firstOrNull ?? task;
+    if (subtaskIndex < 0 || subtaskIndex >= current.subtasks.length) return;
+
+    final updatedSubtasks = current.subtasks
+        .map((s) => Map<String, dynamic>.from(s))
+        .toList();
+    final points = (updatedSubtasks[subtaskIndex]['points'] as List? ?? [])
+        .map((p) => p is Map
+            ? Map<String, dynamic>.from(p)
+            : {'title': '$p', 'completed': false})
+        .toList();
+    if (pointIndex < 0 || pointIndex >= points.length) return;
+
+    final wasDone = points[pointIndex]['completed'] == true;
+    points[pointIndex]['completed'] = !wasDone;
+    updatedSubtasks[subtaskIndex]['points'] = points;
+
+    // If all sub-points are done, mark the parent step as done
+    final allPointsDone = points.every((p) => p['completed'] == true);
+    if (allPointsDone) {
+      updatedSubtasks[subtaskIndex]['completed'] = true;
+    }
+
+    final allDone = updatedSubtasks.isNotEmpty &&
+        updatedSubtasks.every((s) => s['completed'] == true);
+    final String nextStatus = (allDone && current.status != 'completed')
+        ? 'completed'
+        : current.status;
+
+    await saveTask({
+      ...current.toPayload(),
+      'subtasks': updatedSubtasks,
+      'status': nextStatus,
+    }, id: current.id);
+    if (allDone && current.status != 'completed') {
+      await streak.recordTaskCompletion(current);
+    }
+  }
+
+  Future<void> addSubPoint(
+    Task task,
+    int subtaskIndex,
+    String pointTitle,
+  ) async {
+    final clean = pointTitle.trim();
+    if (clean.isEmpty) return;
+    final current =
+        tasks.where((item) => item.id == task.id).firstOrNull ?? task;
+    if (subtaskIndex < 0 || subtaskIndex >= current.subtasks.length) return;
+
+    final updatedSubtasks = current.subtasks
+        .map((s) => Map<String, dynamic>.from(s))
+        .toList();
+    final points = (updatedSubtasks[subtaskIndex]['points'] as List? ?? [])
+        .map((p) => p is Map
+            ? Map<String, dynamic>.from(p)
+            : {'title': '$p', 'completed': false})
+        .toList();
+    points.add({
+      'id': 'p-${DateTime.now().microsecondsSinceEpoch}',
+      'title': clean,
+      'completed': false,
+    });
+    updatedSubtasks[subtaskIndex]['points'] = points;
+
     await saveTask({
       ...current.toPayload(),
       'subtasks': updatedSubtasks,
