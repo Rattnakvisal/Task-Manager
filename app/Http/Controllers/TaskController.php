@@ -103,9 +103,11 @@ class TaskController extends Controller
     public function calendar(Request $request)
     {
         $allTasks = $request->user()->tasks()->get();
-        $tasks = $allTasks->whereNotNull('due_date')->sortBy('due_date');
-        $groupedTasks = $tasks->groupBy(fn (Task $task) => $task->due_date->format('Y-m-d'));
-        $unscheduledTasks = $allTasks->whereNull('due_date')->sortByDesc('created_at')->values();
+        $tasks = $allTasks->filter(fn (Task $task) => $task->due_date !== null || $task->end_date !== null)
+            ->sortBy(fn (Task $task) => $task->due_date ?? $task->end_date);
+        $groupedTasks = $tasks->groupBy(fn (Task $task) => ($task->due_date ?? $task->end_date)->format('Y-m-d'));
+        $unscheduledTasks = $allTasks->filter(fn (Task $task) => $task->due_date === null && $task->end_date === null)
+            ->sortByDesc('created_at')->values();
         $calendarMonth = $request->filled('month') ? Carbon::parse($request->month)->startOfMonth() : Carbon::today()->startOfMonth();
 
         return view('tasks.calendar', compact('groupedTasks', 'unscheduledTasks', 'calendarMonth', 'allTasks'));

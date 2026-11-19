@@ -239,6 +239,16 @@
             <path d="M7 16h10" />
             @break
 
+        @case('columns')
+            <rect width="18" height="18" x="3" y="3" rx="2" />
+            <path d="M12 3v18" />
+            @break
+
+        @case('eye')
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+            <circle cx="12" cy="12" r="3" />
+            @break
+
         @case('chevron-down')
             <path d="m6 9 6 6 6-6" />
             @break
