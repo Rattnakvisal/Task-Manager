@@ -1435,119 +1435,144 @@ class _FocusViewState extends State<FocusView>
           ),
           const SizedBox(height: 22),
 
-          // 5. Tactile iPhone Action Buttons (Play/Pause/Reset)
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Reset Button (iOS circular soft glass)
-                IconButton.filledTonal(
-                  onPressed: _resetTimer,
-                  iconSize: 22,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF64748B),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    minimumSize: const Size(52, 52),
-                    shape: const CircleBorder(),
-                  ),
-                  icon: const Icon(Icons.refresh_rounded),
-                  tooltip: 'Reset timer',
-                ),
-                const SizedBox(width: 14),
-
-                // Hero Capsule Action Button (iPhone Style)
-                Container(
-                  height: 54,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _isRunning
-                          ? [const Color(0xFFF59E0B), const Color(0xFFD97706)]
-                          : (_mode == 'work'
-                                ? [
-                                    const Color(0xFF6366F1),
-                                    const Color(0xFF4F46E5),
-                                  ]
-                                : (_mode == 'flow'
-                                      ? [
-                                          const Color(0xFFF59E0B),
-                                          const Color(0xFFD97706),
-                                        ]
-                                      : [
-                                          const Color(0xFF10B981),
-                                          const Color(0xFF059669),
-                                        ])),
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_isRunning
-                                ? const Color(0xFFF59E0B)
-                                : _currentModeColor)
-                            .withValues(alpha: 0.38),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: _isRunning ? _pauseTimer : _startTimer,
-                    icon: Icon(
-                      _isRunning
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      size: 26,
+          // 5. Tactile iPhone Action Buttons (Play/Pause/Reset) - Perfectly Centered
+          Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Reset Button (iOS circular frosted glass)
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
                       color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    label: Text(
-                      _isRunning
-                          ? 'Pause'
-                          : (_mode == 'work'
-                                ? 'Start Focus'
-                                : (_mode == 'flow'
-                                      ? 'Start Flow'
-                                      : 'Start Break')),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                    child: IconButton(
+                      onPressed: _resetTimer,
+                      iconSize: 22,
+                      color: const Color(0xFF64748B),
+                      icon: const Icon(Icons.refresh_rounded),
+                      tooltip: 'Reset timer',
                     ),
                   ),
-                ),
-                const SizedBox(width: 14),
+                  const SizedBox(width: 16),
 
-                // Skip / Finish Early Button (iOS circular soft glass)
-                IconButton.filledTonal(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    _session.finishSessionEarly();
-                  },
-                  iconSize: 22,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF64748B),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    minimumSize: const Size(52, 52),
-                    shape: const CircleBorder(),
+                  // Hero Capsule Action Button (Apple iOS Style)
+                  Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _isRunning
+                            ? [const Color(0xFFF59E0B), const Color(0xFFD97706)]
+                            : (_mode == 'work'
+                                  ? [
+                                      const Color(0xFF6366F1),
+                                      const Color(0xFF4F46E5),
+                                    ]
+                                  : (_mode == 'flow'
+                                        ? [
+                                            const Color(0xFFF59E0B),
+                                            const Color(0xFFD97706),
+                                          ]
+                                        : [
+                                            const Color(0xFF10B981),
+                                            const Color(0xFF059669),
+                                          ])),
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_isRunning
+                                  ? const Color(0xFFF59E0B)
+                                  : _currentModeColor)
+                              .withValues(alpha: 0.38),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _isRunning ? _pauseTimer : _startTimer,
+                      icon: Icon(
+                        _isRunning
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        size: 26,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        _isRunning
+                            ? 'Pause'
+                            : (_mode == 'work'
+                                  ? 'Start Focus'
+                                  : (_mode == 'flow'
+                                        ? 'Start Flow'
+                                        : 'Start Break')),
+                        style: const TextStyle(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 36,
+                          vertical: 15,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                    ),
                   ),
-                  icon: const Icon(Icons.skip_next_rounded),
-                  tooltip: 'Finish / Skip interval',
-                ),
-              ],
+                  const SizedBox(width: 16),
+
+                  // Skip / Finish Early Button (iOS circular frosted glass)
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        _session.finishSessionEarly();
+                      },
+                      iconSize: 22,
+                      color: const Color(0xFF64748B),
+                      icon: const Icon(Icons.skip_next_rounded),
+                      tooltip: 'Finish / Skip interval',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),

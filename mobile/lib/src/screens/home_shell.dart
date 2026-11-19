@@ -2957,183 +2957,654 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   Widget _profile() {
     final user = state.user!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 6),
-        _buildCleanHeader(
-          eyebrow: 'SETTINGS & ACCOUNT',
-          title: 'Profile',
-          subtitle: 'Account settings & preferences',
-          eyebrowColor: const Color(0xFF168268),
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: Column(
-            children: [
-              Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5B4DFF), Color(0xFF8B5CF6)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: brandPurple.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+    final completedTasks = state.tasks.where((t) => t.completed).length;
+    final totalTasks = state.tasks.length;
+    final completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).round() : 0;
+    final currentStreak = state.streak.currentStreak;
+    final focusMinutes = state.focus.timer.totalFocusSeconds ~/ 60;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 6),
+          _buildCleanHeader(
+            eyebrow: 'SETTINGS & ACCOUNT',
+            title: 'Profile',
+            subtitle: 'Personal workspace & preferences',
+            eyebrowColor: const Color(0xFF168268),
+          ),
+          const SizedBox(height: 18),
+
+          // 1. Apple ID / Hero Profile Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFF0F2F8), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Stack(
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: brandPurple.withValues(alpha: 0.28),
+                                blurRadius: 14,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              user.name.isNotEmpty
+                                  ? user.name.characters.first.toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                fontSize: 30,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  user.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF1C1C1E),
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                color: const Color(0xFF64748B),
+                                tooltip: 'Edit profile',
+                                onPressed: _showEditProfileDialog,
+                              ),
+                            ],
+                          ),
+                          Text(
+                            user.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              color: Color(0xFF8E8E93),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: brandPurple.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.workspace_premium_rounded, size: 13, color: brandPurple),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Personal Workspace • Active',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: brandPurple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-                child: Center(
-                  child: Text(
-                    user.name.characters.first.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 34,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                user.name,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1C1C1E),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                user.email,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF8E8E93),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 28),
-        _iosSectionHeader('ACCOUNT & TASKS'),
-        _iosGroup([
-          _iosTile(
-            icon: _squircleIcon(Icons.check_rounded, const Color(0xFF007AFF)),
-            title: 'Completed tasks',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${state.tasks.where((t) => t.completed).length}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF8E8E93),
-                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 0.5, thickness: 0.5, indent: 62, color: Color(0x1F000000)),
-          _iosTile(
-            icon: _squircleIcon(Icons.cloud_done_rounded, const Color(0xFF34C759)),
-            title: 'Connected account',
-            subtitle: 'Shared with your Task Manager website',
-          ),
-          const Divider(height: 0.5, thickness: 0.5, indent: 62, color: Color(0x1F000000)),
-          _iosTile(
-            icon: _squircleIcon(Icons.auto_stories_rounded, const Color(0xFF5856D6)),
-            title: 'App Tour & Features',
-            subtitle: 'Revisit the feature walkthrough',
-            trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFC7C7CC), size: 22),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => OnboardingScreen(
-                    onGetStarted: () => Navigator.of(context).pop(),
-                    onSignIn: () => Navigator.of(context).pop(),
-                  ),
+          const SizedBox(height: 18),
+
+          // 2. Productivity Highlights (Apple Fitness / Activity style)
+          Row(
+            children: [
+              Expanded(
+                child: _buildProfileStatCard(
+                  title: 'Completed',
+                  value: '$completedTasks',
+                  subtitle: '$completionRate% total',
+                  icon: Icons.check_circle_rounded,
+                  color: const Color(0xFF10B981),
                 ),
-              );
-            },
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildProfileStatCard(
+                  title: 'Streak',
+                  value: '$currentStreak Days',
+                  subtitle: currentStreak > 0 ? 'On fire 🔥' : 'Start today',
+                  icon: Icons.local_fire_department_rounded,
+                  color: const Color(0xFFF59E0B),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildProfileStatCard(
+                  title: 'Focus Time',
+                  value: '${focusMinutes}m',
+                  subtitle: 'Today',
+                  icon: Icons.timer_rounded,
+                  color: const Color(0xFF6366F1),
+                ),
+              ),
+            ],
           ),
-        ]),
-        const SizedBox(height: 24),
-        _iosSectionHeader('SYSTEM'),
-        _iosGroup([
-          _iosTile(
-            icon: _squircleIcon(Icons.info_outline_rounded, const Color(0xFF8E8E93)),
-            title: 'Task Manager',
-            subtitle: 'iOS Edition · Version 1.0.0',
-            trailing: const Text(
-              'v1.0.0',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF8E8E93),
-                fontWeight: FontWeight.w500,
+          const SizedBox(height: 24),
+
+          // 3. Section: WORKSPACE & PRODUCTIVITY PREFERENCES
+          _iosSectionHeader('FOCUS & WORKSPACE PREFERENCES'),
+          _iosGroup([
+            _iosTile(
+              icon: _squircleIcon(Icons.timer_outlined, const Color(0xFF6366F1)),
+              title: 'Focus Block Duration',
+              subtitle: '${state.focus.timer.workMinutes} minutes standard interval',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${state.focus.timer.workMinutes}m',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: brandPurple,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right_rounded, color: Color(0xFFC7C7CC), size: 20),
+                ],
+              ),
+              onTap: () {
+                _selectTab(3); // Jump to focus tab
+              },
+            ),
+            const Divider(height: 0.5, thickness: 0.5, indent: 62, color: Color(0x1F000000)),
+            _iosTile(
+              icon: _squircleIcon(Icons.track_changes_rounded, const Color(0xFF10B981)),
+              title: 'Daily Focus Target',
+              subtitle: '${state.focus.timer.dailyGoalSessions} deep work blocks per day',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${state.focus.timer.dailyGoalSessions} blocks',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF8E8E93),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right_rounded, color: Color(0xFFC7C7CC), size: 20),
+                ],
+              ),
+              onTap: () {
+                _selectTab(3);
+              },
+            ),
+            const Divider(height: 0.5, thickness: 0.5, indent: 62, color: Color(0x1F000000)),
+            _iosTile(
+              icon: _squircleIcon(Icons.check_rounded, const Color(0xFF007AFF)),
+              title: 'Completed tasks',
+              trailing: Text(
+                '$completedTasks',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF8E8E93),
+                ),
               ),
             ),
-          ),
-        ]),
-        const SizedBox(height: 24),
-        _iosSectionHeader('SESSION'),
-        _iosGroup([
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _signingOut ? null : _logout,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_signingOut)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 10),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Color(0xFFFF3B30)),
+          ]),
+          const SizedBox(height: 24),
+
+          // 4. Section: CLOUD & BACKEND CONNECTION
+          _iosSectionHeader('CLOUD & SYNCHRONIZATION'),
+          _iosGroup([
+            _iosTile(
+              icon: _squircleIcon(Icons.cloud_done_rounded, const Color(0xFF34C759)),
+              title: 'Connected account',
+              subtitle: 'Shared with your Task Manager website',
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8FDF0),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.circle, size: 6, color: Color(0xFF10B981)),
+                    SizedBox(width: 5),
+                    Text(
+                      'Live Cloud',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(height: 0.5, thickness: 0.5, indent: 62, color: Color(0x1F000000)),
+            _iosTile(
+              icon: _squircleIcon(Icons.sync_rounded, const Color(0xFF0284C7)),
+              title: 'Sync Workspace Now',
+              subtitle: 'Refresh tasks & streak with server',
+              trailing: const Icon(Icons.refresh_rounded, color: Color(0xFF0284C7), size: 20),
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                await _refresh();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✓ Workspace successfully synchronized!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+            const Divider(height: 0.5, thickness: 0.5, indent: 62, color: Color(0x1F000000)),
+            _iosTile(
+              icon: _squircleIcon(Icons.auto_stories_rounded, const Color(0xFF5856D6)),
+              title: 'App Tour & Features',
+              subtitle: 'Revisit the feature walkthrough',
+              trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFC7C7CC), size: 22),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => OnboardingScreen(
+                      onGetStarted: () => Navigator.of(context).pop(),
+                      onSignIn: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ]),
+          const SizedBox(height: 24),
+
+          // 5. Section: SYSTEM & INFO
+          _iosSectionHeader('SYSTEM & ABOUT'),
+          _iosGroup([
+            _iosTile(
+              icon: _squircleIcon(Icons.info_outline_rounded, const Color(0xFF8E8E93)),
+              title: 'Task Manager',
+              subtitle: 'iOS Edition · Version 1.0.0',
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'v1.0.0',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 24),
+
+          // 6. Section: SESSION ACTIONS (Sign Out)
+          _iosSectionHeader('SESSION'),
+          _iosGroup([
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _signingOut ? null : _confirmSignOut,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_signingOut)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 10),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(Color(0xFFFF3B30)),
+                              ),
+                            ),
+                          )
+                        else
+                          const Padding(
+                            padding: EdgeInsets.only(right: 8),
+                            child: Icon(
+                              Icons.logout_rounded,
+                              color: Color(0xFFFF3B30),
+                              size: 20,
                             ),
                           ),
-                        )
-                      else
-                        const Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: Icon(
-                            Icons.logout_rounded,
+                        Text(
+                          _signingOut ? 'Signing out…' : 'Sign out',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                             color: Color(0xFFFF3B30),
-                            size: 20,
+                            letterSpacing: -0.2,
                           ),
                         ),
-                      Text(
-                        _signingOut ? 'Signing out…' : 'Sign out',
-                        style: const TextStyle(
-                          fontSize: 16,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 36),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileStatCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF0F2F8), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 16),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1C1C1E),
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF8E8E93),
+            ),
+          ),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditProfileDialog() {
+    final user = state.user;
+    if (user == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Account Information',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1B1D28),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Your cloud profile synchronized across devices',
+              style: TextStyle(fontSize: 13, color: Color(0xFF8E95A5)),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Full Name:',
+                        style: TextStyle(
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFFF3B30),
-                          letterSpacing: -0.2,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          user.name,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
                         ),
                       ),
                     ],
                   ),
+                  const Divider(height: 20, color: Color(0xFFE2E8F0)),
+                  Row(
+                    children: [
+                      const Text(
+                        'Email Address:',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          user.email,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: brandPurple,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmSignOut() {
+    HapticFeedback.selectionClick();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Sign Out?',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        ),
+        content: const Text(
+          'Are you sure you want to sign out? Your synchronized tasks will remain safe on the cloud.',
+          style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
-        ]),
-      ],
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFF3B30),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _logout();
+            },
+            child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
     );
   }
 
