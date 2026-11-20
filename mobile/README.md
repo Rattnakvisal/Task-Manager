@@ -12,6 +12,18 @@ Included: sign in/register/sign out, secure token storage and session restoratio
 
 Phone-size previews with sample tasks: [Home](previews/home.png), [Tasks](previews/tasks.png), [Calendar](previews/calendar.png), [Profile](previews/profile.png). Regenerate with `flutter test tool/render_previews.dart --dart-define=FLUTTER_SDK=C:/flutter` (use your Flutter SDK path).
 
+Code folders and naming: [Project structure](../docs/project-structure.md).
+
+## Profile and account
+
+The Profile page shows the signed-in account, completed/active tasks and today's focus minutes. Edit profile saves the display name through authenticated `PATCH /api/mobile/profile`; the sign-in email stays read-only. Validation and network errors keep the entered name available for retry.
+
+Cloud Sync refreshes tasks with loading, success, error and retry states. The last refresh time reflects this session. Focus preferences opens the existing Focus tools; App tour reopens onboarding. Sign Out revokes this device's token and blocks duplicate requests.
+
+Deploy the updated Laravel backend before distributing a mobile build that uses profile editing. No database migration is needed. The Profile page exposes implemented actions; subscription checkout, biometric locking, feedback submission and translation controls are not implemented.
+
+Render the updated sample Profile preview with `flutter test tool/render_previews.dart --dart-define=FLUTTER_SDK=C:/flutter --dart-define=PROFILE_ONLY=true`.
+
 ## Run Laravel
 
 From the repository root:

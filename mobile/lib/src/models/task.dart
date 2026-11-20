@@ -1,14 +1,4 @@
-class AppUser {
-  const AppUser({required this.id, required this.name, required this.email});
-  factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
-    id: json['id'] as int,
-    name: json['name'] as String,
-    email: json['email'] as String,
-  );
-  final int id;
-  final String name;
-  final String email;
-}
+import '../utils/task_helpers.dart';
 
 class Task {
   const Task({
@@ -90,13 +80,3 @@ class Task {
     'is_pinned': isPinned,
   };
 }
-
-DateTime dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
-String? apiDate(DateTime? date) => date == null
-    ? null
-    : '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-String statusLabel(String status) => switch (status) {
-  'in_progress' => 'In progress',
-  'completed' => 'Completed',
-  _ => 'To do',
-};

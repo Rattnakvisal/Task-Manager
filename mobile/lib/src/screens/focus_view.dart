@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app.dart';
-import '../app_state.dart';
-import '../focus_timer.dart';
-import '../models.dart';
+import '../models/task.dart';
+import '../state/app_state.dart';
+import '../state/focus_timer.dart';
 import '../widgets/sweet_alert.dart';
 
 class FocusView extends StatefulWidget {

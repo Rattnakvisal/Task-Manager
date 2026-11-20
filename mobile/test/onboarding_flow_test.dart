@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
-import 'package:task_manager_mobile/src/api.dart';
 import 'package:task_manager_mobile/src/app.dart';
-import 'package:task_manager_mobile/src/app_state.dart';
 import 'package:task_manager_mobile/src/screens/auth_screen.dart';
 import 'package:task_manager_mobile/src/screens/home_shell.dart';
 import 'package:task_manager_mobile/src/screens/onboarding_screen.dart';
+import 'package:task_manager_mobile/src/services/api_client.dart';
+import 'package:task_manager_mobile/src/state/app_state.dart';
 
 import 'app_test.dart' show MemoryStore, jsonResponse, user;
 

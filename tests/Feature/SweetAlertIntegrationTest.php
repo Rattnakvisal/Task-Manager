@@ -74,4 +74,3 @@ test('dashboard renders modal triggers for new tasks', function () {
     $response->assertOk();
     $response->assertSee('data-open-task-modal', false);
 });
-

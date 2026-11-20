@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../app.dart';
-import '../models.dart';
+import '../models/task.dart';
+import '../utils/task_helpers.dart';
 import 'motion.dart';
 import 'task_status_widgets.dart';
 

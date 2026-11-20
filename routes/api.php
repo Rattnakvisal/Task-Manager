@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\TaskAlertController;
 use App\Http\Controllers\Api\TaskApiController;
-use App\Http\Controllers\TaskAlertController;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/mobile.php';

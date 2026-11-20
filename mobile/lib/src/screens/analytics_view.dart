@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
-import '../app_state.dart';
+import '../state/app_state.dart';
 
 class AnalyticsView extends StatelessWidget {
   const AnalyticsView({super.key, required this.state});

@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/models.dart';
-import '../services/api.dart';
+import '../models/app_user.dart';
+import '../models/task.dart';
+import '../services/api_client.dart';
+import '../services/api_exception.dart';
+import '../services/session_store.dart';
 import 'focus_session.dart';
 import 'streak_manager.dart';
 
@@ -23,9 +26,12 @@ class AppState extends ChangeNotifier {
     hasLoadedTasks = true;
     _emit();
   }
+
   bool starting = true, busy = false, hasLoadedTasks = false;
   bool readingSession = true;
   String? startupError;
+  DateTime? lastSyncedAt;
+  bool _updatingProfile = false;
   int _sessionVersion = 0, _taskVersion = 0;
   bool _disposed = false, _authenticating = false;
   Future<void>? _initialization, _refreshFuture;
@@ -184,6 +190,7 @@ class AppState extends ChangeNotifier {
         (data['tasks'] as List).map((item) => Task.fromJson(item)),
       );
       hasLoadedTasks = true;
+      lastSyncedAt = DateTime.now();
       await streak.syncWithTasks(_tasks, userId: user?.id);
     }
   });
@@ -275,7 +282,8 @@ class AppState extends ChangeNotifier {
     final wasDone = updatedSubtasks[subtaskIndex]['completed'] == true;
     updatedSubtasks[subtaskIndex]['completed'] = !wasDone;
 
-    final allDone = updatedSubtasks.isNotEmpty &&
+    final allDone =
+        updatedSubtasks.isNotEmpty &&
         updatedSubtasks.every((s) => s['completed'] == true);
     final String nextStatus = (allDone && current.status != 'completed')
         ? 'completed'
@@ -324,9 +332,11 @@ class AppState extends ChangeNotifier {
         .map((s) => Map<String, dynamic>.from(s))
         .toList();
     final points = (updatedSubtasks[subtaskIndex]['points'] as List? ?? [])
-        .map((p) => p is Map
-            ? Map<String, dynamic>.from(p)
-            : {'title': '$p', 'completed': false})
+        .map(
+          (p) => p is Map
+              ? Map<String, dynamic>.from(p)
+              : {'title': '$p', 'completed': false},
+        )
         .toList();
     if (pointIndex < 0 || pointIndex >= points.length) return;
 
@@ -340,7 +350,8 @@ class AppState extends ChangeNotifier {
       updatedSubtasks[subtaskIndex]['completed'] = true;
     }
 
-    final allDone = updatedSubtasks.isNotEmpty &&
+    final allDone =
+        updatedSubtasks.isNotEmpty &&
         updatedSubtasks.every((s) => s['completed'] == true);
     final String nextStatus = (allDone && current.status != 'completed')
         ? 'completed'
@@ -371,9 +382,11 @@ class AppState extends ChangeNotifier {
         .map((s) => Map<String, dynamic>.from(s))
         .toList();
     final points = (updatedSubtasks[subtaskIndex]['points'] as List? ?? [])
-        .map((p) => p is Map
-            ? Map<String, dynamic>.from(p)
-            : {'title': '$p', 'completed': false})
+        .map(
+          (p) => p is Map
+              ? Map<String, dynamic>.from(p)
+              : {'title': '$p', 'completed': false},
+        )
         .toList();
     points.add({
       'id': 'p-${DateTime.now().microsecondsSinceEpoch}',
@@ -388,6 +401,33 @@ class AppState extends ChangeNotifier {
     }, id: current.id);
   }
 
+  Future<void> updateProfileName(String name) async {
+    final clean = name.trim();
+    if (clean.isEmpty || clean.length > 100) {
+      throw const ApiException('Enter a name between 1 and 100 characters.');
+    }
+    if (_disposed || user == null) {
+      throw const ApiException('Please sign in to update your profile.');
+    }
+    if (_updatingProfile) {
+      throw const ApiException('Your profile is already being saved.');
+    }
+    _updatingProfile = true;
+    final version = _sessionVersion;
+    try {
+      final data = await _authorized(
+        () => api.request('PATCH', '/profile', {'name': clean}),
+      );
+      if (!_active(version)) {
+        throw const ApiException('Your session changed. Please sign in again.');
+      }
+      user = AppUser.fromJson(data['user']);
+      _emit();
+    } finally {
+      _updatingProfile = false;
+    }
+  }
+
   Future<void> logout() async {
     final version = _sessionVersion;
     // Preserve the credential if revocation fails, allowing the user to retry.
@@ -400,6 +440,7 @@ class AppState extends ChangeNotifier {
     ++_sessionVersion;
     api.token = null;
     user = null;
+    lastSyncedAt = null;
     focus.attachUser(null);
     _tasks = const [];
     _mutations.clear();

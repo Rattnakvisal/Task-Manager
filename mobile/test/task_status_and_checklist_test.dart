@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:task_manager_mobile/src/models.dart';
+import 'package:task_manager_mobile/src/models/task.dart';
 import 'package:task_manager_mobile/src/widgets/task_status_widgets.dart';
 
 void main() {

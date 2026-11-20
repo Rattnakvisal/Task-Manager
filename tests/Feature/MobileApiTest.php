@@ -13,6 +13,36 @@ function mobileToken(User $user): string
     return $user->createToken('Android test', ['*'], now()->addDays(30))->plainTextToken;
 }
 
+it('requires authentication to update a mobile profile', function () {
+    $this->patchJson('/api/mobile/profile', ['name' => 'New Name'])->assertUnauthorized();
+});
+
+it('updates only the signed-in mobile users name', function () {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    $this->withToken(mobileToken($user))->patchJson('/api/mobile/profile', [
+        'id' => $other->id,
+        'name' => '  Updated Name  ',
+        'email' => 'changed@example.com',
+        'password' => 'changed',
+    ])->assertOk()->assertJsonPath('user.id', $user->id)
+        ->assertJsonPath('user.name', 'Updated Name')
+        ->assertJsonPath('user.email', $user->email)
+        ->assertJsonMissingPath('user.password');
+    expect($user->fresh()->name)->toBe('Updated Name');
+    expect($user->fresh()->password)->toBe($user->password);
+    expect($other->fresh()->name)->toBe($other->name);
+});
+
+it('validates the mobile profile name before saving', function () {
+    $user = User::factory()->create();
+    $this->withToken(mobileToken($user))->patchJson('/api/mobile/profile', ['name' => '   '])
+        ->assertUnprocessable()->assertJsonValidationErrors('name');
+    $this->patchJson('/api/mobile/profile', ['name' => str_repeat('x', 101)])
+        ->assertUnprocessable()->assertJsonValidationErrors('name');
+    expect($user->fresh()->name)->toBe($user->name);
+});
+
 it('registers a mobile account with a hashed expiring token and normalized email', function () {
     $response = $this->postJson('/api/mobile/register', [
         'name' => 'Android User', 'email' => ' Android@Example.com ',

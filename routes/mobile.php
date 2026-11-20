@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\MobileAuthController;
+use App\Http\Controllers\Api\MobileProfileController;
 use App\Http\Controllers\Api\TaskApiController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('mobile')->group(function () {
-    Route::get('/', fn (Illuminate\Http\Request $request) => response()->json([
+    Route::get('/', fn (Request $request) => response()->json([
         'status' => 'ok',
         'app' => config('app.name'),
         'message' => 'Task Manager Mobile API is running.',
@@ -13,7 +15,7 @@ Route::prefix('mobile')->group(function () {
         'server_host' => $request->getHost(),
         'timestamp' => now()->toIso8601String(),
     ]));
-    Route::get('/ping', fn (Illuminate\Http\Request $request) => response()->json([
+    Route::get('/ping', fn (Request $request) => response()->json([
         'status' => 'ok',
         'app' => config('app.name'),
         'client_ip' => $request->ip(),
@@ -25,6 +27,7 @@ Route::prefix('mobile')->group(function () {
 
     Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
         Route::get('/me', [MobileAuthController::class, 'me']);
+        Route::patch('/profile', [MobileProfileController::class, 'update'])->middleware('throttle:30,1');
         Route::post('/logout', [MobileAuthController::class, 'logout']);
         Route::get('/dashboard', [TaskApiController::class, 'dashboard']);
         Route::get('/calendar', [TaskApiController::class, 'calendar']);

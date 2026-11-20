@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../api.dart';
-import '../app_state.dart';
 import '../app.dart';
+import '../services/api_exception.dart';
+import '../state/app_state.dart';
 import '../widgets/motion.dart';
 
 class AuthScreen extends StatefulWidget {

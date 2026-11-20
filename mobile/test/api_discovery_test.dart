@@ -5,7 +5,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:task_manager_mobile/src/api.dart';
+import 'package:task_manager_mobile/src/services/api_client.dart';
+import 'package:task_manager_mobile/src/services/api_exception.dart';
 
 void main() {
   test('the default API follows the configured Vercel production domain', () {
@@ -146,6 +147,40 @@ void main() {
     );
     expect(requests, 1);
   });
+
+  test(
+    'profile updates recover the production route without changing the payload',
+    () async {
+      final requests = <http.Request>[];
+      final api = ApiClient(
+        client: MockClient((request) async {
+          requests.add(request);
+          if (!request.url.path.startsWith('/api/api/mobile')) {
+            return http.Response('{"message":"Not Found"}', 404);
+          }
+          if (request.url.path.endsWith('/ping')) {
+            expect(request.headers.containsKey('Authorization'), isFalse);
+            return http.Response('{"status":"ok"}', 200);
+          }
+          return http.Response(
+            '{"user":{"id":1,"name":"Updated","email":"user@example.com"}}',
+            200,
+          );
+        }),
+      )..token = 'saved';
+      addTearDown(api.close);
+      final data = await api.request('PATCH', '/profile', {'name': 'Updated'});
+      expect(data['user']['name'], 'Updated');
+      expect(requests.map((request) => request.url.path), [
+        '/api/mobile/profile',
+        '/api/api/mobile/ping',
+        '/api/api/mobile/profile',
+      ]);
+      expect(requests.last.method, 'PATCH');
+      expect(requests.last.body, requests.first.body);
+      expect(requests.last.headers['Authorization'], 'Bearer saved');
+    },
+  );
 
   test('a late 404 reuses the route resolved by another request', () async {
     final lateResponse = Completer<http.Response>();

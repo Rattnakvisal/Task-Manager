@@ -453,10 +453,7 @@ class _TwinIPhoneStageState extends State<_TwinIPhoneStage>
               left: 14,
               child: Transform.translate(
                 offset: Offset(0, backFloat),
-                child: Transform.rotate(
-                  angle: -0.075,
-                  child: widget.backPhone,
-                ),
+                child: Transform.rotate(angle: -0.075, child: widget.backPhone),
               ),
             ),
 
@@ -466,19 +463,12 @@ class _TwinIPhoneStageState extends State<_TwinIPhoneStage>
               left: 98,
               child: Transform.translate(
                 offset: Offset(0, frontFloat),
-                child: Transform.rotate(
-                  angle: 0.045,
-                  child: widget.frontPhone,
-                ),
+                child: Transform.rotate(angle: 0.045, child: widget.frontPhone),
               ),
             ),
 
             // Floating iOS Live Badge / Chip
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: widget.floatingBadge,
-            ),
+            Positioned(bottom: 0, right: 0, child: widget.floatingBadge),
           ],
         );
       },
@@ -512,210 +502,221 @@ class _IPhoneDevice extends StatelessWidget {
   Widget build(BuildContext context) {
     final textColor = isDark ? Colors.white : const Color(0xFF1C1C28);
 
-    return Container(
+    return SizedBox(
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        // Natural Titanium Edge Bezel
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [
-                  Color(0xFF5A586E),
-                  Color(0xFF312F40),
-                  Color(0xFF1E1D28),
-                ]
-              : const [
-                  Color(0xFFE8E8EE),
-                  Color(0xFFBCBCC6),
-                  Color(0xFF888796),
-                ],
-        ),
-        boxShadow: [
-          if (accentGlow != null)
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          // Natural Titanium Edge Bezel
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const [
+                    Color(0xFF5A586E),
+                    Color(0xFF312F40),
+                    Color(0xFF1E1D28),
+                  ]
+                : const [
+                    Color(0xFFE8E8EE),
+                    Color(0xFFBCBCC6),
+                    Color(0xFF888796),
+                  ],
+          ),
+          boxShadow: [
+            if (accentGlow != null)
+              BoxShadow(
+                color: accentGlow!.withValues(alpha: 0.24),
+                blurRadius: 32,
+                spreadRadius: 2,
+                offset: const Offset(0, 12),
+              ),
             BoxShadow(
-              color: accentGlow!.withValues(alpha: 0.24),
-              blurRadius: 32,
-              spreadRadius: 2,
-              offset: const Offset(0, 12),
+              color: const Color(0xFF181728)
+                  .withValues(alpha: isDark ? 0.28 : 0.16),
+              blurRadius: elevation,
+              offset: Offset(0, elevation * 0.45),
             ),
-          BoxShadow(
-            color: const Color(0xFF181728).withValues(alpha: isDark ? 0.28 : 0.16),
-            blurRadius: elevation,
-            offset: Offset(0, elevation * 0.45),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(4), // Bezel border width
-      child: MediaQuery.withNoTextScaling(
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A1926) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark ? const Color(0xFF100F18) : const Color(0xFF14141E),
-              width: 1.5,
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              // Main Screen Contents
-              Positioned.fill(
-                top: 26,
-                bottom: 8,
-                child: SingleChildScrollView(
-                  physics: const NeverScrollableScrollPhysics(),
-                  child: child,
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4), // Bezel border width
+          child: MediaQuery.withNoTextScaling(
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1A1926) : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF100F18)
+                      : const Color(0xFF14141E),
+                  width: 1.5,
                 ),
               ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                children: [
+                  // Main Screen Contents
+                  Positioned.fill(
+                    top: 26,
+                    bottom: 8,
+                    child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: child,
+                    ),
+                  ),
 
-              // iOS Top Status Bar & Dynamic Island
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 26,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        '9:41',
-                        style: TextStyle(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      // Dynamic Island Pill
-                      Flexible(
-                        child: Container(
-                          height: 14,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0A0A10),
-                            borderRadius: BorderRadius.circular(9),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              width: 0.5,
+                  // iOS Top Status Bar & Dynamic Island
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 26,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '9:41',
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                              letterSpacing: -0.2,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 3.5,
-                                height: 3.5,
-                                decoration: BoxDecoration(
-                                  color: dynamicIslandDotColor,
-                                  shape: BoxShape.circle,
+                          // Dynamic Island Pill
+                          Flexible(
+                            child: Container(
+                              height: 14,
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0A0A10),
+                                borderRadius: BorderRadius.circular(9),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  width: 0.5,
                                 ),
                               ),
-                              if (dynamicIslandLabel != null) ...[
-                                const SizedBox(width: 3),
-                                Flexible(
-                                  child: Text(
-                                    dynamicIslandLabel!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 6.5,
-                                      fontWeight: FontWeight.w700,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 3.5,
+                                    height: 3.5,
+                                    decoration: BoxDecoration(
+                                      color: dynamicIslandDotColor,
+                                      shape: BoxShape.circle,
                                     ),
                                   ),
+                                  if (dynamicIslandLabel != null) ...[
+                                    const SizedBox(width: 3),
+                                    Flexible(
+                                      child: Text(
+                                        dynamicIslandLabel!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 6.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Wi-Fi & Battery indicator
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.wifi,
+                                size: 8.5,
+                                color: textColor.withValues(alpha: 0.8),
+                              ),
+                              const SizedBox(width: 3),
+                              Container(
+                                width: 13,
+                                height: 7,
+                                padding: const EdgeInsets.all(1),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(2.5),
+                                  border: Border.all(
+                                    color: textColor.withValues(alpha: 0.7),
+                                    width: 0.8,
+                                  ),
                                 ),
-                              ],
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF34C759),
+                                    borderRadius: BorderRadius.circular(1.2),
+                                  ),
+                                ),
+                              ),
                             ],
-                          ),
-                        ),
-                      ),
-                      // Wi-Fi & Battery indicator
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.wifi,
-                            size: 8.5,
-                            color: textColor.withValues(alpha: 0.8),
-                          ),
-                          const SizedBox(width: 3),
-                          Container(
-                            width: 13,
-                            height: 7,
-                            padding: const EdgeInsets.all(1),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(2.5),
-                              border: Border.all(
-                                color: textColor.withValues(alpha: 0.7),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF34C759),
-                                borderRadius: BorderRadius.circular(1.2),
-                              ),
-                            ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
 
-              // Diagonal Specular Glass Reflection
-              Positioned(
-                top: -40,
-                left: -40,
-                width: width * 1.8,
-                height: 100,
-                child: IgnorePointer(
-                  child: Transform.rotate(
-                    angle: -0.55,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.white.withValues(alpha: isDark ? 0.09 : 0.18),
-                            Colors.white.withValues(alpha: 0.0),
-                          ],
+                  // Diagonal Specular Glass Reflection
+                  Positioned(
+                    top: -40,
+                    left: -40,
+                    width: width * 1.8,
+                    height: 100,
+                    child: IgnorePointer(
+                      child: Transform.rotate(
+                        angle: -0.55,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.white.withValues(
+                                  alpha: isDark ? 0.09 : 0.18,
+                                ),
+                                Colors.white.withValues(alpha: 0.0),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
 
-              // iOS Home Indicator Line
-              Positioned(
-                bottom: 3,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    width: width * 0.32,
-                    height: 2.5,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.35)
-                          : const Color(0xFF1C1C28).withValues(alpha: 0.65),
-                      borderRadius: BorderRadius.circular(2),
+                  // iOS Home Indicator Line
+                  Positioned(
+                    bottom: 3,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        width: width * 0.32,
+                        height: 2.5,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.35)
+                              : const Color(0xFF1C1C28).withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -811,7 +812,10 @@ class _PlanIllustration extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFEFF8),
                     borderRadius: BorderRadius.circular(5),
@@ -1133,10 +1137,7 @@ class _PriorityIllustration extends StatelessWidget {
           ),
           Text(
             count,
-            style: const TextStyle(
-              color: Color(0xFFB9B5CD),
-              fontSize: 7,
-            ),
+            style: const TextStyle(color: Color(0xFFB9B5CD), fontSize: 7),
           ),
         ],
       ),
@@ -1320,8 +1321,11 @@ class _ProgressIllustration extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.local_fire_department_rounded,
-                      color: Color(0xFFFF9500), size: 16),
+                  Icon(
+                    Icons.local_fire_department_rounded,
+                    color: Color(0xFFFF9500),
+                    size: 16,
+                  ),
                   SizedBox(width: 5),
                   Expanded(
                     child: Text(
@@ -1380,9 +1384,7 @@ class _ProgressIllustration extends StatelessWidget {
                     alignment: Alignment.center,
                     children: [
                       Positioned.fill(
-                        child: CustomPaint(
-                          painter: _ProgressRing(progress),
-                        ),
+                        child: CustomPaint(painter: _ProgressRing(progress)),
                       ),
                       Text(
                         '${(progress * 100).round()}%',
@@ -1437,11 +1439,7 @@ class _ProgressIllustration extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.trending_up_rounded,
-            color: Color(0xFF168268),
-            size: 20,
-          ),
+          Icon(Icons.trending_up_rounded, color: Color(0xFF168268), size: 20),
           SizedBox(width: 8),
           Text(
             'That is progress.',

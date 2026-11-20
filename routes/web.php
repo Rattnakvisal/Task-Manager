@@ -1,11 +1,11 @@
 <?php
 
-use App\Http\Controllers\AiCopilotController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\TaskController;
+use App\Http\Controllers\Web\AiCopilotController;
+use App\Http\Controllers\Web\OnboardingController;
+use App\Http\Controllers\Web\ProfileController;
+use App\Http\Controllers\Web\TaskController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/login', '/sign-in');

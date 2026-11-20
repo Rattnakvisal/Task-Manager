@@ -1,8 +1,8 @@
+import '../models/task.dart';
+import '../services/session_store.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import '../models/models.dart';
-import '../services/api.dart';
 
 class DayStreakInfo {
   const DayStreakInfo({
@@ -43,6 +43,7 @@ class StreakManager extends ChangeNotifier {
 
   int _streakCount = 1;
   int get streakCount => _streakCount;
+  int get currentStreak => _streakCount;
 
   int _longestStreak = 1;
   int get longestStreak => _longestStreak;

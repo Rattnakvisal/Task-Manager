@@ -10,10 +10,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:task_manager_mobile/src/api.dart';
 import 'package:task_manager_mobile/src/app.dart';
-import 'package:task_manager_mobile/src/app_state.dart';
-import 'package:task_manager_mobile/src/models.dart';
+import 'package:task_manager_mobile/src/services/api_client.dart';
+import 'package:task_manager_mobile/src/state/app_state.dart';
+import 'package:task_manager_mobile/src/utils/task_helpers.dart';
 
 import '../test/app_test.dart' show MemoryStore;
 
@@ -127,11 +127,13 @@ void main() {
       });
     }
 
-    await capture('home');
-    await tester.tap(find.text('Tasks'));
-    await capture('tasks');
-    await tester.tap(find.text('Calendar'));
-    await capture('calendar');
+    if (!const bool.fromEnvironment('PROFILE_ONLY')) {
+      await capture('home');
+      await tester.tap(find.text('Tasks'));
+      await capture('tasks');
+      await tester.tap(find.text('Calendar'));
+      await capture('calendar');
+    }
     await tester.tap(find.text('Profile'));
     await capture('profile');
     await tester.pumpWidget(const SizedBox());

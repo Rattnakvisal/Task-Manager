@@ -3,33 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
-class ApiException implements Exception {
-  const ApiException(this.message, [this.statusCode = 0]);
-  final String message;
-  final int statusCode;
-  @override
-  String toString() => message;
-}
-
-abstract class SessionStore {
-  Future<String?> read(String key);
-  Future<void> write(String key, String value);
-  Future<void> delete(String key);
-}
-
-class SecureSessionStore implements SessionStore {
-  final _storage = const FlutterSecureStorage();
-  @override
-  Future<String?> read(String key) => _storage.read(key: key);
-  @override
-  Future<void> write(String key, String value) =>
-      _storage.write(key: key, value: value);
-  @override
-  Future<void> delete(String key) => _storage.delete(key: key);
-}
+import 'api_exception.dart';
 
 class ApiClient {
   ApiClient({
@@ -126,6 +102,7 @@ class ApiClient {
             '/login',
             '/register',
             '/me',
+            '/profile',
             '/tasks',
             '/dashboard',
             '/calendar',

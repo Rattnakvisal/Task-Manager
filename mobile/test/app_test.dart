@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:task_manager_mobile/src/api.dart';
 import 'package:task_manager_mobile/src/app.dart';
-import 'package:task_manager_mobile/src/app_state.dart';
-import 'package:task_manager_mobile/src/models.dart';
+import 'package:task_manager_mobile/src/models/app_user.dart';
 import 'package:task_manager_mobile/src/screens/auth_screen.dart';
+import 'package:task_manager_mobile/src/services/api_client.dart';
+import 'package:task_manager_mobile/src/services/api_exception.dart';
+import 'package:task_manager_mobile/src/services/session_store.dart';
+import 'package:task_manager_mobile/src/state/app_state.dart';
 import 'package:task_manager_mobile/src/widgets/animated_taskbar.dart';
 import 'package:task_manager_mobile/src/widgets/motion.dart';
 

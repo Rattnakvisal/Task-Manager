@@ -1,8 +1,8 @@
+import '../services/session_store.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import '../services/api.dart';
 import 'focus_timer.dart';
+import 'package:flutter/foundation.dart';
 
 class FocusSession extends ChangeNotifier {
   FocusSession(this.store, {FocusTimer? timer}) : timer = timer ?? FocusTimer() {
